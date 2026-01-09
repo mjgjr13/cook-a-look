@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Star, Video, MapPin, Filter, Search } from "lucide-react";
+import { Star, Video, MapPin, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,9 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import advisor1 from "@/assets/advisor-1.jpg";
-import advisor2 from "@/assets/advisor-2.jpg";
-import advisor3 from "@/assets/advisor-3.jpg";
 
 const allAdvisors = [
   {
@@ -24,7 +21,7 @@ const allAdvisors = [
     rating: 4.9,
     reviews: 127,
     price: 150,
-    image: advisor1,
+    initials: "MC",
     virtual: true,
     inPerson: true,
     location: "New York",
@@ -38,7 +35,7 @@ const allAdvisors = [
     rating: 4.8,
     reviews: 89,
     price: 125,
-    image: advisor2,
+    initials: "IR",
     virtual: true,
     inPerson: true,
     location: "Los Angeles",
@@ -52,7 +49,7 @@ const allAdvisors = [
     rating: 5.0,
     reviews: 64,
     price: 175,
-    image: advisor3,
+    initials: "AJ",
     virtual: true,
     inPerson: false,
     location: "Miami",
@@ -66,7 +63,7 @@ const allAdvisors = [
     rating: 4.7,
     reviews: 52,
     price: 100,
-    image: advisor2,
+    initials: "SL",
     virtual: true,
     inPerson: false,
     location: "San Francisco",
@@ -80,7 +77,7 @@ const allAdvisors = [
     rating: 4.9,
     reviews: 93,
     price: 140,
-    image: advisor1,
+    initials: "JP",
     virtual: true,
     inPerson: true,
     location: "Chicago",
@@ -94,7 +91,7 @@ const allAdvisors = [
     rating: 4.8,
     reviews: 71,
     price: 130,
-    image: advisor3,
+    initials: "NO",
     virtual: true,
     inPerson: true,
     location: "Atlanta",
@@ -103,10 +100,10 @@ const allAdvisors = [
   },
 ];
 
-const badgeColors = {
-  gold: "bg-gold text-accent-foreground",
-  silver: "bg-silver text-foreground",
-  bronze: "bg-bronze text-primary-foreground",
+const badgeLabels = {
+  gold: "Top Rated",
+  silver: "Rising Star",
+  bronze: "New",
 };
 
 const Advisors = () => {
@@ -135,7 +132,7 @@ const Advisors = () => {
 
   return (
     <Layout>
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -143,14 +140,11 @@ const Advisors = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">
-              Expert Guidance
-            </p>
-            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-4">
+            <h1 className="font-serif text-3xl md:text-4xl font-medium mb-4">
               Style Advisors
             </h1>
-            <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-              Browse our curated selection of professional style consultants
+            <p className="font-sans text-muted-foreground max-w-xl mx-auto">
+              Find the perfect advisor to help you achieve your style goals.
             </p>
           </motion.div>
 
@@ -159,7 +153,7 @@ const Advisors = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex flex-col md:flex-row gap-4 mb-12 p-6 bg-background border border-border"
+            className="flex flex-col md:flex-row gap-4 mb-12 p-6 bg-card border border-border"
           >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -201,68 +195,66 @@ const Advisors = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.05 }}
-                className="group bg-background border border-border overflow-hidden hover-lift"
+                className="group bg-card border border-border p-8 hover:border-foreground/20 transition-colors duration-300"
               >
-                <div className="relative aspect-[4/5] overflow-hidden">
-                  <img
-                    src={advisor.image}
-                    alt={advisor.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {advisor.badge && (
-                    <div
-                      className={`absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider ${
-                        badgeColors[advisor.badge as keyof typeof badgeColors]
-                      }`}
-                    >
-                      {advisor.badge} Advisor
-                    </div>
+                {/* Avatar Placeholder */}
+                <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
+                  <span className="font-serif text-2xl text-muted-foreground">
+                    {advisor.initials}
+                  </span>
+                </div>
+
+                {/* Badge */}
+                {advisor.badge && (
+                  <div className="text-center mb-4">
+                    <span className="text-xs font-sans uppercase tracking-wider text-muted-foreground">
+                      {badgeLabels[advisor.badge as keyof typeof badgeLabels]}
+                    </span>
+                  </div>
+                )}
+
+                {/* Rating */}
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Star className="w-4 h-4 fill-foreground text-foreground" />
+                  <span className="font-sans text-sm">
+                    {advisor.rating} ({advisor.reviews})
+                  </span>
+                </div>
+
+                {/* Name & Specialty */}
+                <h3 className="font-serif text-xl font-medium text-center mb-1">
+                  {advisor.name}
+                </h3>
+                <p className="font-sans text-sm text-muted-foreground text-center mb-2">
+                  {advisor.specialty}
+                </p>
+                <p className="font-sans text-sm text-muted-foreground text-center mb-4 line-clamp-2">
+                  {advisor.bio}
+                </p>
+
+                {/* Consultation Types */}
+                <div className="flex items-center justify-center gap-4 mb-6 text-sm text-muted-foreground font-sans">
+                  {advisor.virtual && (
+                    <span className="flex items-center gap-1">
+                      <Video className="w-4 h-4" /> Virtual
+                    </span>
+                  )}
+                  {advisor.inPerson && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" /> {advisor.location}
+                    </span>
                   )}
                 </div>
 
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Star className="w-4 h-4 fill-gold text-gold" />
-                    <span className="font-sans text-sm font-medium">
-                      {advisor.rating}
-                    </span>
-                    <span className="font-sans text-sm text-muted-foreground">
-                      ({advisor.reviews} reviews)
-                    </span>
-                  </div>
-
-                  <h3 className="font-serif text-xl font-medium mb-1">
-                    {advisor.name}
-                  </h3>
-                  <p className="font-sans text-sm text-gold mb-2">
-                    {advisor.specialty}
+                {/* Price & CTA */}
+                <div className="text-center pt-6 border-t border-border">
+                  <p className="font-sans mb-4">
+                    <span className="text-lg font-medium">${advisor.price}</span>
+                    <span className="text-sm text-muted-foreground">/session</span>
                   </p>
-                  <p className="font-sans text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {advisor.bio}
-                  </p>
-
-                  <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground font-sans">
-                    {advisor.virtual && (
-                      <span className="flex items-center gap-1">
-                        <Video className="w-4 h-4" /> Virtual
-                      </span>
-                    )}
-                    {advisor.inPerson && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" /> {advisor.location}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <span className="font-sans">
-                      <span className="text-lg font-medium">${advisor.price}</span>
-                      <span className="text-sm text-muted-foreground">/session</span>
-                    </span>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/advisors/${advisor.id}`}>Book Now</Link>
-                    </Button>
-                  </div>
+                  <Button variant="outline" size="sm" asChild className="w-full">
+                    <Link to={`/advisors/${advisor.id}`}>Book Now</Link>
+                  </Button>
                 </div>
               </motion.article>
             ))}
@@ -271,7 +263,7 @@ const Advisors = () => {
           {filteredAdvisors.length === 0 && (
             <div className="text-center py-16">
               <p className="font-sans text-muted-foreground">
-                No advisors found matching your criteria. Try adjusting your filters.
+                No advisors found matching your criteria.
               </p>
             </div>
           )}
