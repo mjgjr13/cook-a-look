@@ -45,18 +45,18 @@ const SignUp = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="max-w-md mx-auto"
+            className="max-w-sm mx-auto"
           >
-            <div className="text-center mb-10">
-              <h1 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+            <div className="text-center mb-8">
+              <h1 className="font-serif text-2xl md:text-3xl font-medium mb-2">
                 Create Account
               </h1>
-              <p className="font-sans text-muted-foreground">
-                Join Cook a Look to book style consultations
+              <p className="font-sans text-sm text-muted-foreground">
+                Join Cook a Look today
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
@@ -81,7 +81,7 @@ const SignUp = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -116,20 +116,20 @@ const SignUp = () => {
                 />
               </div>
 
-              <Button variant="hero" size="lg" type="submit" className="w-full">
+              <Button variant="default" size="lg" type="submit" className="w-full">
                 Create Account
               </Button>
 
               <p className="text-center text-xs text-muted-foreground font-sans">
-                By signing up, you agree to our Terms of Service and Privacy Policy.
+                By signing up, you agree to our Terms of Service.
               </p>
             </form>
 
-            <p className="text-center mt-8 font-sans text-sm text-muted-foreground">
+            <p className="text-center mt-6 font-sans text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link
                 to="/signin"
-                className="text-foreground hover:text-gold transition-colors font-medium"
+                className="text-foreground hover:underline"
               >
                 Sign In
               </Link>

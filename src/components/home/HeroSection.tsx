@@ -1,64 +1,56 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import heroImage from "@/assets/hero-fashion.jpg";
+import logo from "@/assets/logo.png";
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Elegant fashion consultant"
-          className="w-full h-full object-cover object-top"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
-      </div>
-
-      {/* Content */}
-      <div className="container mx-auto px-6 lg:px-8 relative z-10">
-        <div className="max-w-2xl">
-          <motion.p
+    <section className="min-h-[85vh] flex items-center justify-center bg-background">
+      <div className="container mx-auto px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-6"
+            transition={{ duration: 0.8 }}
+            className="mb-12"
           >
-            Personal Style, Perfected
-          </motion.p>
+            <img 
+              src={logo} 
+              alt="Cook a Look" 
+              className="h-16 md:h-20 w-auto mx-auto"
+            />
+          </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.1] mb-6"
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="font-serif text-4xl md:text-5xl lg:text-6xl font-medium leading-tight mb-8"
           >
-            The Recipe to{" "}
-            <span className="italic">Dressing Well</span>
+            Elevate your personal style.
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="font-sans text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg"
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="font-sans text-lg md:text-xl text-muted-foreground leading-relaxed mb-12 max-w-2xl mx-auto"
           >
-            Connect with world-class style advisors who will transform your
-            wardrobe and elevate your personal style to new heights.
+            Connect with expert style advisors who will help you build a 
+            wardrobe that reflects who you are.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4"
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Button variant="hero" size="xl" asChild>
+            <Button variant="default" size="lg" asChild>
               <Link to="/advisors">Find Your Advisor</Link>
             </Button>
-            <Button variant="heroOutline" size="xl" asChild>
-              <Link to="/lookbook">Explore Lookbook</Link>
+            <Button variant="outline" size="lg" asChild>
+              <Link to="/lookbook">View Lookbook</Link>
             </Button>
           </motion.div>
         </div>
