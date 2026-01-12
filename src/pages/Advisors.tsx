@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Star, Video, MapPin, Filter, Search } from "lucide-react";
+import { Star, Video, MapPin, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import {
@@ -113,6 +113,7 @@ const Advisors = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [consultationType, setConsultationType] = useState("all");
   const [priceRange, setPriceRange] = useState("all");
+  const navigate = useNavigate();
 
   const filteredAdvisors = allAdvisors.filter((advisor) => {
     const matchesSearch =
@@ -132,6 +133,10 @@ const Advisors = () => {
 
     return matchesSearch && matchesType && matchesPrice;
   });
+
+  const handleCardClick = (advisorId: number) => {
+    navigate(`/advisors/${advisorId}`);
+  };
 
   return (
     <Layout>
@@ -201,7 +206,8 @@ const Advisors = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.05 }}
-                className="group bg-background border border-border overflow-hidden hover-lift"
+                className="group bg-background border border-border overflow-hidden hover-lift cursor-pointer"
+                onClick={() => handleCardClick(advisor.id)}
               >
                 <div className="relative aspect-[4/5] overflow-hidden">
                   <img
@@ -259,8 +265,15 @@ const Advisors = () => {
                       <span className="text-lg font-medium">${advisor.price}</span>
                       <span className="text-sm text-muted-foreground">/session</span>
                     </span>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/advisors/${advisor.id}`}>Book Now</Link>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/advisors/${advisor.id}`);
+                      }}
+                    >
+                      View Profile
                     </Button>
                   </div>
                 </div>
