@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import logo from "@/assets/cook-a-look-logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,9 +23,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <span className="font-serif text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
-              Cook a Look
-            </span>
+            <img 
+              src={logo} 
+              alt="Cook a Look" 
+              className="h-10 lg:h-12 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
