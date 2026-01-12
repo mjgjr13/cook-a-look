@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import advisor1 from "@/assets/advisor-1.jpg";
 import advisor2 from "@/assets/advisor-2.jpg";
 import advisor3 from "@/assets/advisor-3.jpg";
+import advisor4 from "@/assets/advisor-4.jpg";
+
 const advisors = [{
   id: 1,
   name: "Marcus Chen",
@@ -41,7 +43,20 @@ const advisors = [{
   inPerson: false,
   location: "Miami",
   badge: "bronze"
+}, {
+  id: 4,
+  name: "Sophia Lin",
+  specialty: "Minimalist & Modern",
+  rating: 4.9,
+  reviews: 92,
+  price: 140,
+  image: advisor4,
+  virtual: true,
+  inPerson: true,
+  location: "San Francisco",
+  badge: "gold"
 }];
+
 const badgeColors = {
   gold: "bg-gold text-accent-foreground",
   silver: "bg-silver text-foreground",
@@ -72,7 +87,7 @@ const FeaturedAdvisors = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {advisors.map((advisor, index) => <motion.article key={advisor.id} initial={{
           opacity: 0,
           y: 20

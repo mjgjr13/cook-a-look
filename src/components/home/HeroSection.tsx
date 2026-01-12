@@ -8,12 +8,14 @@ const HeroSection = () => {
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Elegant fashion consultant"
-          className="w-full h-full object-cover object-top"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
+        <div className="absolute inset-0 flex justify-end">
+          <img
+            src={heroImage}
+            alt="Elegant fashion consultant"
+            className="h-full w-auto max-w-[60%] object-cover object-top"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
       </div>
 
       {/* Content */}
