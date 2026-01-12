@@ -21,12 +21,9 @@ const Navbar = () => {
       <div className="container mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link to="/" className="flex flex-col items-start">
-            <span className="font-serif text-2xl font-semibold tracking-tight text-foreground">
+          <Link to="/" className="flex items-center">
+            <span className="font-serif text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
               Cook a Look
-            </span>
-            <span className="text-xs tracking-[0.3em] uppercase text-muted-foreground font-sans">
-              The Recipe to Dressing Well
             </span>
           </Link>
 
