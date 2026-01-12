@@ -40,7 +40,7 @@ const Footer = () => {
 
           {/* Center - Logo & Tagline */}
           <div className="flex flex-col items-center text-center">
-            <CookALookLogo size="lg" className="mb-3 invert" />
+            <CookALookLogo size="lg" variant="light" className="mb-3" />
             <p className="text-sm tracking-[0.2em] uppercase text-primary-foreground/80">
               The Recipe to Dressing Well
             </p>
