@@ -26,7 +26,7 @@ const Navbar = () => {
             <img 
               src={logo} 
               alt="Cook a Look" 
-              className="h-8 w-auto"
+              className="h-12 md:h-14 w-auto"
             />
           </Link>
 

@@ -12,12 +12,12 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="mb-12"
+            className="mb-16"
           >
             <img 
               src={logo} 
               alt="Cook a Look" 
-              className="h-16 md:h-20 w-auto mx-auto"
+              className="h-24 md:h-32 lg:h-40 w-auto mx-auto"
             />
           </motion.div>
 
