@@ -28,20 +28,20 @@ const SignIn = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="max-w-sm mx-auto"
+            className="max-w-md mx-auto"
           >
-            <div className="text-center mb-8">
-              <h1 className="font-serif text-2xl md:text-3xl font-medium mb-2">
+            <div className="text-center mb-10">
+              <h1 className="font-serif text-3xl md:text-4xl font-medium mb-4">
                 Welcome Back
               </h1>
-              <p className="font-sans text-sm text-muted-foreground">
-                Sign in to your account
+              <p className="font-sans text-muted-foreground">
+                Sign in to access your account
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -62,16 +62,25 @@ const SignIn = () => {
                 />
               </div>
 
-              <Button variant="default" size="lg" type="submit" className="w-full">
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="font-sans text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              <Button variant="hero" size="lg" type="submit" className="w-full">
                 Sign In
               </Button>
             </form>
 
-            <p className="text-center mt-6 font-sans text-sm text-muted-foreground">
+            <p className="text-center mt-8 font-sans text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Link
                 to="/signup"
-                className="text-foreground hover:underline"
+                className="text-foreground hover:text-gold transition-colors font-medium"
               >
                 Create Account
               </Link>

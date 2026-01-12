@@ -1,21 +1,20 @@
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo.png";
+import { Instagram, Facebook, Twitter, Mail } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="bg-background border-t border-border py-16">
+    <footer className="bg-primary text-primary-foreground py-16">
       <div className="container mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="inline-block mb-6">
-              <img 
-                src={logo} 
-                alt="Cook a Look" 
-                className="h-8 w-auto"
-              />
+            <Link to="/" className="inline-block mb-4">
+              <h3 className="font-serif text-2xl font-semibold">Cook a Look</h3>
+              <p className="text-xs tracking-[0.3em] uppercase text-primary-foreground/70">
+                The Recipe to Dressing Well
+              </p>
             </Link>
-            <p className="text-muted-foreground font-sans text-sm max-w-sm leading-relaxed">
+            <p className="text-primary-foreground/80 font-sans text-sm max-w-md leading-relaxed">
               Connecting you with world-class style advisors to transform your
               wardrobe and elevate your personal style.
             </p>
@@ -23,12 +22,12 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-sans text-sm font-medium mb-4 text-foreground">Explore</h4>
+            <h4 className="font-serif text-lg mb-4">Explore</h4>
             <ul className="space-y-3 font-sans text-sm">
               <li>
                 <Link
                   to="/advisors"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
                 >
                   Style Advisors
                 </Link>
@@ -36,7 +35,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/lookbook"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
                 >
                   Lookbook
                 </Link>
@@ -44,7 +43,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/become-advisor"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
                 >
                   Become an Advisor
                 </Link>
@@ -54,18 +53,48 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-sans text-sm font-medium mb-4 text-foreground">Contact</h4>
+            <h4 className="font-serif text-lg mb-4">Contact Us</h4>
             <a
               href="mailto:hello@cookalook.com"
-              className="text-muted-foreground hover:text-foreground transition-colors font-sans text-sm"
+              className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors font-sans text-sm mb-6"
             >
+              <Mail size={16} />
               hello@cookalook.com
             </a>
+            <div className="flex gap-4">
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-foreground/80 hover:text-gold transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram size={20} />
+              </a>
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-foreground/80 hover:text-gold transition-colors"
+                aria-label="Facebook"
+              >
+                <Facebook size={20} />
+              </a>
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-foreground/80 hover:text-gold transition-colors"
+                aria-label="Twitter"
+              >
+                <Twitter size={20} />
+              </a>
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-border mt-12 pt-8">
-          <p className="font-sans text-xs text-muted-foreground">
+        <div className="border-t border-primary-foreground/20 mt-12 pt-8 text-center">
+          <p className="font-sans text-xs text-primary-foreground/60">
             © {new Date().getFullYear()} Cook a Look. All rights reserved.
           </p>
         </div>

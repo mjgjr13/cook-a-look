@@ -17,23 +17,28 @@ const Navbar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="container mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
-          {/* Minimal text logo for navigation context */}
-          <Link to="/" className="font-serif text-sm tracking-widest uppercase text-foreground/80 hover:text-foreground transition-colors">
-            Cook a Look
+        <div className="flex items-center justify-between h-20">
+          {/* Logo */}
+          <Link to="/" className="flex flex-col items-start">
+            <span className="font-serif text-2xl font-semibold tracking-tight text-foreground">
+              Cook a Look
+            </span>
+            <span className="text-xs tracking-[0.3em] uppercase text-muted-foreground font-sans">
+              The Recipe to Dressing Well
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-10">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`text-sm font-sans transition-colors duration-200 ${
+                className={`text-sm tracking-wide font-sans transition-colors duration-200 ${
                   isActive(link.path)
-                    ? "text-foreground"
+                    ? "text-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -43,12 +48,12 @@ const Navbar = () => {
           </div>
 
           {/* Auth Buttons */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild>
               <Link to="/signin">Sign In</Link>
             </Button>
-            <Button variant="default" size="sm" asChild>
-              <Link to="/signup">Get Started</Link>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/signup">Create Account</Link>
             </Button>
           </div>
 
@@ -78,9 +83,9 @@ const Navbar = () => {
                   key={link.path}
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-                  className={`block py-2 text-base font-sans ${
+                  className={`block py-2 text-lg font-sans ${
                     isActive(link.path)
-                      ? "text-foreground"
+                      ? "text-foreground font-medium"
                       : "text-muted-foreground"
                   }`}
                 >
@@ -93,9 +98,9 @@ const Navbar = () => {
                     Sign In
                   </Link>
                 </Button>
-                <Button variant="default" asChild>
+                <Button variant="outline" asChild>
                   <Link to="/signup" onClick={() => setIsOpen(false)}>
-                    Get Started
+                    Create Account
                   </Link>
                 </Button>
               </div>

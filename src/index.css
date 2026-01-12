@@ -120,7 +120,7 @@
 
 @layer components {
   .text-gradient-gold {
-    @apply bg-gradient-to-r from-accent via-accent/80 to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-gold via-gold-light to-gold bg-clip-text text-transparent;
   }
 
   .hover-lift {
@@ -129,13 +129,5 @@
 
   .editorial-spacing {
     @apply tracking-wide;
-  }
-
-  .accent-link {
-    @apply text-accent hover:text-accent/80 transition-colors duration-200;
-  }
-
-  .accent-underline {
-    @apply relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full;
   }
 }

@@ -15,12 +15,7 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
         ref={ref}
         to={to}
         className={({ isActive, isPending }) =>
-          cn(
-            "transition-colors duration-200 hover:text-accent",
-            className, 
-            isActive && (activeClassName || "text-accent"), 
-            isPending && pendingClassName
-          )
+          cn(className, isActive && activeClassName, isPending && pendingClassName)
         }
         {...props}
       />

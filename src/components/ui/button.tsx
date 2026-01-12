@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-accent text-accent-foreground hover:bg-accent/90 rounded-sm",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-sm",
-        outline: "border border-accent bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm",
+        outline: "border border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground rounded-sm",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-sm",
-        ghost: "hover:bg-accent/10 hover:text-accent rounded-sm",
-        link: "text-accent underline-offset-4 hover:underline",
-        hero: "bg-accent text-accent-foreground hover:bg-accent/90 uppercase tracking-widest font-medium rounded-none",
-        heroOutline: "bg-transparent text-foreground border-2 border-foreground hover:border-accent hover:text-accent uppercase tracking-widest font-medium rounded-none",
-        gold: "bg-accent text-accent-foreground hover:bg-accent/80 uppercase tracking-widest font-medium rounded-none",
+        ghost: "hover:bg-accent hover:text-accent-foreground rounded-sm",
+        link: "text-primary underline-offset-4 hover:underline",
+        hero: "bg-primary text-primary-foreground hover:bg-charcoal uppercase tracking-widest font-medium rounded-none border-2 border-primary hover:border-charcoal",
+        heroOutline: "bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-primary-foreground uppercase tracking-widest font-medium rounded-none",
+        gold: "bg-gold text-accent-foreground hover:bg-gold-light uppercase tracking-widest font-medium rounded-none",
       },
       size: {
         default: "h-10 px-4 py-2",

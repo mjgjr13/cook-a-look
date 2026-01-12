@@ -1,14 +1,30 @@
 import { motion } from "framer-motion";
+import { Search, Calendar, Sparkles } from "lucide-react";
 
 const steps = [
-  { number: "01", title: "Browse Advisors", description: "Explore our curated selection of style professionals." },
-  { number: "02", title: "Book a Session", description: "Schedule a virtual or in-person consultation." },
-  { number: "03", title: "Transform Your Style", description: "Receive personalized guidance for your wardrobe." },
+  {
+    icon: Search,
+    title: "Browse Advisors",
+    description:
+      "Explore our curated directory of professional style advisors. Filter by specialty, price, and availability.",
+  },
+  {
+    icon: Calendar,
+    title: "Book a Session",
+    description:
+      "Choose between virtual or in-person consultations. Select a time that works for you and book instantly.",
+  },
+  {
+    icon: Sparkles,
+    title: "Transform Your Style",
+    description:
+      "Work with your advisor to create personalized looks and receive expert guidance on building your wardrobe.",
+  },
 ];
 
 const HowItWorks = () => {
   return (
-    <section className="py-24 bg-card">
+    <section className="py-24 bg-background">
       <div className="container mx-auto px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -17,15 +33,39 @@ const HowItWorks = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">How It Works</h2>
-          <p className="font-sans text-muted-foreground max-w-xl mx-auto">A simple process to achieve your style goals.</p>
+          <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">
+            Simple Process
+          </p>
+          <h2 className="font-serif text-4xl md:text-5xl font-medium mb-4">
+            How It Works
+          </h2>
+          <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
+            Your style transformation is just three steps away
+          </p>
         </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {steps.map((step, index) => (
-            <motion.div key={step.number} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: index * 0.1 }} className="text-center">
-              <span className="font-sans text-sm text-muted-foreground mb-4 block">{step.number}</span>
-              <h3 className="font-serif text-xl font-medium mb-3">{step.title}</h3>
-              <p className="font-sans text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">{step.description}</p>
+            <motion.div
+              key={step.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              className="text-center"
+            >
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-card border border-border mb-6">
+                <step.icon className="w-7 h-7 text-gold" />
+              </div>
+              <div className="font-sans text-sm text-gold tracking-[0.2em] uppercase mb-2">
+                Step {index + 1}
+              </div>
+              <h3 className="font-serif text-2xl font-medium mb-3">
+                {step.title}
+              </h3>
+              <p className="font-sans text-muted-foreground leading-relaxed">
+                {step.description}
+              </p>
             </motion.div>
           ))}
         </div>
