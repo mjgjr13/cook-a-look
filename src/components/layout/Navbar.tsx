@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "@/assets/logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,16 +17,12 @@ const Navbar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-md border-b border-border/50">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md">
       <div className="container mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <img 
-              src={logo} 
-              alt="Cook a Look" 
-              className="h-12 md:h-14 w-auto"
-            />
+        <div className="flex items-center justify-between h-14">
+          {/* Minimal text logo for navigation context */}
+          <Link to="/" className="font-serif text-sm tracking-widest uppercase text-foreground/80 hover:text-foreground transition-colors">
+            Cook a Look
           </Link>
 
           {/* Desktop Navigation */}
