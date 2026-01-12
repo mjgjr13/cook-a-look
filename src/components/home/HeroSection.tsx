@@ -6,6 +6,9 @@ import heroImage from "@/assets/hero-fashion.jpg";
 const HeroSection = () => {
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      {/* Full-width beige gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[hsl(45,40%,96%)] via-[hsl(45,30%,92%)] to-[hsl(40,25%,85%)]" />
+      
       {/* Background Image */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 flex justify-end">
@@ -15,7 +18,7 @@ const HeroSection = () => {
             className="h-full w-auto max-w-[60%] object-cover object-top"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(45,40%,96%)] via-[hsl(45,35%,94%)]/90 to-transparent" />
       </div>
 
       {/* Content */}

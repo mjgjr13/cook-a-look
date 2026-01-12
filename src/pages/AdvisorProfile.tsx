@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import inspiration1 from "@/assets/inspiration-1.jpg";
 import inspiration2 from "@/assets/inspiration-2.jpg";
 import inspiration3 from "@/assets/inspiration-3.jpg";
 import inspiration4 from "@/assets/inspiration-4.jpg";
+import BookingCalendar from "@/components/BookingCalendar";
 
 const advisorData: Record<string, {
   id: number;
@@ -105,6 +107,18 @@ const badgeColors = {
 const AdvisorProfile = () => {
   const { id } = useParams<{ id: string }>();
   const advisor = id ? advisorData[id] : null;
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<"availability" | "booking">("availability");
+
+  const handleCheckAvailability = () => {
+    setCalendarMode("availability");
+    setCalendarOpen(true);
+  };
+
+  const handleBookConsultation = () => {
+    setCalendarMode("booking");
+    setCalendarOpen(true);
+  };
 
   if (!advisor) {
     return (
@@ -258,11 +272,11 @@ const AdvisorProfile = () => {
                   <span className="font-sans text-muted-foreground">/session</span>
                 </div>
                 <div className="flex gap-4">
-                  <Button variant="outline" size="lg">
+                  <Button variant="outline" size="lg" onClick={handleCheckAvailability}>
                     <Calendar className="w-4 h-4 mr-2" />
                     Check Availability
                   </Button>
-                  <Button variant="hero" size="lg">
+                  <Button variant="hero" size="lg" onClick={handleBookConsultation}>
                     Book Consultation
                   </Button>
                 </div>
@@ -311,6 +325,16 @@ const AdvisorProfile = () => {
           </div>
         </div>
       </section>
+
+      {/* Booking Calendar Dialog */}
+      <BookingCalendar
+        advisorId={id || ""}
+        advisorName={advisor.name}
+        price={advisor.price}
+        isOpen={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        mode={calendarMode}
+      />
     </Layout>
   );
 };

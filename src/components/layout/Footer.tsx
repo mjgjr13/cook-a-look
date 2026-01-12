@@ -1,25 +1,12 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Twitter, Mail } from "lucide-react";
+import { Instagram, Mail } from "lucide-react";
+import CookALookLogo from "@/components/CookALookLogo";
 
 const Footer = () => {
   return (
     <footer className="bg-primary text-primary-foreground py-16">
       <div className="container mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <Link to="/" className="inline-block mb-4">
-              <h3 className="font-serif text-2xl font-semibold">Cook a Look</h3>
-              <p className="text-xs tracking-[0.3em] uppercase text-primary-foreground/70">
-                The Recipe to Dressing Well
-              </p>
-            </Link>
-            <p className="text-primary-foreground/80 font-sans text-sm max-w-md leading-relaxed">
-              Connecting you with world-class style advisors to transform your
-              wardrobe and elevate your personal style.
-            </p>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {/* Quick Links */}
           <div>
             <h4 className="font-serif text-lg mb-4">Explore</h4>
@@ -51,43 +38,33 @@ const Footer = () => {
             </ul>
           </div>
 
+          {/* Center - Logo & Tagline */}
+          <div className="flex flex-col items-center text-center">
+            <CookALookLogo size="lg" className="mb-3 invert" />
+            <p className="text-sm tracking-[0.2em] uppercase text-primary-foreground/80">
+              The Recipe to Dressing Well
+            </p>
+          </div>
+
           {/* Contact */}
-          <div>
+          <div className="md:text-right">
             <h4 className="font-serif text-lg mb-4">Contact Us</h4>
             <a
-              href="mailto:hello@cookalook.com"
-              className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors font-sans text-sm mb-6"
+              href="mailto:info@cookalook.com"
+              className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors font-sans text-sm mb-6 md:justify-end"
             >
               <Mail size={16} />
-              hello@cookalook.com
+              info@cookalook.com
             </a>
-            <div className="flex gap-4">
+            <div className="flex gap-4 md:justify-end">
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/cookalookofficial?igsh=amNzdmFiM2JzZmF3&utm_source=qr"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary-foreground/80 hover:text-gold transition-colors"
+                className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram size={20} />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/80 hover:text-gold transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook size={20} />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/80 hover:text-gold transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter size={20} />
               </a>
             </div>
           </div>
