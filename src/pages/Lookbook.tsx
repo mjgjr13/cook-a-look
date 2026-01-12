@@ -2,6 +2,14 @@ import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import lookbookBusiness1 from "@/assets/lookbook-business-1.jpg";
+import lookbookBusiness2 from "@/assets/lookbook-business-2.jpg";
+import lookbookCasual1 from "@/assets/lookbook-casual-1.jpg";
+import lookbookCasual2 from "@/assets/lookbook-casual-2.jpg";
+import lookbookEvening1 from "@/assets/lookbook-evening-1.jpg";
+import lookbookEvening2 from "@/assets/lookbook-evening-2.jpg";
+import lookbookStreet1 from "@/assets/lookbook-street-1.jpg";
+import lookbookStreet2 from "@/assets/lookbook-street-2.jpg";
 
 const categories = ["All", "Business", "Casual", "Evening", "Streetwear"];
 
@@ -12,6 +20,7 @@ const lookbookItems = [
     category: "Business",
     description: "Tailored perfection for the boardroom",
     aspectRatio: "tall",
+    image: lookbookBusiness1,
   },
   {
     id: 2,
@@ -19,6 +28,7 @@ const lookbookItems = [
     category: "Casual",
     description: "Effortlessly chic weekend look",
     aspectRatio: "square",
+    image: lookbookCasual1,
   },
   {
     id: 3,
@@ -26,6 +36,7 @@ const lookbookItems = [
     category: "Evening",
     description: "Red carpet ready",
     aspectRatio: "wide",
+    image: lookbookEvening1,
   },
   {
     id: 4,
@@ -33,6 +44,7 @@ const lookbookItems = [
     category: "Streetwear",
     description: "Contemporary street style",
     aspectRatio: "tall",
+    image: lookbookStreet1,
   },
   {
     id: 5,
@@ -40,6 +52,7 @@ const lookbookItems = [
     category: "Business",
     description: "Smart casual redefined",
     aspectRatio: "square",
+    image: lookbookBusiness2,
   },
   {
     id: 6,
@@ -47,6 +60,7 @@ const lookbookItems = [
     category: "Casual",
     description: "Clean lines, warm weather",
     aspectRatio: "wide",
+    image: lookbookCasual2,
   },
   {
     id: 7,
@@ -54,6 +68,7 @@ const lookbookItems = [
     category: "Evening",
     description: "After-five sophistication",
     aspectRatio: "square",
+    image: lookbookEvening2,
   },
   {
     id: 8,
@@ -61,6 +76,7 @@ const lookbookItems = [
     category: "Streetwear",
     description: "High fashion meets the streets",
     aspectRatio: "tall",
+    image: lookbookStreet2,
   },
 ];
 
@@ -82,9 +98,6 @@ const Lookbook = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">
-              Style Inspiration
-            </p>
             <h1 className="font-serif text-4xl md:text-5xl font-medium mb-4">
               Lookbook
             </h1>
@@ -132,18 +145,16 @@ const Lookbook = () => {
                       : item.aspectRatio === "wide"
                       ? "aspect-[4/3]"
                       : "aspect-square"
-                  } bg-gradient-to-br from-secondary to-muted overflow-hidden`}
+                  } overflow-hidden`}
                 >
-                  {/* Placeholder gradient since we don't have actual lookbook images */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-charcoal/5 to-gold/10" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-serif text-6xl text-muted-foreground/20 italic">
-                      {item.title.charAt(0)}
-                    </span>
-                  </div>
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
                   
                   {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <div className="text-center text-primary-foreground p-6">
                       <h3 className="font-serif text-xl mb-2">{item.title}</h3>
                       <p className="font-sans text-sm text-primary-foreground/80">
