@@ -14,20 +14,25 @@ const CookALookLogo = ({ className, size = "md" }: CookALookLogoProps) => {
 
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      {/* Wayfarer Sunglasses Icon */}
+      {/* Ray-Ban Wayfarer Style Sunglasses - Slight Angle */}
       <svg
-        viewBox="0 0 64 24"
+        viewBox="0 0 72 28"
         className={cn(sizeConfig[size].icon, "w-auto")}
         fill="currentColor"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
+        style={{ transform: "rotate(-5deg)" }}
       >
-        {/* Left lens - wayfarer shape */}
-        <path d="M2 6 L2 18 Q2 22 6 22 L22 22 Q26 22 27 18 L28 12 L27 6 Q26 2 22 2 L6 2 Q2 2 2 6 Z" />
-        {/* Right lens - wayfarer shape */}
-        <path d="M36 6 L36 18 Q36 22 40 22 L56 22 Q60 22 61 18 L62 12 L61 6 Q60 2 56 2 L40 2 Q36 2 36 6 Z" />
-        {/* Bridge */}
-        <path d="M28 10 Q32 7 36 10" fill="none" stroke="currentColor" strokeWidth="2" />
+        {/* Left lens - classic wayfarer trapezoid shape */}
+        <path d="M4 8 L6 20 Q7 24 12 24 L24 23 Q28 22 29 18 L30 10 Q30 6 26 5 L10 4 Q5 4 4 8 Z" />
+        {/* Right lens - classic wayfarer trapezoid shape */}
+        <path d="M42 6 L43 18 Q44 22 49 23 L61 24 Q66 24 67 20 L69 8 Q69 4 64 4 L48 5 Q43 5 42 6 Z" />
+        {/* Bridge - curved nose bridge */}
+        <path d="M30 12 Q36 8 42 10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Left temple arm hint */}
+        <path d="M4 10 L1 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        {/* Right temple arm hint */}
+        <path d="M69 10 L72 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
 
       {/* Text Logo */}
