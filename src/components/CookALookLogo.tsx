@@ -3,36 +3,38 @@ import { cn } from "@/lib/utils";
 interface CookALookLogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
+  variant?: "dark" | "light";
 }
 
-const CookALookLogo = ({ className, size = "md" }: CookALookLogoProps) => {
+const CookALookLogo = ({ className, size = "md", variant = "dark" }: CookALookLogoProps) => {
   const sizeConfig = {
     sm: { icon: "h-5", text: "text-lg" },
     md: { icon: "h-6 lg:h-7", text: "text-xl lg:text-2xl" },
     lg: { icon: "h-8 lg:h-9", text: "text-2xl lg:text-3xl" },
   };
 
+  const colorClass = variant === "light" ? "text-white" : "text-foreground";
+
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      {/* Ray-Ban Wayfarer Style Sunglasses - Slight Angle */}
+    <div className={cn("flex items-center gap-2.5", colorClass, className)}>
+      {/* Ray-Ban Wayfarer Style Sunglasses - Angled Left Perspective */}
       <svg
-        viewBox="0 0 72 28"
+        viewBox="0 0 80 26"
         className={cn(sizeConfig[size].icon, "w-auto")}
         fill="currentColor"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
-        style={{ transform: "rotate(-5deg)" }}
       >
-        {/* Left lens - classic wayfarer trapezoid shape */}
-        <path d="M4 8 L6 20 Q7 24 12 24 L24 23 Q28 22 29 18 L30 10 Q30 6 26 5 L10 4 Q5 4 4 8 Z" />
-        {/* Right lens - classic wayfarer trapezoid shape */}
-        <path d="M42 6 L43 18 Q44 22 49 23 L61 24 Q66 24 67 20 L69 8 Q69 4 64 4 L48 5 Q43 5 42 6 Z" />
+        {/* Left lens - larger, closer (perspective looking left) */}
+        <path d="M2 7 L4 19 Q5 23 10 23 L26 22 Q31 21 32 16 L33 9 Q33 5 28 4 L8 5 Q3 5 2 7 Z" />
+        {/* Right lens - smaller, further away (perspective) */}
+        <path d="M40 8 L41 17 Q42 20 46 20 L58 19 Q62 18 62 14 L63 9 Q63 6 59 6 L44 7 Q40 7 40 8 Z" />
         {/* Bridge - curved nose bridge */}
-        <path d="M30 12 Q36 8 42 10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Left temple arm hint */}
-        <path d="M4 10 L1 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M33 12 Q37 9 40 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        {/* Left temple arm - extending left */}
+        <path d="M2 9 L-4 6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
         {/* Right temple arm hint */}
-        <path d="M69 10 L72 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M63 10 L68 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
 
       {/* Text Logo */}
