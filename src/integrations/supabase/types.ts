@@ -14,7 +14,203 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      availability_slots: {
+        Row: {
+          advisor_id: string
+          created_at: string | null
+          end_time: string
+          id: string
+          is_booked: boolean | null
+          is_virtual: boolean | null
+          start_time: string
+        }
+        Insert: {
+          advisor_id: string
+          created_at?: string | null
+          end_time: string
+          id?: string
+          is_booked?: boolean | null
+          is_virtual?: boolean | null
+          start_time: string
+        }
+        Update: {
+          advisor_id?: string
+          created_at?: string | null
+          end_time?: string
+          id?: string
+          is_booked?: boolean | null
+          is_virtual?: boolean | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_slots_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          advisor_id: string
+          client_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          slot_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          advisor_id: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          slot_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          advisor_id?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          slot_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "availability_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      featured_advisors: {
+        Row: {
+          advisor_id: string
+          amount_paid: number | null
+          created_at: string | null
+          end_date: string
+          id: string
+          payment_status: string | null
+          start_date: string
+        }
+        Insert: {
+          advisor_id: string
+          amount_paid?: number | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          payment_status?: string | null
+          start_date?: string
+        }
+        Update: {
+          advisor_id?: string
+          amount_paid?: number | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          payment_status?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_advisors_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          advisor_approved: boolean | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          in_person_available: boolean | null
+          instagram_url: string | null
+          is_advisor: boolean | null
+          location: string | null
+          portfolio_url: string | null
+          price_per_session: number | null
+          rating: number | null
+          review_count: number | null
+          specialty: string | null
+          updated_at: string | null
+          user_id: string
+          virtual_available: boolean | null
+        }
+        Insert: {
+          advisor_approved?: boolean | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          in_person_available?: boolean | null
+          instagram_url?: string | null
+          is_advisor?: boolean | null
+          location?: string | null
+          portfolio_url?: string | null
+          price_per_session?: number | null
+          rating?: number | null
+          review_count?: number | null
+          specialty?: string | null
+          updated_at?: string | null
+          user_id: string
+          virtual_available?: boolean | null
+        }
+        Update: {
+          advisor_approved?: boolean | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          in_person_available?: boolean | null
+          instagram_url?: string | null
+          is_advisor?: boolean | null
+          location?: string | null
+          portfolio_url?: string | null
+          price_per_session?: number | null
+          rating?: number | null
+          review_count?: number | null
+          specialty?: string | null
+          updated_at?: string | null
+          user_id?: string
+          virtual_available?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
