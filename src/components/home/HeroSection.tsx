@@ -6,19 +6,20 @@ import heroImage from "@/assets/hero-fashion.jpg";
 const HeroSection = () => {
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-      {/* Full-width beige gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[hsl(45,40%,96%)] via-[hsl(45,30%,92%)] to-[hsl(40,25%,85%)]" />
+      {/* Seamless full-width background */}
+      <div className="absolute inset-0 bg-cream" />
       
-      {/* Background Image */}
+      {/* Background Image with seamless gradient overlay */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 flex justify-end">
+        <div className="absolute right-0 top-0 bottom-0 w-[65%]">
           <img
             src={heroImage}
             alt="Elegant fashion consultant"
-            className="h-full w-auto max-w-[60%] object-cover object-top"
+            className="h-full w-full object-cover object-top"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(45,40%,96%)] via-[hsl(45,35%,94%)]/90 to-transparent" />
+        {/* Seamless gradient overlay - extends fully to the right */}
+        <div className="absolute inset-0 bg-gradient-to-r from-cream via-cream/95 via-40% to-cream/20" />
       </div>
 
       {/* Content */}
