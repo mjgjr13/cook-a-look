@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -12,9 +10,10 @@ interface BookingConfirmationRequest {
   bookingId: string;
 }
 
-// Simple base64 encoding for Deno
-function btoa(str: string): string {
-  return btoa(str);
+// UUID validation helper
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
 }
 
 function encodeBase64(str: string): string {
@@ -28,6 +27,11 @@ function encodeBase64(str: string): string {
 }
 
 async function sendEmail(to: string[], subject: string, html: string, icsContent?: string) {
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendApiKey) {
+    throw new Error("RESEND_API_KEY not configured");
+  }
+
   const payload: Record<string, unknown> = {
     from: "Cook a Look <onboarding@resend.dev>",
     to,
@@ -48,7 +52,7 @@ async function sendEmail(to: string[], subject: string, html: string, icsContent
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
+      "Authorization": `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify(payload),
   });
@@ -66,28 +70,79 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
+  const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
+
   try {
+    // Parse and validate input
     const { bookingId }: BookingConfirmationRequest = await req.json();
 
-    // Get booking with all details
-    const { data: booking, error: bookingError } = await supabaseClient
+    if (!bookingId || !isValidUUID(bookingId)) {
+      return new Response(JSON.stringify({ error: "Invalid booking ID format" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    // Authenticate the user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !userData.user) {
+      console.error("Auth error:", authError);
+      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const userId = userData.user.id;
+
+    // Get booking with all details (use admin client to bypass RLS for reading)
+    const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
       .select(`
         *,
         slot:availability_slots(*),
-        client:profiles!bookings_client_id_fkey(full_name, email),
-        advisor:profiles!bookings_advisor_id_fkey(full_name, email, specialty, price_per_session)
+        client:profiles!bookings_client_id_fkey(id, user_id, full_name, email),
+        advisor:profiles!bookings_advisor_id_fkey(id, user_id, full_name, email, specialty, price_per_session)
       `)
       .eq("id", bookingId)
       .single();
 
     if (bookingError || !booking) {
-      throw new Error("Booking not found");
+      console.error("Booking fetch error:", bookingError);
+      return new Response(JSON.stringify({ error: "Booking not found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
+    }
+
+    // Authorization check: Only client or advisor can trigger confirmation email
+    const isClient = booking.client?.user_id === userId;
+    const isAdvisor = booking.advisor?.user_id === userId;
+
+    if (!isClient && !isAdvisor) {
+      console.error("Authorization failed: user", userId, "is neither client nor advisor for booking", bookingId);
+      return new Response(JSON.stringify({ error: "Not authorized for this booking" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
     }
 
     const sessionDate = new Date(booking.slot.start_time);
@@ -235,12 +290,13 @@ serve(async (req) => {
     `;
 
     // Send emails
+    console.log("Sending confirmation emails for booking:", bookingId);
     const [clientEmail, advisorEmail] = await Promise.all([
       sendEmail([booking.client.email], `Booking Confirmed: Style Consultation on ${formattedDate}`, clientEmailHtml, icsContent),
       sendEmail([booking.advisor.email], `New Booking: ${booking.client.full_name} on ${formattedDate}`, advisorEmailHtml, icsContent),
     ]);
 
-    console.log("Emails sent:", { clientEmail, advisorEmail });
+    console.log("Emails sent successfully:", { clientEmail, advisorEmail });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

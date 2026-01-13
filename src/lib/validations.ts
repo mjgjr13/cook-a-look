@@ -43,5 +43,84 @@ export const bookingRequestSchema = z.object({
   slotId: uuidSchema,
 });
 
+// Phone number validation - optional but must be valid if provided
+export const phoneSchema = z
+  .string()
+  .trim()
+  .max(20, { message: "Phone number must be less than 20 characters" })
+  .regex(/^[+]?[\d\s\-()]*$/, { message: "Please enter a valid phone number" })
+  .optional()
+  .or(z.literal(""));
+
+// Instagram handle validation
+export const instagramSchema = z
+  .string()
+  .trim()
+  .min(1, { message: "Instagram handle is required" })
+  .max(30, { message: "Instagram handle must be less than 30 characters" })
+  .regex(/^@?[a-zA-Z0-9._]+$/, { message: "Please enter a valid Instagram handle" });
+
+// URL validation - optional but must be valid if provided
+export const urlSchema = z
+  .string()
+  .trim()
+  .url({ message: "Please enter a valid URL" })
+  .max(500, { message: "URL must be less than 500 characters" })
+  .optional()
+  .or(z.literal(""));
+
+// Bio/text area validation
+export const bioSchema = z
+  .string()
+  .trim()
+  .min(10, { message: "Please provide at least 10 characters" })
+  .max(2000, { message: "Must be less than 2000 characters" });
+
+// Specialty validation
+export const specialtySchema = z
+  .string()
+  .trim()
+  .min(2, { message: "Specialty is required" })
+  .max(100, { message: "Specialty must be less than 100 characters" })
+  .regex(/^[a-zA-Z\s,&-]+$/, { message: "Specialty can only contain letters, spaces, commas, and hyphens" });
+
+// File validation helper
+export const validateFile = (file: File | null, maxSizeMB: number = 5): string | null => {
+  if (!file) return "File is required";
+  
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!allowedTypes.includes(file.type)) {
+    return "Only JPEG, PNG, WebP, and GIF images are allowed";
+  }
+  
+  const maxSize = maxSizeMB * 1024 * 1024;
+  if (file.size > maxSize) {
+    return `File must be smaller than ${maxSizeMB}MB`;
+  }
+  
+  return null;
+};
+
+// Advisor application schema
+export const advisorApplicationSchema = z.object({
+  firstName: nameSchema,
+  lastName: nameSchema,
+  email: emailSchema,
+  phone: phoneSchema,
+  specialty: specialtySchema,
+  experience: z.string().max(50, { message: "Experience must be less than 50 characters" }).optional(),
+  bio: bioSchema,
+  virtual: z.boolean(),
+  inPerson: z.boolean(),
+  instagram: instagramSchema,
+  tiktok: z.string().max(30).optional().or(z.literal("")),
+  linkedin: z.string().max(200).optional().or(z.literal("")),
+  portfolio: urlSchema,
+  agreeTerms: z.literal(true, { 
+    errorMap: () => ({ message: "You must agree to the terms" }) 
+  }),
+});
+
 export type SignInFormData = z.infer<typeof signInSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;
+export type AdvisorApplicationFormData = z.infer<typeof advisorApplicationSchema>;
