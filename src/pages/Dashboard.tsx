@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Calendar, Video, Clock, DollarSign, Settings, LogOut, ChevronRight } from "lucide-react";
+import { Calendar, Video, Clock, Settings, LogOut, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
+import RewardsCard from "@/components/dashboard/RewardsCard";
 
 interface Booking {
   id: string;
@@ -35,6 +36,7 @@ interface Profile {
   account_type: string;
   is_advisor: boolean;
   avatar_url: string;
+  user_id: string;
 }
 
 const Dashboard = () => {
@@ -44,6 +46,7 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -53,6 +56,8 @@ const Dashboard = () => {
         navigate("/signin?redirect=/dashboard");
         return;
       }
+
+      setUserId(session.user.id);
 
       // Get profile
       const { data: profileData, error: profileError } = await supabase
@@ -150,12 +155,18 @@ const Dashboard = () => {
             <div className="flex gap-3">
               {profile?.is_advisor && (
                 <Button variant="outline" asChild>
-                  <Link to="/advisor/availability">
-                    <Settings className="w-4 h-4 mr-2" />
+                  <Link to="/advisor-availability">
+                    <Calendar className="w-4 h-4 mr-2" />
                     Manage Availability
                   </Link>
                 </Button>
               )}
+              <Button variant="outline" asChild>
+                <Link to="/settings">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Link>
+              </Button>
               <Button variant="ghost" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
@@ -163,7 +174,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid */}
+          {/* Stats Grid - Show rewards for clients instead of total bookings amount */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -184,16 +195,22 @@ const Dashboard = () => {
               <p className="text-3xl font-serif font-medium">{pastBookings.length}</p>
               <p className="text-muted-foreground">Completed Sessions</p>
             </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-background border border-border p-6"
-            >
-              <DollarSign className="w-8 h-8 text-gold mb-3" />
-              <p className="text-3xl font-serif font-medium">{bookings.length}</p>
-              <p className="text-muted-foreground">Total Bookings</p>
-            </motion.div>
+            
+            {/* Rewards card for clients, session count for advisors */}
+            {!profile?.is_advisor && userId ? (
+              <RewardsCard userId={userId} />
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-background border border-border p-6"
+              >
+                <Calendar className="w-8 h-8 text-gold mb-3" />
+                <p className="text-3xl font-serif font-medium">{bookings.length}</p>
+                <p className="text-muted-foreground">Total Sessions</p>
+              </motion.div>
+            )}
           </div>
 
           {/* Upcoming Sessions */}

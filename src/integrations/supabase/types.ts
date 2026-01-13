@@ -336,6 +336,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_rewards: {
+        Row: {
+          created_at: string
+          current_tier: string
+          id: string
+          lifetime_points: number
+          points_to_next_tier: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_tier?: string
+          id?: string
+          lifetime_points?: number
+          points_to_next_tier?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_tier?: string
+          id?: string
+          lifetime_points?: number
+          points_to_next_tier?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
