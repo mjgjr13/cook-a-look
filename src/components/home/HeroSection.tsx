@@ -31,8 +31,8 @@ const HeroSection = () => {
             transition={{ duration: 0.6 }}
             className="font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.1] mb-8"
           >
-            Your Personal{" "}
-            <span className="italic">Style Journey</span>
+            Discover your{" "}
+            <span className="italic">personal style</span>
           </motion.h1>
 
           <motion.p
