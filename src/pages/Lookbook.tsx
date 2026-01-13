@@ -1,92 +1,150 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Layout from "@/components/layout/Layout";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLookbookItems, LookbookItem } from "@/hooks/useLookbookItems";
+
+// Fallback static data for when database is empty
 import lookbookBusiness1 from "@/assets/lookbook-business-1.jpg";
 import lookbookBusiness2 from "@/assets/lookbook-business-2.jpg";
 import lookbookCasual1 from "@/assets/lookbook-casual-1.jpg";
 import lookbookCasual2 from "@/assets/lookbook-casual-2.jpg";
 import lookbookEvening1 from "@/assets/lookbook-evening-1.jpg";
 import lookbookEvening2 from "@/assets/lookbook-evening-2.jpg";
-import lookbookStreet1 from "@/assets/lookbook-street-1.jpg";
 import lookbookStreet2 from "@/assets/lookbook-street-2.jpg";
 
-const categories = ["All", "Business", "Casual", "Evening", "Streetwear"];
-
-const lookbookItems = [
+const fallbackItems: LookbookItem[] = [
   {
-    id: 1,
+    id: "1",
     title: "Modern Power Suit",
     category: "Business",
     description: "Tailored perfection for the boardroom",
-    aspectRatio: "tall",
-    image: lookbookBusiness1,
+    aspect_ratio: "tall",
+    image_url: lookbookBusiness1,
+    sort_order: 0,
+    is_published: true,
+    created_at: "",
+    updated_at: "",
   },
   {
-    id: 2,
+    id: "2",
     title: "Weekend Elegance",
     category: "Casual",
     description: "Effortlessly chic weekend look",
-    aspectRatio: "square",
-    image: lookbookCasual1,
+    aspect_ratio: "square",
+    image_url: lookbookCasual1,
+    sort_order: 1,
+    is_published: true,
+    created_at: "",
+    updated_at: "",
   },
   {
-    id: 3,
+    id: "3",
     title: "Gala Night",
     category: "Evening",
     description: "Red carpet ready",
-    aspectRatio: "wide",
-    image: lookbookEvening1,
+    aspect_ratio: "wide",
+    image_url: lookbookEvening1,
+    sort_order: 2,
+    is_published: true,
+    created_at: "",
+    updated_at: "",
   },
   {
-    id: 4,
-    title: "Urban Edge",
-    category: "Streetwear",
-    description: "Contemporary street style",
-    aspectRatio: "tall",
-    image: lookbookStreet1,
-  },
-  {
-    id: 5,
-    title: "Executive Casual",
-    category: "Business",
-    description: "Smart casual redefined",
-    aspectRatio: "square",
-    image: lookbookBusiness2,
-  },
-  {
-    id: 6,
-    title: "Summer Minimalist",
-    category: "Casual",
-    description: "Clean lines, warm weather",
-    aspectRatio: "wide",
-    image: lookbookCasual2,
-  },
-  {
-    id: 7,
-    title: "Cocktail Hour",
-    category: "Evening",
-    description: "After-five sophistication",
-    aspectRatio: "square",
-    image: lookbookEvening2,
-  },
-  {
-    id: 8,
+    id: "4",
     title: "Street Luxe",
     category: "Streetwear",
     description: "High fashion meets the streets",
-    aspectRatio: "tall",
-    image: lookbookStreet2,
+    aspect_ratio: "tall",
+    image_url: lookbookStreet2,
+    sort_order: 3,
+    is_published: true,
+    created_at: "",
+    updated_at: "",
+  },
+  {
+    id: "5",
+    title: "Executive Casual",
+    category: "Business",
+    description: "Smart casual redefined",
+    aspect_ratio: "square",
+    image_url: lookbookBusiness2,
+    sort_order: 4,
+    is_published: true,
+    created_at: "",
+    updated_at: "",
+  },
+  {
+    id: "6",
+    title: "Summer Minimalist",
+    category: "Casual",
+    description: "Clean lines, warm weather",
+    aspect_ratio: "wide",
+    image_url: lookbookCasual2,
+    sort_order: 5,
+    is_published: true,
+    created_at: "",
+    updated_at: "",
+  },
+  {
+    id: "7",
+    title: "Cocktail Hour",
+    category: "Evening",
+    description: "After-five sophistication",
+    aspect_ratio: "square",
+    image_url: lookbookEvening2,
+    sort_order: 6,
+    is_published: true,
+    created_at: "",
+    updated_at: "",
   },
 ];
 
 const Lookbook = () => {
   const [activeCategory, setActiveCategory] = useState("All");
+  const { data: dbItems, isLoading } = useLookbookItems();
+
+  // Use database items if available, otherwise use fallback
+  const lookbookItems = dbItems && dbItems.length > 0 ? dbItems : fallbackItems;
+
+  // Get unique categories from items
+  const categories = useMemo(() => {
+    const cats = new Set(lookbookItems.map((item) => item.category));
+    return ["All", ...Array.from(cats)];
+  }, [lookbookItems]);
 
   const filteredItems =
     activeCategory === "All"
       ? lookbookItems
       : lookbookItems.filter((item) => item.category === activeCategory);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <section className="py-16 bg-background">
+          <div className="container mx-auto px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <Skeleton className="h-12 w-48 mx-auto mb-4" />
+              <Skeleton className="h-6 w-96 mx-auto" />
+            </div>
+            <div className="flex justify-center gap-3 mb-12">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-10 w-24" />
+              ))}
+            </div>
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="break-inside-avoid">
+                  <Skeleton className="aspect-square w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -140,15 +198,15 @@ const Lookbook = () => {
               >
                 <div
                   className={`relative ${
-                    item.aspectRatio === "tall"
+                    item.aspect_ratio === "tall"
                       ? "aspect-[3/4]"
-                      : item.aspectRatio === "wide"
+                      : item.aspect_ratio === "wide"
                       ? "aspect-[4/3]"
                       : "aspect-square"
                   } overflow-hidden`}
                 >
                   <img
-                    src={item.image}
+                    src={item.image_url}
                     alt={item.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
