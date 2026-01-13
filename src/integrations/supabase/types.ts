@@ -395,9 +395,13 @@ export type Database = {
           full_name: string | null
           id: string | null
           in_person_available: boolean | null
+          instagram_url: string | null
           is_advisor: boolean | null
           languages: string[] | null
+          location: string | null
+          personal_philosophy: string | null
           portfolio_images: string[] | null
+          portfolio_url: string | null
           price_per_session: number | null
           rating: number | null
           review_count: number | null
@@ -416,9 +420,13 @@ export type Database = {
           full_name?: string | null
           id?: string | null
           in_person_available?: boolean | null
+          instagram_url?: string | null
           is_advisor?: boolean | null
           languages?: string[] | null
+          location?: string | null
+          personal_philosophy?: string | null
           portfolio_images?: string[] | null
+          portfolio_url?: string | null
           price_per_session?: number | null
           rating?: number | null
           review_count?: number | null
@@ -437,9 +445,13 @@ export type Database = {
           full_name?: string | null
           id?: string | null
           in_person_available?: boolean | null
+          instagram_url?: string | null
           is_advisor?: boolean | null
           languages?: string[] | null
+          location?: string | null
+          personal_philosophy?: string | null
           portfolio_images?: string[] | null
+          portfolio_url?: string | null
           price_per_session?: number | null
           rating?: number | null
           review_count?: number | null
@@ -454,6 +466,32 @@ export type Database = {
       }
     }
     Functions: {
+      get_advisor_public_profile: {
+        Args: { advisor_profile_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          experience_years: number
+          full_name: string
+          id: string
+          in_person_available: boolean
+          instagram_url: string
+          languages: string[]
+          location: string
+          personal_philosophy: string
+          portfolio_images: string[]
+          portfolio_url: string
+          price_per_session: number
+          rating: number
+          review_count: number
+          session_duration: number
+          specialty: string
+          style_tags: string[]
+          target_demographics: string[]
+          verified: boolean
+          virtual_available: boolean
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
