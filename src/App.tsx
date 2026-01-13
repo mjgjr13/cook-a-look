@@ -17,6 +17,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import BookingSuccess from "./pages/BookingSuccess";
 import AdvisorAvailability from "./pages/AdvisorAvailability";
+import AccountSettings from "./pages/AccountSettings";
 import TermsOfUse from "./pages/TermsOfUse";
 import NotFound from "./pages/NotFound";
 import AdminLookbook from "./pages/admin/AdminLookbook";
@@ -53,6 +54,11 @@ const App = () => (
             <Route path="/advisor-availability" element={
               <ProtectedRoute>
                 <AdvisorAvailability />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <AccountSettings />
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<TermsOfUse />} />
