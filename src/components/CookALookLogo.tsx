@@ -14,10 +14,10 @@ const CookALookLogo = ({
   type = "full"
 }: CookALookLogoProps) => {
   const sizeConfig = {
-    sm: { height: "h-5", text: "text-base", iconSize: 14, spacing: "gap-1.5" },
-    md: { height: "h-6", text: "text-lg lg:text-xl", iconSize: 18, spacing: "gap-2" },
-    lg: { height: "h-8", text: "text-xl lg:text-2xl", iconSize: 24, spacing: "gap-2.5" },
-    xl: { height: "h-10", text: "text-2xl lg:text-3xl", iconSize: 32, spacing: "gap-3" },
+    sm: { height: "h-4", text: "text-base", iconW: 28, iconH: 12, spacing: "gap-2" },
+    md: { height: "h-5", text: "text-lg lg:text-xl", iconW: 36, iconH: 14, spacing: "gap-2.5" },
+    lg: { height: "h-6", text: "text-xl lg:text-2xl", iconW: 48, iconH: 18, spacing: "gap-3" },
+    xl: { height: "h-8", text: "text-2xl lg:text-3xl", iconW: 64, iconH: 24, spacing: "gap-3.5" },
   };
 
   const fillColor = variant === "light" ? "#ffffff" : "#000000";
@@ -31,8 +31,7 @@ const CookALookLogo = ({
       height={height}
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
-      className="inline-block"
-      style={{ verticalAlign: 'baseline', marginBottom: '-0.05em' }}
+      className="flex-shrink-0"
     >
       {/* Left lens - rounder Wayfarer shape, slightly angled */}
       <path
@@ -75,15 +74,12 @@ const CookALookLogo = ({
 
   // Icon only version
   if (type === "icon") {
-    const iconSizes = {
-      sm: { w: 28, h: 12 },
-      md: { w: 36, h: 14 },
-      lg: { w: 48, h: 18 },
-      xl: { w: 64, h: 24 },
-    };
     return (
       <div className={cn("flex items-center justify-center", className)}>
-        <SunglassesIcon width={iconSizes[size].w} height={iconSizes[size].h} />
+        <SunglassesIcon 
+          width={sizeConfig[size].iconW} 
+          height={sizeConfig[size].iconH} 
+        />
       </div>
     );
   }
@@ -91,7 +87,7 @@ const CookALookLogo = ({
   // Text only version
   if (type === "text") {
     return (
-      <div className={cn("flex items-center", sizeConfig[size].spacing, className)}>
+      <div className={cn("flex items-center", className)}>
         <span className={cn(
           "font-serif font-semibold tracking-[0.2em] uppercase",
           textColorClass,
@@ -103,36 +99,19 @@ const CookALookLogo = ({
     );
   }
 
-  // Full wordmark with integrated sunglasses as "OO" in LOOK
-  const glassesWidth = {
-    sm: 22,
-    md: 28,
-    lg: 36,
-    xl: 46,
-  };
-  
-  const glassesHeight = {
-    sm: 9,
-    md: 11,
-    lg: 14,
-    xl: 18,
-  };
-
+  // Full wordmark: sunglasses icon + text
   return (
     <div className={cn("flex items-center", sizeConfig[size].spacing, className)}>
+      <SunglassesIcon 
+        width={sizeConfig[size].iconW} 
+        height={sizeConfig[size].iconH} 
+      />
       <span className={cn(
-        "font-serif font-semibold tracking-[0.15em] uppercase whitespace-nowrap",
+        "font-serif font-semibold tracking-[0.2em] uppercase",
         textColorClass,
         sizeConfig[size].text
       )}>
-        <span className="tracking-[0.2em]">Cook a L</span>
-        <span className="inline-flex items-baseline" style={{ letterSpacing: '0.02em' }}>
-          <SunglassesIcon 
-            width={glassesWidth[size]} 
-            height={glassesHeight[size]} 
-          />
-        </span>
-        <span className="tracking-[0.2em]">k</span>
+        Cook a Look
       </span>
     </div>
   );
