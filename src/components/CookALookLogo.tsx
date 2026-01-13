@@ -17,24 +17,24 @@ const CookALookLogo = ({ className, size = "md", variant = "dark" }: CookALookLo
 
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      {/* Ray-Ban Wayfarer Style Sunglasses - Always Black */}
+      {/* Symmetrical Wayfarer Sunglasses */}
       <svg
-        viewBox="0 0 80 26"
+        viewBox="0 0 80 24"
         className={cn(sizeConfig[size].icon, "w-auto")}
         fill="black"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
-        {/* Left lens - larger, closer (perspective looking left) */}
-        <path d="M2 7 L4 19 Q5 23 10 23 L26 22 Q31 21 32 16 L33 9 Q33 5 28 4 L8 5 Q3 5 2 7 Z" />
-        {/* Right lens - smaller, further away (perspective) */}
-        <path d="M40 8 L41 17 Q42 20 46 20 L58 19 Q62 18 62 14 L63 9 Q63 6 59 6 L44 7 Q40 7 40 8 Z" />
+        {/* Left lens */}
+        <path d="M2 6 L3 17 Q4 21 9 21 L26 21 Q31 20 32 15 L33 7 Q33 3 28 3 L7 3 Q2 3 2 6 Z" />
+        {/* Right lens */}
+        <path d="M47 6 L48 17 Q49 21 54 21 L71 21 Q76 20 77 15 L78 7 Q78 3 73 3 L52 3 Q47 3 47 6 Z" />
         {/* Bridge - curved nose bridge */}
-        <path d="M33 12 Q37 9 40 11" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" />
-        {/* Left temple arm - extending left */}
-        <path d="M2 9 L-4 6" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" />
-        {/* Right temple arm hint */}
-        <path d="M63 10 L68 8" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" />
+        <path d="M33 10 Q40 6 47 10" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Left temple arm */}
+        <path d="M2 8 L-4 5" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Right temple arm */}
+        <path d="M78 8 L84 5" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" />
       </svg>
 
       {/* Text Logo */}
