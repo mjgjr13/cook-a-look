@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Star, Video, MapPin, Search } from "lucide-react";
+import { Star, Video, MapPin, Search, Filter } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,29 @@ import {
 import advisor1 from "@/assets/advisor-1.jpg";
 import advisor2 from "@/assets/advisor-2.jpg";
 import advisor3 from "@/assets/advisor-3.jpg";
+
+// Style tags for filtering
+const styleOptions = [
+  "Minimalist",
+  "Streetwear",
+  "Business",
+  "Formal",
+  "Casual",
+  "Bohemian",
+  "Classic",
+  "Contemporary",
+];
+
+// Target demographics for filtering
+const demographicOptions = [
+  "Men",
+  "Women",
+  "Non-Binary",
+  "Young Professionals",
+  "Executives",
+  "Students",
+  "Plus Size",
+];
 
 const allAdvisors = [
   {
@@ -30,6 +54,8 @@ const allAdvisors = [
     location: "New York",
     badge: "gold",
     bio: "Expert in classic tailoring with a modern twist. 10+ years of experience styling executives and professionals.",
+    styleTags: ["Business", "Formal", "Classic"],
+    demographics: ["Men", "Executives", "Young Professionals"],
   },
   {
     id: 2,
@@ -44,6 +70,8 @@ const allAdvisors = [
     location: "Los Angeles",
     badge: "silver",
     bio: "Specializing in red carpet looks and special occasion styling. Former stylist for Vogue Italia.",
+    styleTags: ["Formal", "Contemporary", "Classic"],
+    demographics: ["Women", "Executives"],
   },
   {
     id: 3,
@@ -58,6 +86,8 @@ const allAdvisors = [
     location: "Miami",
     badge: "bronze",
     bio: "Blending high fashion with streetwear aesthetics. Featured in Complex and Hypebeast.",
+    styleTags: ["Streetwear", "Contemporary", "Casual"],
+    demographics: ["Men", "Women", "Non-Binary", "Young Professionals"],
   },
   {
     id: 4,
@@ -72,6 +102,8 @@ const allAdvisors = [
     location: "San Francisco",
     badge: null,
     bio: "Capsule wardrobe expert focused on sustainable and timeless pieces.",
+    styleTags: ["Minimalist", "Classic", "Casual"],
+    demographics: ["Women", "Young Professionals", "Students"],
   },
   {
     id: 5,
@@ -86,6 +118,8 @@ const allAdvisors = [
     location: "Chicago",
     badge: null,
     bio: "Helping professionals navigate the modern workplace dress code with confidence.",
+    styleTags: ["Business", "Casual", "Classic"],
+    demographics: ["Men", "Women", "Young Professionals", "Executives"],
   },
   {
     id: 6,
@@ -100,6 +134,8 @@ const allAdvisors = [
     location: "Atlanta",
     badge: null,
     bio: "Certified color consultant. Find your perfect palette and transform your wardrobe.",
+    styleTags: ["Contemporary", "Bohemian", "Casual"],
+    demographics: ["Women", "Plus Size", "Young Professionals"],
   },
 ];
 
@@ -113,6 +149,8 @@ const Advisors = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [consultationType, setConsultationType] = useState("all");
   const [priceRange, setPriceRange] = useState("all");
+  const [selectedStyle, setSelectedStyle] = useState("all");
+  const [selectedDemographic, setSelectedDemographic] = useState("all");
   const navigate = useNavigate();
 
   const filteredAdvisors = allAdvisors.filter((advisor) => {
@@ -131,8 +169,29 @@ const Advisors = () => {
       (priceRange === "100-150" && advisor.price >= 100 && advisor.price <= 150) ||
       (priceRange === "over-150" && advisor.price > 150);
 
-    return matchesSearch && matchesType && matchesPrice;
+    const matchesStyle =
+      selectedStyle === "all" || advisor.styleTags.includes(selectedStyle);
+
+    const matchesDemographic =
+      selectedDemographic === "all" || advisor.demographics.includes(selectedDemographic);
+
+    return matchesSearch && matchesType && matchesPrice && matchesStyle && matchesDemographic;
   });
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setConsultationType("all");
+    setPriceRange("all");
+    setSelectedStyle("all");
+    setSelectedDemographic("all");
+  };
+
+  const hasActiveFilters = 
+    searchTerm !== "" || 
+    consultationType !== "all" || 
+    priceRange !== "all" || 
+    selectedStyle !== "all" || 
+    selectedDemographic !== "all";
 
   const handleCardClick = (advisorId: number) => {
     navigate(`/advisors/${advisorId}`);
@@ -164,38 +223,77 @@ const Advisors = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="flex flex-col md:flex-row gap-4 mb-12 p-6 bg-background border border-border"
+            className="mb-12 p-6 bg-background border border-border"
           >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or specialty..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex flex-col lg:flex-row gap-4 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or specialty..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={consultationType} onValueChange={setConsultationType}>
+                <SelectTrigger className="w-full lg:w-40">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="virtual">Virtual Only</SelectItem>
+                  <SelectItem value="in-person">In-Person</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={priceRange} onValueChange={setPriceRange}>
+                <SelectTrigger className="w-full lg:w-40">
+                  <SelectValue placeholder="Price" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Prices</SelectItem>
+                  <SelectItem value="under-100">Under $100</SelectItem>
+                  <SelectItem value="100-150">$100 - $150</SelectItem>
+                  <SelectItem value="over-150">Over $150</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={consultationType} onValueChange={setConsultationType}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Consultation Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="virtual">Virtual Only</SelectItem>
-                <SelectItem value="in-person">In-Person</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={priceRange} onValueChange={setPriceRange}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Price Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="under-100">Under $100</SelectItem>
-                <SelectItem value="100-150">$100 - $150</SelectItem>
-                <SelectItem value="over-150">Over $150</SelectItem>
-              </SelectContent>
-            </Select>
+            
+            <div className="flex flex-col lg:flex-row gap-4">
+              <Select value={selectedStyle} onValueChange={setSelectedStyle}>
+                <SelectTrigger className="w-full lg:w-48">
+                  <SelectValue placeholder="Style" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Styles</SelectItem>
+                  {styleOptions.map((style) => (
+                    <SelectItem key={style} value={style}>{style}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedDemographic} onValueChange={setSelectedDemographic}>
+                <SelectTrigger className="w-full lg:w-48">
+                  <SelectValue placeholder="For" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Demographics</SelectItem>
+                  {demographicOptions.map((demo) => (
+                    <SelectItem key={demo} value={demo}>{demo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {hasActiveFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Filter className="w-4 h-4" />
+                  Clear filters
+                </Button>
+              )}
+            </div>
           </motion.div>
 
           {/* Advisors Grid */}
@@ -246,6 +344,14 @@ const Advisors = () => {
                   <p className="font-sans text-sm text-muted-foreground mb-4 line-clamp-2">
                     {advisor.bio}
                   </p>
+
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {advisor.styleTags.slice(0, 3).map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
 
                   <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground font-sans">
                     {advisor.virtual && (
