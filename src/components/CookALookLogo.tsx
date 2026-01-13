@@ -22,21 +22,21 @@ const CookALookLogo = ({ className, size = "md", variant = "dark" }: CookALookLo
     <div className={cn("flex items-center gap-3", className)}>
       {/* Wayfarer Sunglasses - Angled left */}
       <svg
-        viewBox="0 0 72 24"
+        viewBox="0 0 80 24"
         className={cn(sizeConfig[size].icon, "w-auto", iconColorClass)}
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
-        {/* Left lens - larger, closer (angled perspective) */}
-        <path d="M1 6 L3 18 Q4 22 10 22 L28 21 Q34 20 35 14 L36 7 Q36 2 30 2 L6 3 Q1 3 1 6 Z" />
-        {/* Right lens - smaller, further (angled perspective) */}
-        <path d="M42 7 L43 16 Q44 19 48 19 L62 18 Q67 17 67 13 L68 8 Q68 5 63 5 L46 6 Q42 6 42 7 Z" />
+        {/* Left lens */}
+        <path d="M2 6 L3 17 Q4 21 9 21 L26 21 Q31 20 32 15 L33 7 Q33 3 28 3 L7 3 Q2 3 2 6 Z" />
+        {/* Right lens */}
+        <path d="M47 6 L48 17 Q49 21 54 21 L71 21 Q76 20 77 15 L78 7 Q78 3 73 3 L52 3 Q47 3 47 6 Z" />
         {/* Bridge */}
-        <path d="M36 10 Q39 7 42 9" fill="none" stroke={strokeColor} strokeWidth="2" strokeLinecap="round" />
+        <path d="M33 10 Q40 6 47 10" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
         {/* Left temple arm */}
-        <path d="M1 8 L-5 4" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
-        {/* Right temple arm hint */}
-        <path d="M68 9 L72 7" fill="none" stroke={strokeColor} strokeWidth="2" strokeLinecap="round" />
+        <path d="M2 8 L-4 5" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
+        {/* Right temple arm */}
+        <path d="M78 8 L84 5" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
       </svg>
 
       {/* Text Logo */}
