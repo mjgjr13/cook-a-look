@@ -50,6 +50,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "availability_slots_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "public_advisor_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bookings: {
@@ -92,10 +99,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "public_advisor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "public_advisor_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -141,6 +162,13 @@ export type Database = {
             columns: ["advisor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_advisors_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "public_advisor_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -358,7 +386,72 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_advisor_profiles: {
+        Row: {
+          advisor_approved: boolean | null
+          avatar_url: string | null
+          bio: string | null
+          experience_years: number | null
+          full_name: string | null
+          id: string | null
+          in_person_available: boolean | null
+          is_advisor: boolean | null
+          languages: string[] | null
+          portfolio_images: string[] | null
+          price_per_session: number | null
+          rating: number | null
+          review_count: number | null
+          session_duration: number | null
+          specialty: string | null
+          style_tags: string[] | null
+          target_demographics: string[] | null
+          verified: boolean | null
+          virtual_available: boolean | null
+        }
+        Insert: {
+          advisor_approved?: boolean | null
+          avatar_url?: string | null
+          bio?: string | null
+          experience_years?: number | null
+          full_name?: string | null
+          id?: string | null
+          in_person_available?: boolean | null
+          is_advisor?: boolean | null
+          languages?: string[] | null
+          portfolio_images?: string[] | null
+          price_per_session?: number | null
+          rating?: number | null
+          review_count?: number | null
+          session_duration?: number | null
+          specialty?: string | null
+          style_tags?: string[] | null
+          target_demographics?: string[] | null
+          verified?: boolean | null
+          virtual_available?: boolean | null
+        }
+        Update: {
+          advisor_approved?: boolean | null
+          avatar_url?: string | null
+          bio?: string | null
+          experience_years?: number | null
+          full_name?: string | null
+          id?: string | null
+          in_person_available?: boolean | null
+          is_advisor?: boolean | null
+          languages?: string[] | null
+          portfolio_images?: string[] | null
+          price_per_session?: number | null
+          rating?: number | null
+          review_count?: number | null
+          session_duration?: number | null
+          specialty?: string | null
+          style_tags?: string[] | null
+          target_demographics?: string[] | null
+          verified?: boolean | null
+          virtual_available?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
