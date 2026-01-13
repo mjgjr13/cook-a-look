@@ -228,7 +228,7 @@ export type Database = {
           style_tags: string[] | null
           target_demographics: string[] | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
           verified: boolean | null
           virtual_available: boolean | null
         }
@@ -258,7 +258,7 @@ export type Database = {
           style_tags?: string[] | null
           target_demographics?: string[] | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
           verified?: boolean | null
           virtual_available?: boolean | null
         }
@@ -288,7 +288,7 @@ export type Database = {
           style_tags?: string[] | null
           target_demographics?: string[] | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
           verified?: boolean | null
           virtual_available?: boolean | null
         }
