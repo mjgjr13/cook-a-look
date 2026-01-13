@@ -19,24 +19,24 @@ const CookALookLogo = ({ className, size = "md", variant = "dark" }: CookALookLo
   const strokeColor = variant === "light" ? "white" : "black";
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      {/* Wayfarer Sunglasses - Angled left */}
+    <div className={cn("flex items-center gap-2.5", className)}>
+      {/* Wayfarer Sunglasses - Rounder, smaller, thicker bridge */}
       <svg
-        viewBox="0 0 80 24"
+        viewBox="0 0 68 20"
         className={cn(sizeConfig[size].icon, "w-auto", iconColorClass)}
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
-        {/* Left lens */}
-        <path d="M2 6 L3 17 Q4 21 9 21 L26 21 Q31 20 32 15 L33 7 Q33 3 28 3 L7 3 Q2 3 2 6 Z" />
-        {/* Right lens */}
-        <path d="M47 6 L48 17 Q49 21 54 21 L71 21 Q76 20 77 15 L78 7 Q78 3 73 3 L52 3 Q47 3 47 6 Z" />
-        {/* Bridge */}
-        <path d="M33 10 Q40 6 47 10" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
+        {/* Left lens - rounder shape */}
+        <path d="M3 8 Q3 3 8 3 L22 3 Q27 3 27 8 L27 12 Q27 17 22 17 L8 17 Q3 17 3 12 Z" />
+        {/* Right lens - rounder shape */}
+        <path d="M41 8 Q41 3 46 3 L60 3 Q65 3 65 8 L65 12 Q65 17 60 17 L46 17 Q41 17 41 12 Z" />
+        {/* Bridge - thicker */}
+        <path d="M27 9 Q34 5 41 9" fill="none" stroke={strokeColor} strokeWidth="3.5" strokeLinecap="round" />
         {/* Left temple arm */}
-        <path d="M2 8 L-4 5" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M3 7 L-2 4" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
         {/* Right temple arm */}
-        <path d="M78 8 L84 5" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M65 7 L70 4" fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
       </svg>
 
       {/* Text Logo */}
