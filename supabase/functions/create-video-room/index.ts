@@ -17,20 +17,48 @@ serve(async (req) => {
   );
 
   try {
+    // Properly check Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Missing Authorization header");
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !userData.user) {
+      console.error("Authentication failed:", authError?.message);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const user = userData.user;
+    console.log("Authenticated user:", user.id);
+
     const { bookingId } = await req.json();
+    
+    if (!bookingId) {
+      return new Response(JSON.stringify({ error: "Booking ID is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
     const dailyApiKey = Deno.env.get("DAILY_API_KEY");
     
     if (!dailyApiKey) {
-      throw new Error("Daily.co API key not configured");
+      console.error("Daily.co API key not configured");
+      return new Response(JSON.stringify({ error: "Video service not configured" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
     }
-
-    // Verify the booking exists and user is authorized
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseClient.auth.getUser(token);
-    const user = userData.user;
-    
-    if (!user) throw new Error("Not authenticated");
 
     // Get the booking
     const { data: booking, error: bookingError } = await supabaseClient
@@ -44,7 +72,11 @@ serve(async (req) => {
       .single();
 
     if (bookingError || !booking) {
-      throw new Error("Booking not found");
+      console.error("Booking not found:", bookingError?.message);
+      return new Response(JSON.stringify({ error: "Booking not found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
     }
 
     // Verify user is participant
@@ -52,8 +84,14 @@ serve(async (req) => {
     const isAdvisor = booking.advisor?.user_id === user.id;
     
     if (!isClient && !isAdvisor) {
-      throw new Error("Not authorized for this booking");
+      console.error("User not authorized for booking:", user.id);
+      return new Response(JSON.stringify({ error: "Not authorized for this booking" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
     }
+
+    console.log("User authorized as:", isClient ? "client" : "advisor");
 
     // Check if room already exists
     const { data: existingSession } = await supabaseClient
@@ -63,6 +101,7 @@ serve(async (req) => {
       .single();
 
     if (existingSession) {
+      console.log("Returning existing video room:", existingSession.room_name);
       return new Response(JSON.stringify({
         roomUrl: existingSession.room_url,
         roomName: existingSession.room_name,
@@ -74,6 +113,7 @@ serve(async (req) => {
 
     // Create new Daily.co room
     const roomName = `cal-session-${bookingId.slice(0, 8)}-${Date.now()}`;
+    console.log("Creating new video room:", roomName);
     
     const dailyResponse = await fetch("https://api.daily.co/v1/rooms", {
       method: "POST",
@@ -95,17 +135,27 @@ serve(async (req) => {
 
     if (!dailyResponse.ok) {
       const error = await dailyResponse.text();
-      throw new Error(`Daily.co API error: ${error}`);
+      console.error("Daily.co API error:", error);
+      return new Response(JSON.stringify({ error: "Failed to create video room" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
     }
 
     const roomData = await dailyResponse.json();
+    console.log("Video room created:", roomData.name);
 
     // Store the session
-    await supabaseClient.from("video_sessions").insert({
+    const { error: insertError } = await supabaseClient.from("video_sessions").insert({
       booking_id: bookingId,
       room_name: roomData.name,
       room_url: roomData.url,
     });
+
+    if (insertError) {
+      console.error("Error storing video session:", insertError.message);
+      // Still return the room URL even if storage fails
+    }
 
     return new Response(JSON.stringify({
       roomUrl: roomData.url,
