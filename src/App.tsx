@@ -12,6 +12,8 @@ import Lookbook from "./pages/Lookbook";
 import BecomeAdvisor from "./pages/BecomeAdvisor";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import BookingSuccess from "./pages/BookingSuccess";
 import AdvisorAvailability from "./pages/AdvisorAvailability";
@@ -35,6 +37,8 @@ const App = () => (
             <Route path="/become-advisor" element={<BecomeAdvisor />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
