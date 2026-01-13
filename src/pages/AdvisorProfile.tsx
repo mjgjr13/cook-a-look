@@ -2,113 +2,84 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import advisor1 from "@/assets/advisor-1.jpg";
-import advisor2 from "@/assets/advisor-2.jpg";
-import advisor3 from "@/assets/advisor-3.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import BookingCalendar from "@/components/BookingCalendar";
+
+// Fallback images for when no portfolio images exist
 import inspiration1 from "@/assets/inspiration-1.jpg";
 import inspiration2 from "@/assets/inspiration-2.jpg";
 import inspiration3 from "@/assets/inspiration-3.jpg";
 import inspiration4 from "@/assets/inspiration-4.jpg";
-import BookingCalendar from "@/components/BookingCalendar";
 
-const advisorData: Record<string, {
-  id: number;
-  name: string;
-  specialty: string;
-  rating: number;
-  reviews: number;
-  price: number;
-  image: string;
-  virtual: boolean;
-  inPerson: boolean;
-  location: string;
-  badge: string | null;
-  bio: string;
-  fullBio: string;
-  experience: string;
-  languages: string[];
-  specialties: string[];
-  instagram: string;
-  website?: string;
-  inspirationImages: string[];
-}> = {
-  "1": {
-    id: 1,
-    name: "Marcus Chen",
-    specialty: "Menswear & Suiting",
-    rating: 4.9,
-    reviews: 127,
-    price: 150,
-    image: advisor1,
-    virtual: true,
-    inPerson: true,
-    location: "New York",
-    badge: "gold",
-    bio: "Expert in classic tailoring with a modern twist. 10+ years of experience styling executives and professionals.",
-    fullBio: "With over a decade of experience in the fashion industry, I've helped hundreds of professionals refine their personal style. My approach combines classic tailoring principles with contemporary trends, ensuring my clients look both timeless and current. I believe that great style should be an extension of who you are—confident, capable, and authentic.",
-    experience: "10+ years",
-    languages: ["English", "Mandarin"],
-    specialties: ["Executive Styling", "Wedding Attire", "Capsule Wardrobes", "Color Coordination"],
-    instagram: "@marcuschenestyle",
-    website: "marcuschenstyle.com",
-    inspirationImages: [inspiration1, inspiration2, inspiration3, inspiration4],
-  },
-  "2": {
-    id: 2,
-    name: "Isabella Romano",
-    specialty: "Occasion Styling",
-    rating: 4.8,
-    reviews: 89,
-    price: 125,
-    image: advisor2,
-    virtual: true,
-    inPerson: true,
-    location: "Los Angeles",
-    badge: "silver",
-    bio: "Specializing in red carpet looks and special occasion styling. Former stylist for Vogue Italia.",
-    fullBio: "My journey in fashion began on the streets of Milan, where I developed an eye for elegance and sophistication. Having worked with Vogue Italia and styled for numerous high-profile events, I bring a touch of European glamour to every consultation. Whether you're preparing for a gala, a wedding, or simply want to elevate your everyday style, I'm here to help you shine.",
-    experience: "8 years",
-    languages: ["English", "Italian", "Spanish"],
-    specialties: ["Red Carpet Styling", "Evening Wear", "Bridal Styling", "Fashion Week Prep"],
-    instagram: "@isabellaromano_style",
-    inspirationImages: [inspiration2, inspiration3, inspiration4, inspiration1],
-  },
-  "3": {
-    id: 3,
-    name: "Amara Johnson",
-    specialty: "Streetwear & Contemporary",
-    rating: 5.0,
-    reviews: 64,
-    price: 175,
-    image: advisor3,
-    virtual: true,
-    inPerson: false,
-    location: "Miami",
-    badge: "bronze",
-    bio: "Blending high fashion with streetwear aesthetics. Featured in Complex and Hypebeast.",
-    fullBio: "I'm passionate about the intersection of high fashion and street culture. My styling philosophy is all about bold self-expression and breaking conventional fashion rules. Having been featured in publications like Complex and Hypebeast, I understand what it takes to create looks that are both Instagram-worthy and authentically you. Let's create something unique together.",
-    experience: "6 years",
-    languages: ["English"],
-    specialties: ["Streetwear Curation", "Sneaker Styling", "Brand Collaborations", "Festival Looks"],
-    instagram: "@amarajohnson",
-    website: "amarajohnson.style",
-    inspirationImages: [inspiration4, inspiration1, inspiration2, inspiration3],
-  },
-};
+const fallbackImages = [inspiration1, inspiration2, inspiration3, inspiration4];
 
-const badgeColors = {
-  gold: "bg-gold text-accent-foreground",
-  silver: "bg-silver text-foreground",
-  bronze: "bg-bronze text-primary-foreground",
-};
+interface AdvisorData {
+  id: string;
+  full_name: string | null;
+  specialty: string | null;
+  bio: string | null;
+  personal_philosophy: string | null;
+  rating: number | null;
+  review_count: number | null;
+  price_per_session: number | null;
+  avatar_url: string | null;
+  virtual_available: boolean | null;
+  in_person_available: boolean | null;
+  location: string | null;
+  experience_years: number | null;
+  languages: string[] | null;
+  style_tags: string[] | null;
+  portfolio_images: string[] | null;
+  instagram_url: string | null;
+  portfolio_url: string | null;
+  verified: boolean | null;
+}
 
 const AdvisorProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const advisor = id ? advisorData[id] : null;
+  const [advisor, setAdvisor] = useState<AdvisorData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState<"availability" | "booking">("availability");
+
+  useEffect(() => {
+    const fetchAdvisor = async () => {
+      if (!id) {
+        setError("Invalid advisor ID");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error: fetchError } = await supabase
+          .rpc('get_advisor_public_profile', { advisor_profile_id: id });
+
+        if (fetchError) {
+          console.error('Error fetching advisor:', fetchError);
+          setError("Failed to load advisor profile");
+          setLoading(false);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setAdvisor(data[0] as AdvisorData);
+        } else {
+          setError("Advisor not found");
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setError("An error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdvisor();
+  }, [id]);
 
   const handleCheckAvailability = () => {
     setCalendarMode("availability");
@@ -120,12 +91,43 @@ const AdvisorProfile = () => {
     setCalendarOpen(true);
   };
 
-  if (!advisor) {
+  if (loading) {
+    return (
+      <Layout>
+        <section className="py-8 bg-card">
+          <div className="container mx-auto px-6 lg:px-8">
+            <Skeleton className="h-6 w-32 mb-8" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+              <div className="lg:col-span-1">
+                <Skeleton className="aspect-[4/5] w-full mb-6" />
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <div className="lg:col-span-2">
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-12 w-64 mb-2" />
+                <Skeleton className="h-6 w-48 mb-6" />
+                <Skeleton className="h-32 w-full mb-8" />
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (error || !advisor) {
     return (
       <Layout>
         <div className="container mx-auto px-6 lg:px-8 py-24 text-center">
           <h1 className="font-serif text-3xl mb-4">Advisor Not Found</h1>
-          <p className="text-muted-foreground mb-8">The advisor you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground mb-8">
+            {error || "The advisor you're looking for doesn't exist."}
+          </p>
           <Button variant="outline" asChild>
             <Link to="/advisors">View All Advisors</Link>
           </Button>
@@ -133,6 +135,15 @@ const AdvisorProfile = () => {
       </Layout>
     );
   }
+
+  const displayName = advisor.full_name || "Style Advisor";
+  const displayPrice = advisor.price_per_session || 100;
+  const displayRating = advisor.rating || 0;
+  const displayReviews = advisor.review_count || 0;
+  const displayExperience = advisor.experience_years ? `${advisor.experience_years}+ years` : "N/A";
+  const displayLanguages = advisor.languages?.length ? advisor.languages : ["English"];
+  const displaySpecialties = advisor.style_tags?.length ? advisor.style_tags : [];
+  const displayImages = advisor.portfolio_images?.length ? advisor.portfolio_images : fallbackImages;
 
   return (
     <Layout>
@@ -154,60 +165,62 @@ const AdvisorProfile = () => {
               transition={{ duration: 0.6 }}
               className="lg:col-span-1"
             >
-              <div className="relative aspect-[4/5] overflow-hidden mb-6">
-                <img
-                  src={advisor.image}
-                  alt={advisor.name}
-                  className="w-full h-full object-cover"
-                />
-                {advisor.badge && (
-                  <div
-                    className={`absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider ${
-                      badgeColors[advisor.badge as keyof typeof badgeColors]
-                    }`}
-                  >
-                    {advisor.badge} Advisor
+              <div className="relative aspect-[4/5] overflow-hidden mb-6 bg-muted">
+                {advisor.avatar_url ? (
+                  <img
+                    src={advisor.avatar_url}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <span className="text-6xl font-serif">{displayName.charAt(0)}</span>
+                  </div>
+                )}
+                {advisor.verified && (
+                  <div className="absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider bg-gold text-accent-foreground">
+                    Verified Advisor
                   </div>
                 )}
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground font-sans">
-                  {advisor.virtual && (
+                  {advisor.virtual_available && (
                     <span className="flex items-center gap-1">
                       <Video className="w-4 h-4" /> Virtual
                     </span>
                   )}
-                  {advisor.inPerson && (
+                  {advisor.in_person_available && advisor.location && (
                     <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" /> {advisor.location}
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {advisor.instagram && (
-                    <a 
-                      href={`https://instagram.com/${advisor.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors"
-                    >
-                      <Instagram className="w-4 h-4" />
-                      {advisor.instagram}
-                    </a>
-                  )}
-                </div>
-
-                {advisor.website && (
+                {advisor.instagram_url && (
                   <a 
-                    href={`https://${advisor.website}`}
+                    href={advisor.instagram_url.startsWith('http') ? advisor.instagram_url : `https://instagram.com/${advisor.instagram_url.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors"
+                  >
+                    <Instagram className="w-4 h-4" />
+                    {advisor.instagram_url.includes('instagram.com') 
+                      ? advisor.instagram_url.split('/').pop() 
+                      : advisor.instagram_url}
+                  </a>
+                )}
+
+                {advisor.portfolio_url && (
+                  <a 
+                    href={advisor.portfolio_url.startsWith('http') ? advisor.portfolio_url : `https://${advisor.portfolio_url}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors"
                   >
                     <Globe className="w-4 h-4" />
-                    {advisor.website}
+                    {advisor.portfolio_url.replace(/^https?:\/\//, '')}
                   </a>
                 )}
               </div>
@@ -222,53 +235,55 @@ const AdvisorProfile = () => {
             >
               <div className="flex items-center gap-2 mb-2">
                 <Star className="w-5 h-5 fill-gold text-gold" />
-                <span className="font-sans font-medium">{advisor.rating}</span>
+                <span className="font-sans font-medium">{displayRating.toFixed(1)}</span>
                 <span className="font-sans text-muted-foreground">
-                  ({advisor.reviews} reviews)
+                  ({displayReviews} reviews)
                 </span>
               </div>
 
               <h1 className="font-serif text-4xl md:text-5xl font-medium mb-2">
-                {advisor.name}
+                {displayName}
               </h1>
               <p className="font-sans text-lg text-gold mb-6">
-                {advisor.specialty}
+                {advisor.specialty || "Style Consultant"}
               </p>
 
               <div className="prose prose-lg max-w-none mb-8">
                 <p className="font-sans text-muted-foreground leading-relaxed">
-                  {advisor.fullBio}
+                  {advisor.personal_philosophy || advisor.bio || "Passionate about helping clients discover their unique style."}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-background p-6 border border-border">
                   <h3 className="font-serif text-lg font-medium mb-3">Experience</h3>
-                  <p className="font-sans text-muted-foreground">{advisor.experience}</p>
+                  <p className="font-sans text-muted-foreground">{displayExperience}</p>
                 </div>
                 <div className="bg-background p-6 border border-border">
                   <h3 className="font-serif text-lg font-medium mb-3">Languages</h3>
-                  <p className="font-sans text-muted-foreground">{advisor.languages.join(", ")}</p>
+                  <p className="font-sans text-muted-foreground">{displayLanguages.join(", ")}</p>
                 </div>
               </div>
 
-              <div className="mb-8">
-                <h3 className="font-serif text-lg font-medium mb-4">Specialties</h3>
-                <div className="flex flex-wrap gap-2">
-                  {advisor.specialties.map((specialty) => (
-                    <span
-                      key={specialty}
-                      className="px-4 py-2 bg-secondary text-sm font-sans"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
+              {displaySpecialties.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="font-serif text-lg font-medium mb-4">Specialties</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {displaySpecialties.map((specialty) => (
+                      <span
+                        key={specialty}
+                        className="px-4 py-2 bg-secondary text-sm font-sans"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex items-center justify-between p-6 bg-background border border-border">
                 <div>
-                  <span className="font-sans text-2xl font-medium">${advisor.price}</span>
+                  <span className="font-sans text-2xl font-medium">${displayPrice}</span>
                   <span className="font-sans text-muted-foreground">/session</span>
                 </div>
                 <div className="flex gap-4">
@@ -300,19 +315,19 @@ const AdvisorProfile = () => {
               Style Inspiration
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-              A glimpse into the looks and styling work by {advisor.name.split(' ')[0]}
+              A glimpse into the looks and styling work by {displayName.split(' ')[0]}
             </p>
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {advisor.inspirationImages.map((image, index) => (
+            {displayImages.slice(0, 4).map((image, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="relative aspect-[3/4] overflow-hidden group cursor-pointer"
+                className="relative aspect-[3/4] overflow-hidden group cursor-pointer bg-muted"
               >
                 <img
                   src={image}
@@ -329,8 +344,8 @@ const AdvisorProfile = () => {
       {/* Booking Calendar Dialog */}
       <BookingCalendar
         advisorId={id || ""}
-        advisorName={advisor.name}
-        price={advisor.price}
+        advisorName={displayName}
+        price={displayPrice}
         isOpen={calendarOpen}
         onClose={() => setCalendarOpen(false)}
         mode={calendarMode}

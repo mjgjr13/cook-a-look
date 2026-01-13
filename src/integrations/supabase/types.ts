@@ -386,6 +386,16 @@ export type Database = {
         }
         Relationships: []
       }
+      public_featured_advisors: {
+        Row: {
+          advisor_id: string | null
+          created_at: string | null
+          end_date: string | null
+          id: string | null
+          start_date: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_advisor_public_profile: {
@@ -440,6 +450,16 @@ export type Database = {
           target_demographics: string[]
           verified: boolean
           virtual_available: boolean
+        }[]
+      }
+      get_public_featured_advisors: {
+        Args: never
+        Returns: {
+          advisor_id: string
+          created_at: string
+          end_date: string
+          id: string
+          start_date: string
         }[]
       }
       has_role: {
