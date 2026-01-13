@@ -50,13 +50,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "availability_slots_advisor_id_fkey"
-            columns: ["advisor_id"]
-            isOneToOne: false
-            referencedRelation: "public_advisor_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       bookings: {
@@ -99,24 +92,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bookings_advisor_id_fkey"
-            columns: ["advisor_id"]
-            isOneToOne: false
-            referencedRelation: "public_advisor_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bookings_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookings_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "public_advisor_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -162,13 +141,6 @@ export type Database = {
             columns: ["advisor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "featured_advisors_advisor_id_fkey"
-            columns: ["advisor_id"]
-            isOneToOne: false
-            referencedRelation: "public_advisor_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -412,56 +384,6 @@ export type Database = {
           verified: boolean | null
           virtual_available: boolean | null
         }
-        Insert: {
-          advisor_approved?: boolean | null
-          avatar_url?: string | null
-          bio?: string | null
-          experience_years?: number | null
-          full_name?: string | null
-          id?: string | null
-          in_person_available?: boolean | null
-          instagram_url?: string | null
-          is_advisor?: boolean | null
-          languages?: string[] | null
-          location?: string | null
-          personal_philosophy?: string | null
-          portfolio_images?: string[] | null
-          portfolio_url?: string | null
-          price_per_session?: number | null
-          rating?: number | null
-          review_count?: number | null
-          session_duration?: number | null
-          specialty?: string | null
-          style_tags?: string[] | null
-          target_demographics?: string[] | null
-          verified?: boolean | null
-          virtual_available?: boolean | null
-        }
-        Update: {
-          advisor_approved?: boolean | null
-          avatar_url?: string | null
-          bio?: string | null
-          experience_years?: number | null
-          full_name?: string | null
-          id?: string | null
-          in_person_available?: boolean | null
-          instagram_url?: string | null
-          is_advisor?: boolean | null
-          languages?: string[] | null
-          location?: string | null
-          personal_philosophy?: string | null
-          portfolio_images?: string[] | null
-          portfolio_url?: string | null
-          price_per_session?: number | null
-          rating?: number | null
-          review_count?: number | null
-          session_duration?: number | null
-          specialty?: string | null
-          style_tags?: string[] | null
-          target_demographics?: string[] | null
-          verified?: boolean | null
-          virtual_available?: boolean | null
-        }
         Relationships: []
       }
     }
@@ -476,6 +398,34 @@ export type Database = {
           id: string
           in_person_available: boolean
           instagram_url: string
+          languages: string[]
+          location: string
+          personal_philosophy: string
+          portfolio_images: string[]
+          portfolio_url: string
+          price_per_session: number
+          rating: number
+          review_count: number
+          session_duration: number
+          specialty: string
+          style_tags: string[]
+          target_demographics: string[]
+          verified: boolean
+          virtual_available: boolean
+        }[]
+      }
+      get_public_advisor_profiles: {
+        Args: never
+        Returns: {
+          advisor_approved: boolean
+          avatar_url: string
+          bio: string
+          experience_years: number
+          full_name: string
+          id: string
+          in_person_available: boolean
+          instagram_url: string
+          is_advisor: boolean
           languages: string[]
           location: string
           personal_philosophy: string
