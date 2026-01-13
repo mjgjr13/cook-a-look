@@ -63,7 +63,7 @@ const badgeColors = {
   bronze: "bg-bronze text-primary-foreground"
 };
 const FeaturedAdvisors = () => {
-  return <section className="py-24 bg-card">
+  return <section className="py-24 bg-card overflow-hidden">
       <div className="container mx-auto px-6 lg:px-8">
         <motion.div initial={{
         opacity: 0,
@@ -87,7 +87,7 @@ const FeaturedAdvisors = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-2 lg:px-6">
           {advisors.map((advisor, index) => <motion.article key={advisor.id} initial={{
           opacity: 0,
           y: 20
