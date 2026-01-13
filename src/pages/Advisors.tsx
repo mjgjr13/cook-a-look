@@ -1,43 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, Search, Filter } from "lucide-react";
+import { Star, Video, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-
-// Style tags for filtering
-const styleOptions = [
-  "Minimalist",
-  "Streetwear",
-  "Business",
-  "Formal",
-  "Casual",
-  "Bohemian",
-  "Classic",
-  "Contemporary",
-];
-
-// Target demographics for filtering
-const demographicOptions = [
-  "Men",
-  "Women",
-  "Non-Binary",
-  "Young Professionals",
-  "Executives",
-  "Students",
-  "Plus Size",
-];
+import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilters";
 
 interface AdvisorData {
   id: string;
@@ -54,6 +24,7 @@ interface AdvisorData {
   style_tags: string[] | null;
   target_demographics: string[] | null;
   verified: boolean | null;
+  is_demo?: boolean | null;
 }
 
 const badgeColors = {
@@ -63,11 +34,15 @@ const badgeColors = {
 const Advisors = () => {
   const [advisors, setAdvisors] = useState<AdvisorData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [consultationType, setConsultationType] = useState("all");
-  const [priceRange, setPriceRange] = useState("all");
-  const [selectedStyle, setSelectedStyle] = useState("all");
-  const [selectedDemographic, setSelectedDemographic] = useState("all");
+  const [filters, setFilters] = useState<FilterState>({
+    searchTerm: "",
+    styles: [],
+    clientFocus: [],
+    sessionTypes: [],
+    minPrice: "",
+    maxPrice: "",
+    sortBy: "featured",
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -92,51 +67,73 @@ const Advisors = () => {
     fetchAdvisors();
   }, []);
 
-  const filteredAdvisors = advisors.filter((advisor) => {
-    const name = advisor.full_name || "";
-    const specialty = advisor.specialty || "";
-    const styleTags = advisor.style_tags || [];
-    const demographics = advisor.target_demographics || [];
-    const price = advisor.price_per_session || 0;
+  const filteredAndSortedAdvisors = useMemo(() => {
+    let result = advisors.filter((advisor) => {
+      const name = advisor.full_name || "";
+      const specialty = advisor.specialty || "";
+      const styleTags = advisor.style_tags || [];
+      const demographics = advisor.target_demographics || [];
+      const price = advisor.price_per_session || 0;
 
-    const matchesSearch =
-      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      specialty.toLowerCase().includes(searchTerm.toLowerCase());
+      // Search filter
+      const matchesSearch =
+        filters.searchTerm === "" ||
+        name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        specialty.toLowerCase().includes(filters.searchTerm.toLowerCase());
 
-    const matchesType =
-      consultationType === "all" ||
-      (consultationType === "virtual" && advisor.virtual_available) ||
-      (consultationType === "in-person" && advisor.in_person_available);
+      // Session type filter
+      const matchesSessionType =
+        filters.sessionTypes.length === 0 ||
+        (filters.sessionTypes.includes("virtual") && advisor.virtual_available) ||
+        (filters.sessionTypes.includes("in-person") && advisor.in_person_available);
 
-    const matchesPrice =
-      priceRange === "all" ||
-      (priceRange === "under-100" && price < 100) ||
-      (priceRange === "100-150" && price >= 100 && price <= 150) ||
-      (priceRange === "over-150" && price > 150);
+      // Style filter - match any selected style
+      const matchesStyle =
+        filters.styles.length === 0 ||
+        filters.styles.some((style) => 
+          styleTags.some((tag) => tag.toLowerCase().includes(style.toLowerCase()))
+        );
 
-    const matchesStyle =
-      selectedStyle === "all" || styleTags.includes(selectedStyle);
+      // Client focus filter - match any selected demographic
+      const matchesClientFocus =
+        filters.clientFocus.length === 0 ||
+        filters.clientFocus.some((focus) => 
+          demographics.some((demo) => demo.toLowerCase().includes(focus.toLowerCase()))
+        );
 
-    const matchesDemographic =
-      selectedDemographic === "all" || demographics.includes(selectedDemographic);
+      // Price range filter
+      const minPrice = filters.minPrice ? parseFloat(filters.minPrice) : 0;
+      const maxPrice = filters.maxPrice ? parseFloat(filters.maxPrice) : Infinity;
+      const matchesPrice = price >= minPrice && price <= maxPrice;
 
-    return matchesSearch && matchesType && matchesPrice && matchesStyle && matchesDemographic;
-  });
+      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesPrice;
+    });
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setConsultationType("all");
-    setPriceRange("all");
-    setSelectedStyle("all");
-    setSelectedDemographic("all");
-  };
+    // Sort results
+    switch (filters.sortBy) {
+      case "price-low":
+        result = [...result].sort((a, b) => 
+          (a.price_per_session || 0) - (b.price_per_session || 0)
+        );
+        break;
+      case "price-high":
+        result = [...result].sort((a, b) => 
+          (b.price_per_session || 0) - (a.price_per_session || 0)
+        );
+        break;
+      case "featured":
+      default:
+        // Featured sorting: prioritize by rating and review count
+        result = [...result].sort((a, b) => {
+          const aScore = (a.rating || 0) * 10 + (a.review_count || 0);
+          const bScore = (b.rating || 0) * 10 + (b.review_count || 0);
+          return bScore - aScore;
+        });
+        break;
+    }
 
-  const hasActiveFilters = 
-    searchTerm !== "" || 
-    consultationType !== "all" || 
-    priceRange !== "all" || 
-    selectedStyle !== "all" || 
-    selectedDemographic !== "all";
+    return result;
+  }, [advisors, filters]);
 
   const handleCardClick = (advisorId: string) => {
     navigate(`/advisors/${advisorId}`);
@@ -193,87 +190,22 @@ const Advisors = () => {
             </p>
           </motion.div>
 
-          {/* Filters */}
+          {/* Enhanced Filters */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-12 p-6 bg-background border border-border"
           >
-            <div className="flex flex-col lg:flex-row gap-4 mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name or specialty..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={consultationType} onValueChange={setConsultationType}>
-                <SelectTrigger className="w-full lg:w-40">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="virtual">Virtual Only</SelectItem>
-                  <SelectItem value="in-person">In-Person</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={priceRange} onValueChange={setPriceRange}>
-                <SelectTrigger className="w-full lg:w-40">
-                  <SelectValue placeholder="Price" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Prices</SelectItem>
-                  <SelectItem value="under-100">Under $100</SelectItem>
-                  <SelectItem value="100-150">$100 - $150</SelectItem>
-                  <SelectItem value="over-150">Over $150</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex flex-col lg:flex-row gap-4">
-              <Select value={selectedStyle} onValueChange={setSelectedStyle}>
-                <SelectTrigger className="w-full lg:w-48">
-                  <SelectValue placeholder="Style" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Styles</SelectItem>
-                  {styleOptions.map((style) => (
-                    <SelectItem key={style} value={style}>{style}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedDemographic} onValueChange={setSelectedDemographic}>
-                <SelectTrigger className="w-full lg:w-48">
-                  <SelectValue placeholder="For" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Demographics</SelectItem>
-                  {demographicOptions.map((demo) => (
-                    <SelectItem key={demo} value={demo}>{demo}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {hasActiveFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearFilters}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Filter className="w-4 h-4" />
-                  Clear filters
-                </Button>
-              )}
-            </div>
+            <AdvisorFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              resultCount={filteredAndSortedAdvisors.length}
+            />
           </motion.div>
 
           {/* Advisors Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredAdvisors.map((advisor, index) => {
+            {filteredAndSortedAdvisors.map((advisor, index) => {
               const displayName = advisor.full_name || "Style Advisor";
               const displayPrice = advisor.price_per_session || 100;
               const displayRating = advisor.rating || 0;
@@ -374,7 +306,7 @@ const Advisors = () => {
             })}
           </div>
 
-          {filteredAdvisors.length === 0 && !loading && (
+          {filteredAndSortedAdvisors.length === 0 && !loading && (
             <div className="text-center py-16">
               <p className="font-sans text-muted-foreground">
                 {advisors.length === 0 

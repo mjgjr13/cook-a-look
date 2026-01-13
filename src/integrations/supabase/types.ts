@@ -145,6 +145,45 @@ export type Database = {
           },
         ]
       }
+      lookbook_items: {
+        Row: {
+          aspect_ratio: string
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          is_published: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          aspect_ratio?: string
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          is_published?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          aspect_ratio?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          is_published?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           advisor_id: string
@@ -215,6 +254,7 @@ export type Database = {
           in_person_available: boolean | null
           instagram_url: string | null
           is_advisor: boolean | null
+          is_demo: boolean
           languages: string[] | null
           location: string | null
           personal_philosophy: string | null
@@ -245,6 +285,7 @@ export type Database = {
           in_person_available?: boolean | null
           instagram_url?: string | null
           is_advisor?: boolean | null
+          is_demo?: boolean
           languages?: string[] | null
           location?: string | null
           personal_philosophy?: string | null
@@ -275,6 +316,7 @@ export type Database = {
           in_person_available?: boolean | null
           instagram_url?: string | null
           is_advisor?: boolean | null
+          is_demo?: boolean
           languages?: string[] | null
           location?: string | null
           personal_philosophy?: string | null
@@ -369,6 +411,7 @@ export type Database = {
           in_person_available: boolean | null
           instagram_url: string | null
           is_advisor: boolean | null
+          is_demo: boolean | null
           languages: string[] | null
           location: string | null
           personal_philosophy: string | null
@@ -424,6 +467,35 @@ export type Database = {
           virtual_available: boolean
         }[]
       }
+      get_all_advisor_profiles_including_demo: {
+        Args: never
+        Returns: {
+          advisor_approved: boolean
+          avatar_url: string
+          bio: string
+          experience_years: number
+          full_name: string
+          id: string
+          in_person_available: boolean
+          instagram_url: string
+          is_advisor: boolean
+          is_demo: boolean
+          languages: string[]
+          location: string
+          personal_philosophy: string
+          portfolio_images: string[]
+          portfolio_url: string
+          price_per_session: number
+          rating: number
+          review_count: number
+          session_duration: number
+          specialty: string
+          style_tags: string[]
+          target_demographics: string[]
+          verified: boolean
+          virtual_available: boolean
+        }[]
+      }
       get_public_advisor_profiles: {
         Args: never
         Returns: {
@@ -436,6 +508,7 @@ export type Database = {
           in_person_available: boolean
           instagram_url: string
           is_advisor: boolean
+          is_demo: boolean
           languages: string[]
           location: string
           personal_philosophy: string

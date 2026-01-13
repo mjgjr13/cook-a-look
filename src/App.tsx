@@ -19,6 +19,7 @@ import BookingSuccess from "./pages/BookingSuccess";
 import AdvisorAvailability from "./pages/AdvisorAvailability";
 import TermsOfUse from "./pages/TermsOfUse";
 import NotFound from "./pages/NotFound";
+import AdminLookbook from "./pages/admin/AdminLookbook";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/admin/lookbook" element={
+              <ProtectedRoute>
+                <AdminLookbook />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
