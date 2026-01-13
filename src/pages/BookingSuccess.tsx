@@ -7,6 +7,13 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Validate Stripe checkout session ID format
+const isValidStripeSessionId = (id: string | null): boolean => {
+  if (!id || typeof id !== 'string') return false;
+  // Stripe checkout session IDs start with 'cs_' followed by alphanumeric characters
+  return /^cs_[a-zA-Z0-9_]{10,}$/.test(id);
+};
+
 const BookingSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -19,11 +26,16 @@ const BookingSuccess = () => {
   } | null>(null);
 
   const sessionId = searchParams.get("session_id");
-  const advisorId = searchParams.get("advisor_id");
 
   useEffect(() => {
     const verifyPayment = async () => {
-      if (!sessionId) {
+      // Validate session ID format before making API call
+      if (!isValidStripeSessionId(sessionId)) {
+        toast({
+          title: "Invalid session",
+          description: "The payment session is invalid or expired.",
+          variant: "destructive",
+        });
         navigate("/");
         return;
       }
