@@ -1,13 +1,13 @@
 project_id = "chjmyzzczwattluqpbat"
 
 [functions.create-checkout]
-verify_jwt = false
+verify_jwt = true
 
 [functions.verify-payment]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-video-room]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-booking-confirmation]
-verify_jwt = false
+verify_jwt = true
