@@ -95,16 +95,41 @@ const BookingCalendar = ({
 
     setIsLoading(true);
 
-    // In production, this would create a booking and integrate with Stripe
-    toast({
-      title: "Booking confirmed!",
-      description: `Your consultation with ${advisorName} is scheduled for ${format(selectedDate, "MMMM d, yyyy")} at ${selectedSlot.time}.`,
-    });
+    try {
+      // Create Stripe checkout session
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          advisorId,
+          slotId: selectedSlot.id,
+          date: selectedDate.toISOString(),
+          price,
+          advisorName,
+        },
+      });
 
-    setIsLoading(false);
-    onClose();
-    setSelectedDate(undefined);
-    setSelectedSlot(null);
+      if (error) throw error;
+
+      if (data?.url) {
+        // Open Stripe checkout in new tab
+        window.open(data.url, '_blank');
+        toast({
+          title: "Redirecting to payment",
+          description: "Complete your payment in the new tab.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Payment error",
+        description: error.message || "Failed to create checkout session. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      onClose();
+      setSelectedDate(undefined);
+      setSelectedSlot(null);
+    }
   };
 
   const disabledDays = [

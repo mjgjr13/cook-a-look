@@ -35,6 +35,14 @@ const Footer = () => {
                   Become an Advisor
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/terms"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+                >
+                  Terms of Use
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -10,6 +10,10 @@ import Lookbook from "./pages/Lookbook";
 import BecomeAdvisor from "./pages/BecomeAdvisor";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import Dashboard from "./pages/Dashboard";
+import BookingSuccess from "./pages/BookingSuccess";
+import AdvisorAvailability from "./pages/AdvisorAvailability";
+import TermsOfUse from "./pages/TermsOfUse";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +32,10 @@ const App = () => (
           <Route path="/become-advisor" element={<BecomeAdvisor />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/booking-success" element={<BookingSuccess />} />
+          <Route path="/advisor-availability" element={<AdvisorAvailability />} />
+          <Route path="/terms" element={<TermsOfUse />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
