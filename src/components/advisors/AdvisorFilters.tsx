@@ -103,7 +103,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
     filters.sortBy !== "featured";
 
   return (
-    <div className="mb-12 p-6 bg-background border border-border">
+    <div className="mb-12 p-6 bg-background border border-border space-y-4">
       {/* Top Row: Search, Filters, Sort */}
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
         {/* Search */}
@@ -115,34 +115,6 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
             onChange={(e) => updateFilter("searchTerm", e.target.value)}
             className="pl-10"
           />
-        </div>
-
-        {/* Session Type Boxes */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => toggleArrayFilter("sessionTypes", "virtual")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 border text-sm font-sans transition-colors",
-              filters.sessionTypes.includes("virtual")
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:border-primary/50"
-            )}
-          >
-            <Video className="w-4 h-4" />
-            Virtual
-          </button>
-          <button
-            onClick={() => toggleArrayFilter("sessionTypes", "in-person")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 border text-sm font-sans transition-colors",
-              filters.sessionTypes.includes("in-person")
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:border-primary/50"
-            )}
-          >
-            <MapPin className="w-4 h-4" />
-            In-Person
-          </button>
         </div>
 
         {/* Filters Dropdown */}
@@ -158,7 +130,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-4" align="end">
+          <PopoverContent className="w-80 p-4 bg-background" align="end">
             <div className="space-y-6">
               {/* Style Categories */}
               <div>
@@ -261,7 +233,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
             <ArrowUpDown className="w-4 h-4" />
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-background">
             {sortOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -269,6 +241,34 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Second Row: Session Type Boxes */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => toggleArrayFilter("sessionTypes", "virtual")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 border text-sm font-sans transition-colors",
+            filters.sessionTypes.includes("virtual")
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+          )}
+        >
+          <Video className="w-4 h-4" />
+          Virtual
+        </button>
+        <button
+          onClick={() => toggleArrayFilter("sessionTypes", "in-person")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 border text-sm font-sans transition-colors",
+            filters.sessionTypes.includes("in-person")
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+          )}
+        >
+          <MapPin className="w-4 h-4" />
+          In-Person
+        </button>
       </div>
 
       {/* Active Filters Display */}
