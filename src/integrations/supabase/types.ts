@@ -145,71 +145,195 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          advisor_id: string
+          amount: number
+          booking_id: string | null
+          client_id: string
+          created_at: string | null
+          currency: string | null
+          id: string
+          status: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          tax_amount: number | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          advisor_id: string
+          amount: number
+          booking_id?: string | null
+          client_id: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          tax_amount?: number | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          advisor_id?: string
+          amount?: number
+          booking_id?: string | null
+          client_id?: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          tax_amount?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          account_type: string | null
           advisor_approved: boolean | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
           email: string | null
+          experience_years: number | null
           full_name: string | null
           id: string
           in_person_available: boolean | null
           instagram_url: string | null
           is_advisor: boolean | null
+          languages: string[] | null
           location: string | null
+          personal_philosophy: string | null
+          portfolio_images: string[] | null
           portfolio_url: string | null
           price_per_session: number | null
           rating: number | null
           review_count: number | null
+          session_duration: number | null
           specialty: string | null
+          style_tags: string[] | null
+          target_demographics: string[] | null
           updated_at: string | null
           user_id: string
+          verified: boolean | null
           virtual_available: boolean | null
         }
         Insert: {
+          account_type?: string | null
           advisor_approved?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           email?: string | null
+          experience_years?: number | null
           full_name?: string | null
           id?: string
           in_person_available?: boolean | null
           instagram_url?: string | null
           is_advisor?: boolean | null
+          languages?: string[] | null
           location?: string | null
+          personal_philosophy?: string | null
+          portfolio_images?: string[] | null
           portfolio_url?: string | null
           price_per_session?: number | null
           rating?: number | null
           review_count?: number | null
+          session_duration?: number | null
           specialty?: string | null
+          style_tags?: string[] | null
+          target_demographics?: string[] | null
           updated_at?: string | null
           user_id: string
+          verified?: boolean | null
           virtual_available?: boolean | null
         }
         Update: {
+          account_type?: string | null
           advisor_approved?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           email?: string | null
+          experience_years?: number | null
           full_name?: string | null
           id?: string
           in_person_available?: boolean | null
           instagram_url?: string | null
           is_advisor?: boolean | null
+          languages?: string[] | null
           location?: string | null
+          personal_philosophy?: string | null
+          portfolio_images?: string[] | null
           portfolio_url?: string | null
           price_per_session?: number | null
           rating?: number | null
           review_count?: number | null
+          session_duration?: number | null
           specialty?: string | null
+          style_tags?: string[] | null
+          target_demographics?: string[] | null
           updated_at?: string | null
           user_id?: string
+          verified?: boolean | null
           virtual_available?: boolean | null
         }
         Relationships: []
+      }
+      video_sessions: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          duration_minutes: number | null
+          ended_at: string | null
+          id: string
+          room_name: string
+          room_url: string
+          started_at: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          room_name: string
+          room_url: string
+          started_at?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          room_name?: string
+          room_url?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_sessions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
