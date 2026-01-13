@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface BookingCalendarProps {
   advisorId: string;
@@ -28,6 +29,9 @@ interface TimeSlot {
   time: string;
   isVirtual: boolean;
 }
+
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const BookingCalendar = ({
   advisorId,
@@ -69,18 +73,12 @@ const BookingCalendar = ({
 
   const handleBooking = async () => {
     if (!user) {
-      // Store booking intent and redirect to sign in
-      sessionStorage.setItem('bookingIntent', JSON.stringify({
-        advisorId,
-        date: selectedDate?.toISOString(),
-        slotId: selectedSlot?.id,
-      }));
       toast({
         title: "Sign in required",
         description: "Please sign in to book a consultation.",
       });
       onClose();
-      navigate("/signin?redirect=/advisors/" + advisorId);
+      navigate(`/signin?redirect=/advisors/${encodeURIComponent(advisorId)}`);
       return;
     }
 
@@ -93,42 +91,53 @@ const BookingCalendar = ({
       return;
     }
 
+    // SECURITY: Validate inputs before sending
+    if (!UUID_REGEX.test(advisorId)) {
+      toast({
+        title: "Invalid request",
+        description: "Invalid advisor information.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Create Stripe checkout session
+      const sessionDate = selectedDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+
+      // Note: Amount is fetched server-side for security - not sent from client
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           advisorId,
           slotId: selectedSlot.id,
-          date: selectedDate.toISOString(),
-          price,
-          advisorName,
+          sessionDate,
+          sessionTime: selectedSlot.time,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || "Failed to create checkout session");
+      }
 
       if (data?.url) {
-        // Open Stripe checkout in new tab
-        window.open(data.url, '_blank');
-        toast({
-          title: "Redirecting to payment",
-          description: "Complete your payment in the new tab.",
-        });
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
       }
-    } catch (error: any) {
-      console.error('Checkout error:', error);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
       toast({
-        title: "Payment error",
-        description: error.message || "Failed to create checkout session. Please try again.",
+        title: "Booking failed",
+        description: errorMessage,
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
-      onClose();
-      setSelectedDate(undefined);
-      setSelectedSlot(null);
     }
   };
 
@@ -201,7 +210,16 @@ const BookingCalendar = ({
                 onClick={handleBooking}
                 disabled={isLoading}
               >
-                {isLoading ? "Processing..." : user ? "Proceed to Payment" : "Sign in to Book"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : user ? (
+                  "Proceed to Payment"
+                ) : (
+                  "Sign in to Book"
+                )}
               </Button>
               {!user && (
                 <p className="text-xs text-muted-foreground text-center mt-2">
