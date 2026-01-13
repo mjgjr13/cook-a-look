@@ -107,7 +107,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
       {/* All filters on one line */}
       <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-center">
         {/* Search */}
-        <div className="relative flex-1 w-full lg:max-w-md">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by name or specialty..."
