@@ -22,6 +22,16 @@ import {
   Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  advisorApplicationSchema, 
+  validateFile,
+  nameSchema,
+  emailSchema,
+  specialtySchema,
+  bioSchema,
+  instagramSchema
+} from "@/lib/validations";
+import { z } from "zod";
 
 const benefits = [
   {
@@ -53,10 +63,26 @@ const steps = [
   { number: 4, title: "Review" },
 ];
 
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  specialty?: string;
+  bio?: string;
+  instagram?: string;
+  portfolio?: string;
+  selfieFile?: string;
+  idFile?: string;
+  agreeTerms?: string;
+}
+
 const BecomeAdvisor = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -78,20 +104,120 @@ const BecomeAdvisor = () => {
     agreeTerms: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateField = (field: string, value: unknown): string | undefined => {
+    try {
+      switch (field) {
+        case 'firstName':
+        case 'lastName':
+          nameSchema.parse(value);
+          break;
+        case 'email':
+          emailSchema.parse(value);
+          break;
+        case 'specialty':
+          specialtySchema.parse(value);
+          break;
+        case 'bio':
+          bioSchema.parse(value);
+          break;
+        case 'instagram':
+          instagramSchema.parse(value);
+          break;
+        case 'portfolio':
+          if (value && typeof value === 'string' && value.trim()) {
+            z.string().url().parse(value);
+          }
+          break;
+      }
+      return undefined;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return err.errors[0]?.message;
+      }
+      return "Invalid input";
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
+    
+    // Validate all fields before submission
+    try {
+      advisorApplicationSchema.parse({
+        ...formData,
+        agreeTerms: formData.agreeTerms as true,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const newErrors: FormErrors = {};
+        err.errors.forEach((error) => {
+          const path = error.path[0] as keyof FormErrors;
+          newErrors[path] = error.message;
+        });
+        setErrors(newErrors);
+        toast({
+          title: "Validation Error",
+          description: "Please check the form for errors.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validate files
+    const selfieError = validateFile(formData.selfieFile);
+    const idError = validateFile(formData.idFile);
+    
+    if (selfieError || idError) {
+      setErrors({
+        ...errors,
+        selfieFile: selfieError || undefined,
+        idFile: idError || undefined,
+      });
+      toast({
+        title: "File Validation Error",
+        description: selfieError || idError,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    // For now, just show success (in production, this would call an edge function)
+    // The form data would be sent to a secure edge function for processing
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+    }, 1500);
   };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Clear error and validate on change
+    const error = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'selfieFile' | 'idFile') => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file
+      const fileError = validateFile(file);
+      if (fileError) {
+        setErrors((prev) => ({ ...prev, [field]: fileError }));
+        toast({
+          title: "Invalid File",
+          description: fileError,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const previewField = field === 'selfieFile' ? 'selfiePreview' : 'idPreview';
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -100,22 +226,52 @@ const BecomeAdvisor = () => {
           [field]: file,
           [previewField]: reader.result as string
         });
+        setErrors((prev) => ({ ...prev, [field]: undefined }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 4));
+  const nextStep = () => {
+    // Validate current step before proceeding
+    const stepErrors: FormErrors = {};
+    
+    if (currentStep === 1) {
+      stepErrors.firstName = validateField('firstName', formData.firstName);
+      stepErrors.lastName = validateField('lastName', formData.lastName);
+      stepErrors.email = validateField('email', formData.email);
+      stepErrors.specialty = validateField('specialty', formData.specialty);
+      stepErrors.bio = validateField('bio', formData.bio);
+    } else if (currentStep === 2) {
+      stepErrors.instagram = validateField('instagram', formData.instagram);
+      if (formData.portfolio) {
+        stepErrors.portfolio = validateField('portfolio', formData.portfolio);
+      }
+    } else if (currentStep === 3) {
+      stepErrors.selfieFile = validateFile(formData.selfieFile) || undefined;
+      stepErrors.idFile = validateFile(formData.idFile) || undefined;
+    }
+
+    const hasErrors = Object.values(stepErrors).some(error => error !== undefined);
+    if (hasErrors) {
+      setErrors(stepErrors);
+      return;
+    }
+
+    setCurrentStep((prev) => Math.min(prev + 1, 4));
+  };
+  
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return formData.firstName && formData.lastName && formData.email && formData.specialty && formData.bio;
+        return formData.firstName && formData.lastName && formData.email && formData.specialty && formData.bio &&
+               !errors.firstName && !errors.lastName && !errors.email && !errors.specialty && !errors.bio;
       case 2:
-        return formData.instagram;
+        return formData.instagram && !errors.instagram && !errors.portfolio;
       case 3:
-        return formData.selfieFile && formData.idFile;
+        return formData.selfieFile && formData.idFile && !errors.selfieFile && !errors.idFile;
       case 4:
         return formData.agreeTerms;
       default:
@@ -284,8 +440,12 @@ const BecomeAdvisor = () => {
                           name="firstName"
                           value={formData.firstName}
                           onChange={handleInputChange}
+                          className={errors.firstName ? "border-destructive" : ""}
                           required
                         />
+                        {errors.firstName && (
+                          <p className="text-xs text-destructive">{errors.firstName}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last Name *</Label>
@@ -294,8 +454,12 @@ const BecomeAdvisor = () => {
                           name="lastName"
                           value={formData.lastName}
                           onChange={handleInputChange}
+                          className={errors.lastName ? "border-destructive" : ""}
                           required
                         />
+                        {errors.lastName && (
+                          <p className="text-xs text-destructive">{errors.lastName}</p>
+                        )}
                       </div>
                     </div>
 
@@ -308,8 +472,12 @@ const BecomeAdvisor = () => {
                           type="email"
                           value={formData.email}
                           onChange={handleInputChange}
+                          className={errors.email ? "border-destructive" : ""}
                           required
                         />
+                        {errors.email && (
+                          <p className="text-xs text-destructive">{errors.email}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
@@ -319,7 +487,11 @@ const BecomeAdvisor = () => {
                           type="tel"
                           value={formData.phone}
                           onChange={handleInputChange}
+                          className={errors.phone ? "border-destructive" : ""}
                         />
+                        {errors.phone && (
+                          <p className="text-xs text-destructive">{errors.phone}</p>
+                        )}
                       </div>
                     </div>
 
@@ -332,8 +504,12 @@ const BecomeAdvisor = () => {
                           placeholder="e.g., Menswear, Occasion Styling"
                           value={formData.specialty}
                           onChange={handleInputChange}
+                          className={errors.specialty ? "border-destructive" : ""}
                           required
                         />
+                        {errors.specialty && (
+                          <p className="text-xs text-destructive">{errors.specialty}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="experience">Years of Experience</Label>
@@ -356,8 +532,13 @@ const BecomeAdvisor = () => {
                         rows={5}
                         value={formData.bio}
                         onChange={handleInputChange}
+                        className={errors.bio ? "border-destructive" : ""}
                         required
                       />
+                      {errors.bio && (
+                        <p className="text-xs text-destructive">{errors.bio}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">{formData.bio.length}/2000 characters</p>
                     </div>
 
                     <div className="space-y-4">
@@ -420,11 +601,15 @@ const BecomeAdvisor = () => {
                           placeholder="@yourusername"
                           value={formData.instagram}
                           onChange={handleInputChange}
-                          className="pl-10"
+                          className={`pl-10 ${errors.instagram ? "border-destructive" : ""}`}
                           required
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">Required — your primary showcase of style work</p>
+                      {errors.instagram ? (
+                        <p className="text-xs text-destructive">{errors.instagram}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Required — your primary showcase of style work</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -459,10 +644,14 @@ const BecomeAdvisor = () => {
                           placeholder="https://yourwebsite.com"
                           value={formData.portfolio}
                           onChange={handleInputChange}
-                          className="pl-10"
+                          className={`pl-10 ${errors.portfolio ? "border-destructive" : ""}`}
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">Share a link to your portfolio, Behance, or personal website</p>
+                      {errors.portfolio ? (
+                        <p className="text-xs text-destructive">{errors.portfolio}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Share a link to your portfolio, Behance, or personal website</p>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -668,9 +857,9 @@ const BecomeAdvisor = () => {
                     type="submit" 
                     variant="hero" 
                     size="lg"
-                    disabled={!canProceed()}
+                    disabled={!canProceed() || isSubmitting}
                   >
-                    Submit Application
+                    {isSubmitting ? "Submitting..." : "Submit Application"}
                   </Button>
                 )}
               </div>
