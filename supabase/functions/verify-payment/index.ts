@@ -7,6 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Validate Stripe session ID format
+const isValidStripeSessionId = (id: string): boolean => {
+  return typeof id === "string" && id.startsWith("cs_") && id.length > 10 && id.length < 200;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -17,8 +22,60 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
+  const supabaseAuth = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
+
   try {
     const { sessionId } = await req.json();
+
+    // SECURITY: Validate session ID format
+    if (!sessionId || !isValidStripeSessionId(sessionId)) {
+      return new Response(JSON.stringify({ error: "Invalid session ID format" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    // SECURITY: Verify the caller is authenticated
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing authorization" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: authData, error: authError } = await supabaseAuth.auth.getUser(token);
+    
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    // Check if this session has already been processed (prevent replay attacks)
+    const { data: existingPayment } = await supabaseClient
+      .from("payments")
+      .select("id")
+      .eq("stripe_checkout_session_id", sessionId)
+      .single();
+
+    if (existingPayment) {
+      // Already processed - return success but don't create duplicate
+      console.log("Payment already processed for session:", sessionId);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Payment already processed",
+        alreadyProcessed: true 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
     
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -42,6 +99,15 @@ serve(async (req) => {
 
     if (!advisorId || !slotId || !clientUserId) {
       throw new Error("Missing metadata");
+    }
+
+    // SECURITY: Verify the caller is the client who made this payment
+    if (clientUserId !== authData.user.id) {
+      console.error("User mismatch:", { clientUserId, callerId: authData.user.id });
+      return new Response(JSON.stringify({ error: "Unauthorized access to this payment" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
     }
 
     // Get client's profile

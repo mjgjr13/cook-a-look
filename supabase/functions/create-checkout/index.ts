@@ -7,11 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation using simple regex and type checks
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 interface CheckoutRequest {
   advisorId: string;
   slotId: string;
-  amount: number;
-  advisorName: string;
   sessionDate: string;
   sessionTime: string;
 }
@@ -21,20 +25,82 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Use service role to fetch advisor data securely
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
   try {
-    const { advisorId, slotId, amount, advisorName, sessionDate, sessionTime }: CheckoutRequest = await req.json();
+    const body = await req.json();
+    const { advisorId, slotId, sessionDate, sessionTime } = body as CheckoutRequest;
+
+    // Validate UUIDs to prevent injection
+    if (!isValidUUID(advisorId) || !isValidUUID(slotId)) {
+      throw new Error("Invalid advisor or slot ID format");
+    }
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Missing authorization header");
     
-    const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
+    const { data, error: authError } = await supabaseClient.auth.getUser(token);
     
-    if (!user?.email) throw new Error("User not authenticated");
+    if (authError || !data.user?.email) {
+      throw new Error("User not authenticated");
+    }
+    const user = data.user;
+
+    // SECURITY: Fetch the advisor's price from database instead of trusting client input
+    const { data: advisor, error: advisorError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, price_per_session, is_advisor, advisor_approved")
+      .eq("id", advisorId)
+      .single();
+
+    if (advisorError || !advisor) {
+      throw new Error("Advisor not found");
+    }
+
+    if (!advisor.is_advisor || !advisor.advisor_approved) {
+      throw new Error("Invalid advisor");
+    }
+
+    if (!advisor.price_per_session || advisor.price_per_session <= 0) {
+      throw new Error("Advisor has not set a valid price");
+    }
+
+    // SECURITY: Verify the slot belongs to this advisor and is not already booked
+    const { data: slot, error: slotError } = await supabaseAdmin
+      .from("availability_slots")
+      .select("id, advisor_id, is_booked, start_time")
+      .eq("id", slotId)
+      .single();
+
+    if (slotError || !slot) {
+      throw new Error("Time slot not found");
+    }
+
+    if (slot.advisor_id !== advisorId) {
+      throw new Error("Slot does not belong to this advisor");
+    }
+
+    if (slot.is_booked) {
+      throw new Error("This time slot is no longer available");
+    }
+
+    // Verify slot is in the future
+    if (new Date(slot.start_time) <= new Date()) {
+      throw new Error("Cannot book a past time slot");
+    }
+
+    const amount = advisor.price_per_session;
+    const advisorName = advisor.full_name || "Style Advisor";
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
