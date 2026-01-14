@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -22,10 +23,82 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Missing Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Initialize Supabase client and verify JWT
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Auth error:", authError?.message || "No user found");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     const { email, name, type }: SignupConfirmationRequest = await req.json();
 
-    if (!email) {
-      throw new Error("Email is required");
+    // Validate input
+    if (!email || typeof email !== "string" || email.length > 255) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (!name || typeof name !== "string" || name.length > 200) {
+      return new Response(
+        JSON.stringify({ error: "Invalid name" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (!["user", "advisor"].includes(type)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid type" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Verify email matches authenticated user to prevent email bombing
+    if (email.toLowerCase() !== user.email?.toLowerCase()) {
+      console.error("Email mismatch: requested", email, "but user is", user.email);
+      return new Response(
+        JSON.stringify({ error: "Email mismatch" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     const firstName = name?.split(" ")[0] || "there";
@@ -133,7 +206,7 @@ const handler = async (req: Request): Promise<Response> => {
       html,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully to", email, "for user", user.id);
 
     return new Response(JSON.stringify({ success: true, ...emailResponse }), {
       status: 200,
