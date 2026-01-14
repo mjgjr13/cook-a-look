@@ -150,15 +150,15 @@ const Advisors = () => {
               <Skeleton className="h-6 w-96 mx-auto" />
             </div>
             <Skeleton className="h-32 w-full mb-12" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i} className="bg-background border border-border overflow-hidden">
-                  <Skeleton className="aspect-[4/5] w-full" />
-                  <div className="p-6">
-                    <Skeleton className="h-4 w-24 mb-2" />
-                    <Skeleton className="h-6 w-32 mb-2" />
-                    <Skeleton className="h-4 w-40 mb-4" />
-                    <Skeleton className="h-16 w-full" />
+                  <Skeleton className="aspect-[3/4] w-full" />
+                  <div className="p-4">
+                    <Skeleton className="h-3 w-20 mb-2" />
+                    <Skeleton className="h-5 w-28 mb-2" />
+                    <Skeleton className="h-3 w-24 mb-3" />
+                    <Skeleton className="h-12 w-full" />
                   </div>
                 </div>
               ))}
@@ -204,7 +204,7 @@ const Advisors = () => {
           </motion.div>
 
           {/* Advisors Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
             {filteredAndSortedAdvisors.map((advisor, index) => {
               const displayName = advisor.full_name || "Style Advisor";
               const displayPrice = advisor.price_per_session || 100;
@@ -217,11 +217,11 @@ const Advisors = () => {
                   key={advisor.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.05 }}
+                  transition={{ duration: 0.6, delay: index * 0.03 }}
                   className="group bg-background border border-border overflow-hidden hover-lift cursor-pointer"
                   onClick={() => handleCardClick(advisor.id)}
                 >
-                  <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+                  <div className="relative aspect-[3/4] overflow-hidden bg-muted">
                     {advisor.avatar_url ? (
                       <img
                         src={advisor.avatar_url}
@@ -230,74 +230,72 @@ const Advisors = () => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-muted to-muted/50">
-                        <span className="text-6xl font-serif">{displayName.charAt(0)}</span>
+                        <span className="text-4xl font-serif">{displayName.charAt(0)}</span>
                       </div>
                     )}
                     {advisor.verified && (
-                      <div className={`absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider ${badgeColors.verified}`}>
-                        Verified Advisor
+                      <div className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider ${badgeColors.verified}`}>
+                        Verified
                       </div>
                     )}
                   </div>
 
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Star className="w-4 h-4 fill-gold text-gold" />
-                      <span className="font-sans text-sm font-medium">
+                  <div className="p-3 lg:p-4">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Star className="w-3 h-3 fill-gold text-gold" />
+                      <span className="font-sans text-xs font-medium">
                         {displayRating.toFixed(1)}
                       </span>
-                      <span className="font-sans text-sm text-muted-foreground">
-                        ({displayReviews} reviews)
+                      <span className="font-sans text-xs text-muted-foreground">
+                        ({displayReviews})
                       </span>
                     </div>
 
-                    <h3 className="font-serif text-xl font-medium mb-1">
+                    <h3 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1">
                       {displayName}
                     </h3>
-                    <p className="font-sans text-sm text-gold mb-2">
+                    <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
                       {advisor.specialty || "Style Consultant"}
-                    </p>
-                    <p className="font-sans text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {advisor.bio || "Passionate about helping clients discover their unique style."}
                     </p>
 
                     {styleTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {styleTags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
+                      <div className="flex flex-wrap gap-1 mb-2 hidden sm:flex">
+                        {styleTags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
                             {tag}
                           </Badge>
                         ))}
                       </div>
                     )}
 
-                    <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground font-sans">
+                    <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground font-sans">
                       {advisor.virtual_available && (
-                        <span className="flex items-center gap-1">
-                          <Video className="w-4 h-4" /> Virtual
+                        <span className="flex items-center gap-0.5">
+                          <Video className="w-3 h-3" /> Virtual
                         </span>
                       )}
-                      {advisor.in_person_available && advisor.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" /> {advisor.location}
+                      {advisor.in_person_available && (
+                        <span className="flex items-center gap-0.5">
+                          <MapPin className="w-3 h-3" /> In-Person
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
                       <span className="font-sans">
-                        <span className="text-lg font-medium">${displayPrice}</span>
-                        <span className="text-sm text-muted-foreground">/session</span>
+                        <span className="text-sm font-medium">${displayPrice}</span>
+                        <span className="text-xs text-muted-foreground">/hr</span>
                       </span>
                       <Button 
                         variant="outline" 
                         size="sm"
+                        className="text-xs h-7 px-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/advisors/${advisor.id}`);
                         }}
                       >
-                        View Profile
+                        View
                       </Button>
                     </div>
                   </div>
