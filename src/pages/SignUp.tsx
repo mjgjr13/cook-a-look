@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { signUpSchema, type SignUpFormData } from "@/lib/validations";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SignUp = () => {
   const { toast } = useToast();
@@ -87,9 +88,18 @@ const SignUp = () => {
         return;
       }
 
+      // Send confirmation email (fire and forget)
+      supabase.functions.invoke("send-signup-confirmation", {
+        body: {
+          email: formData.email,
+          name: fullName,
+          type: "user",
+        },
+      }).catch(console.error);
+
       toast({
         title: "Account created!",
-        description: "Welcome to Cook a Look. You can now sign in.",
+        description: "Welcome to Cook a Look. Check your email for confirmation.",
       });
 
       navigate("/dashboard");
