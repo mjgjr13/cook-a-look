@@ -22,6 +22,7 @@ import TermsOfUse from "./pages/TermsOfUse";
 import NotFound from "./pages/NotFound";
 import AdminLookbook from "./pages/admin/AdminLookbook";
 import AdminAdvisors from "./pages/admin/AdminAdvisors";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
             <Route path="/admin/lookbook" element={
               <ProtectedRoute>
                 <AdminLookbook />
