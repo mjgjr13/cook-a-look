@@ -32,6 +32,8 @@ import {
   instagramSchema
 } from "@/lib/validations";
 import { z } from "zod";
+import LivenessCamera from "@/components/LivenessCamera";
+import { supabase } from "@/integrations/supabase/client";
 
 const benefits = [
   {
@@ -674,44 +676,63 @@ const BecomeAdvisor = () => {
                       </p>
                     </div>
 
-                    {/* Selfie Upload */}
+                    {/* Selfie with Liveness Detection */}
                     <div className="space-y-4">
-                      <Label>Profile Photo (Selfie) *</Label>
+                      <Label>Profile Photo (Live Capture) *</Label>
                       <p className="text-sm text-muted-foreground">
-                        Upload a clear, well-lit photo of yourself. This will be your public profile image.
+                        Take a live photo using your camera. This verifies your identity and will be your public profile image.
                       </p>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors">
-                        {formData.selfiePreview ? (
+                      {formData.selfiePreview ? (
+                        <div className="border-2 border-green-500 rounded-lg p-6 text-center bg-green-500/5">
                           <div className="relative inline-block">
                             <img 
                               src={formData.selfiePreview} 
                               alt="Selfie preview" 
                               className="max-h-48 mx-auto rounded-lg"
                             />
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, selfieFile: null, selfiePreview: "" })}
-                              className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full text-xs"
-                            >
-                              ×
-                            </button>
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center">
+                              <Check className="w-4 h-4" />
+                            </div>
                           </div>
-                        ) : (
-                          <label className="cursor-pointer block">
-                            <Camera className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                            <span className="font-sans text-sm text-muted-foreground">
-                              Click to upload your photo
-                            </span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleFileChange(e, 'selfieFile')}
-                              className="hidden"
-                            />
-                          </label>
-                        )}
-                      </div>
+                          <p className="text-sm text-green-600 mt-3 flex items-center justify-center gap-2">
+                            <Shield className="w-4 h-4" />
+                            Liveness verified
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                            onClick={() => setFormData({ ...formData, selfieFile: null, selfiePreview: "" })}
+                          >
+                            Retake Photo
+                          </Button>
+                        </div>
+                      ) : (
+                        <LivenessCamera
+                          onCapture={(blob, isVerified) => {
+                            const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setFormData({ 
+                                ...formData, 
+                                selfieFile: file,
+                                selfiePreview: reader.result as string
+                              });
+                              if (isVerified) {
+                                toast({
+                                  title: "Liveness verified!",
+                                  description: "Your photo has been captured successfully.",
+                                });
+                              }
+                            };
+                            reader.readAsDataURL(blob);
+                          }}
+                          onCancel={() => {}}
+                        />
+                      )}
                     </div>
+
 
                     {/* ID Upload */}
                     <div className="space-y-4">

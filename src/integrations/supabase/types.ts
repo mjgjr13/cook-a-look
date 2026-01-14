@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      advisor_applications: {
+        Row: {
+          admin_notes: string | null
+          bio: string
+          created_at: string
+          email: string
+          experience: string | null
+          first_name: string
+          id: string
+          id_document_url: string | null
+          in_person: boolean | null
+          instagram: string
+          last_name: string
+          linkedin: string | null
+          liveness_verified: boolean | null
+          phone: string | null
+          portfolio: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string | null
+          specialty: string
+          status: string
+          tiktok: string | null
+          updated_at: string
+          user_id: string | null
+          virtual: boolean | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          bio: string
+          created_at?: string
+          email: string
+          experience?: string | null
+          first_name: string
+          id?: string
+          id_document_url?: string | null
+          in_person?: boolean | null
+          instagram: string
+          last_name: string
+          linkedin?: string | null
+          liveness_verified?: boolean | null
+          phone?: string | null
+          portfolio?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          specialty: string
+          status?: string
+          tiktok?: string | null
+          updated_at?: string
+          user_id?: string | null
+          virtual?: boolean | null
+        }
+        Update: {
+          admin_notes?: string | null
+          bio?: string
+          created_at?: string
+          email?: string
+          experience?: string | null
+          first_name?: string
+          id?: string
+          id_document_url?: string | null
+          in_person?: boolean | null
+          instagram?: string
+          last_name?: string
+          linkedin?: string | null
+          liveness_verified?: boolean | null
+          phone?: string | null
+          portfolio?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          specialty?: string
+          status?: string
+          tiktok?: string | null
+          updated_at?: string
+          user_id?: string | null
+          virtual?: boolean | null
+        }
+        Relationships: []
+      }
       availability_slots: {
         Row: {
           advisor_id: string
@@ -247,6 +328,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
+          demo_availability_enabled: boolean | null
           email: string | null
           experience_years: number | null
           full_name: string | null
@@ -278,6 +360,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          demo_availability_enabled?: boolean | null
           email?: string | null
           experience_years?: number | null
           full_name?: string | null
@@ -309,6 +392,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          demo_availability_enabled?: boolean | null
           email?: string | null
           experience_years?: number | null
           full_name?: string | null

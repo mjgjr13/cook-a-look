@@ -21,6 +21,7 @@ import AccountSettings from "./pages/AccountSettings";
 import TermsOfUse from "./pages/TermsOfUse";
 import NotFound from "./pages/NotFound";
 import AdminLookbook from "./pages/admin/AdminLookbook";
+import AdminAdvisors from "./pages/admin/AdminAdvisors";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,11 @@ const App = () => (
             <Route path="/admin/lookbook" element={
               <ProtectedRoute>
                 <AdminLookbook />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/advisors" element={
+              <ProtectedRoute>
+                <AdminAdvisors />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

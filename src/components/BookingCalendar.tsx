@@ -205,9 +205,9 @@ const BookingCalendar = ({
     }
   };
 
+  // Only disable past dates - allow any future date including weekends
   const disabledDays = [
     { before: new Date() },
-    { dayOfWeek: [0, 6] }, // Disable weekends
   ];
 
   return (
