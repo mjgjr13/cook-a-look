@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Star, Video, MapPin, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -46,6 +46,11 @@ const useFeaturedAdvisors = () => {
 };
 const FeaturedAdvisors = () => {
   const { data: advisors, isLoading } = useFeaturedAdvisors();
+  const navigate = useNavigate();
+
+  const handleCardClick = (advisorId: string) => {
+    navigate(`/advisors/${advisorId}`);
+  };
 
   return (
     <section className="py-24 bg-card overflow-hidden">
@@ -81,7 +86,8 @@ const FeaturedAdvisors = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group bg-background border border-border overflow-hidden hover-lift"
+                className="group bg-background border border-border overflow-hidden hover-lift cursor-pointer"
+                onClick={() => handleCardClick(advisor.id)}
               >
                 <div className="relative aspect-[4/5] overflow-hidden">
                   <img
@@ -129,7 +135,12 @@ const FeaturedAdvisors = () => {
                       </span>
                       <span className="text-sm text-muted-foreground">/session</span>
                     </span>
-                    <Button variant="outline" size="sm" asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={(e) => e.stopPropagation()}
+                      asChild
+                    >
                       <Link to={`/advisors/${advisor.id}`}>Book Now</Link>
                     </Button>
                   </div>
