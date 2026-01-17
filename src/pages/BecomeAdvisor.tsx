@@ -186,12 +186,80 @@ const BecomeAdvisor = () => {
 
     setIsSubmitting(true);
     
-    // For now, just show success (in production, this would call an edge function)
-    // The form data would be sent to a secure edge function for processing
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Get the current session to include auth token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to submit your application.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Prepare the request body with base64-encoded files
+      const requestBody = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        specialty: formData.specialty,
+        experience: formData.experience || undefined,
+        bio: formData.bio,
+        virtual: formData.virtual,
+        inPerson: formData.inPerson,
+        instagram: formData.instagram,
+        tiktok: formData.tiktok || undefined,
+        linkedin: formData.linkedin || undefined,
+        portfolio: formData.portfolio || undefined,
+        selfieBase64: formData.selfiePreview,
+        idBase64: formData.idPreview,
+        selfieFileName: formData.selfieFile?.name,
+        idFileName: formData.idFile?.name,
+      };
+
+      const { data, error } = await supabase.functions.invoke('submit-advisor-application', {
+        body: requestBody,
+      });
+
+      if (error) {
+        console.error("Submission error:", error);
+        toast({
+          title: "Submission Failed",
+          description: error.message || "An error occurred while submitting your application.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.error) {
+        toast({
+          title: "Submission Failed",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Success!
       setIsSubmitted(true);
-    }, 1500);
+      toast({
+        title: "Application Submitted",
+        description: "Your application has been submitted successfully!",
+      });
+    } catch (err: any) {
+      console.error("Error submitting application:", err);
+      toast({
+        title: "Submission Failed",
+        description: err.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (
