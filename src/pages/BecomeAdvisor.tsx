@@ -101,6 +101,7 @@ const BecomeAdvisor = () => {
     portfolio: "",
     selfieFile: null as File | null,
     selfiePreview: "",
+    livenessVerified: false,
     idFile: null as File | null,
     idPreview: "",
     agreeTerms: false,
@@ -219,6 +220,7 @@ const BecomeAdvisor = () => {
         idBase64: formData.idPreview,
         selfieFileName: formData.selfieFile?.name,
         idFileName: formData.idFile?.name,
+        livenessVerified: formData.livenessVerified,
       };
 
       const { data, error } = await supabase.functions.invoke('submit-advisor-application', {
@@ -785,7 +787,8 @@ const BecomeAdvisor = () => {
                               setFormData({ 
                                 ...formData, 
                                 selfieFile: file,
-                                selfiePreview: reader.result as string
+                                selfiePreview: reader.result as string,
+                                livenessVerified: isVerified
                               });
                               if (isVerified) {
                                 toast({
