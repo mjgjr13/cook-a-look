@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Image, Calendar, DollarSign, Shield, Loader2 } from "lucide-react";
+import { Users, Image, Calendar, DollarSign, Loader2 } from "lucide-react";
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [stats, setStats] = useState({
     totalAdvisors: 0,
     pendingApplications: 0,
@@ -20,27 +16,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdminAndFetchStats = async () => {
-      if (!user) {
-        navigate("/signin");
-        return;
-      }
-
-      // Check if user has admin role
-      const { data: hasRole } = await supabase.rpc("has_role", {
-        _user_id: user.id,
-        _role: "admin",
-      });
-
-      if (!hasRole) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-
-      setIsAdmin(true);
-
-      // Fetch dashboard stats
+    const fetchStats = async () => {
+      // Fetch dashboard stats - AdminRoute already verified admin access
       const [advisorsRes, applicationsRes, bookingsRes, lookbookRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact" }).eq("is_advisor", true),
         supabase.from("advisor_applications").select("id", { count: "exact" }).eq("status", "pending"),
@@ -58,31 +35,14 @@ const AdminDashboard = () => {
       setLoading(false);
     };
 
-    checkAdminAndFetchStats();
-  }, [user, navigate]);
+    fetchStats();
+  }, []);
 
   if (loading) {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <Shield className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">
-            You don't have permission to access the admin dashboard.
-          </p>
-          <Button asChild>
-            <Link to="/">Return to Home</Link>
-          </Button>
         </div>
       </Layout>
     );
