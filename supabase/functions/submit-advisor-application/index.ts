@@ -77,6 +77,7 @@ interface ApplicationData {
   idBase64?: string;
   selfieFileName?: string;
   idFileName?: string;
+  livenessVerified?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -339,6 +340,9 @@ const handler = async (req: Request): Promise<Response> => {
       : body.instagram;
 
     // Insert application into database
+    // Only set liveness_verified to true if the client reports it as verified
+    const livenessVerified = body.livenessVerified === true;
+    
     const { data: application, error: insertError } = await supabaseAdmin
       .from("advisor_applications")
       .insert({
@@ -359,7 +363,7 @@ const handler = async (req: Request): Promise<Response> => {
         selfie_url: selfieUrl,
         id_document_url: idUrl,
         status: "pending",
-        liveness_verified: false,
+        liveness_verified: livenessVerified,
       })
       .select()
       .single();
