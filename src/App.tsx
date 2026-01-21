@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import AdminLookbook from "./pages/admin/AdminLookbook";
 import AdminAdvisors from "./pages/admin/AdminAdvisors";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/advisors" element={<Advisors />} />
