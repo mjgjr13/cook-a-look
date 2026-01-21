@@ -38,7 +38,7 @@ export type Database = {
           status: string
           tiktok: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
           virtual: boolean | null
         }
         Insert: {
@@ -64,7 +64,7 @@ export type Database = {
           status?: string
           tiktok?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           virtual?: boolean | null
         }
         Update: {
@@ -90,7 +90,7 @@ export type Database = {
           status?: string
           tiktok?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           virtual?: boolean | null
         }
         Relationships: []
@@ -517,35 +517,6 @@ export type Database = {
       }
     }
     Views: {
-      public_advisor_profiles: {
-        Row: {
-          advisor_approved: boolean | null
-          avatar_url: string | null
-          bio: string | null
-          experience_years: number | null
-          full_name: string | null
-          id: string | null
-          in_person_available: boolean | null
-          instagram_url: string | null
-          is_advisor: boolean | null
-          is_demo: boolean | null
-          languages: string[] | null
-          location: string | null
-          personal_philosophy: string | null
-          portfolio_images: string[] | null
-          portfolio_url: string | null
-          price_per_session: number | null
-          rating: number | null
-          review_count: number | null
-          session_duration: number | null
-          specialty: string | null
-          style_tags: string[] | null
-          target_demographics: string[] | null
-          verified: boolean | null
-          virtual_available: boolean | null
-        }
-        Relationships: []
-      }
       public_featured_advisors: {
         Row: {
           advisor_id: string | null
