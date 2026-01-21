@@ -517,16 +517,7 @@ export type Database = {
       }
     }
     Views: {
-      public_featured_advisors: {
-        Row: {
-          advisor_id: string | null
-          created_at: string | null
-          end_date: string | null
-          id: string | null
-          start_date: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       get_advisor_public_profile: {
