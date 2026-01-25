@@ -208,7 +208,7 @@ const AdminLookbook = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate(-1)}
                 className="gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
