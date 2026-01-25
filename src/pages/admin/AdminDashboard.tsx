@@ -145,15 +145,15 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Payments & Revenue
+                Payments & Withdrawals
               </CardTitle>
               <CardDescription>
-                View payment history and platform revenue
+                View revenue, platform fees, and process advisor withdrawals
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="secondary" className="w-full" disabled>
-                Coming Soon
+              <Button asChild className="w-full">
+                <Link to="/admin/payments">Manage Payments</Link>
               </Button>
             </CardContent>
           </Card>

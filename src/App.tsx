@@ -19,11 +19,13 @@ import Dashboard from "./pages/Dashboard";
 import BookingSuccess from "./pages/BookingSuccess";
 import AdvisorAvailability from "./pages/AdvisorAvailability";
 import AccountSettings from "./pages/AccountSettings";
+import AdvisorEarnings from "./pages/AdvisorEarnings";
 import TermsOfUse from "./pages/TermsOfUse";
 import NotFound from "./pages/NotFound";
 import AdminLookbook from "./pages/admin/AdminLookbook";
 import AdminAdvisors from "./pages/admin/AdminAdvisors";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPayments from "./pages/admin/AdminPayments";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -81,6 +83,16 @@ const App = () => (
               <AdminRoute>
                 <AdminAdvisors />
               </AdminRoute>
+            } />
+            <Route path="/admin/payments" element={
+              <AdminRoute>
+                <AdminPayments />
+              </AdminRoute>
+            } />
+            <Route path="/advisor/earnings" element={
+              <ProtectedRoute>
+                <AdvisorEarnings />
+              </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

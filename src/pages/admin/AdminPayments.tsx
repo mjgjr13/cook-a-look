@@ -1,0 +1,565 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Layout from "@/components/layout/Layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { 
+  ArrowLeft, 
+  DollarSign, 
+  TrendingUp, 
+  Users,
+  ArrowDownToLine,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  RefreshCw
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+
+interface Payment {
+  id: string;
+  amount: number;
+  advisor_payout: number;
+  platform_fee: number;
+  tax_amount: number;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  advisor_id: string;
+  client_id: string;
+}
+
+interface WithdrawalRequest {
+  id: string;
+  advisor_id: string;
+  amount: number;
+  status: string;
+  payment_method: string | null;
+  admin_notes: string | null;
+  created_at: string;
+  processed_at: string | null;
+  advisor_name?: string;
+}
+
+interface PlatformStats {
+  totalRevenue: number;
+  platformFees: number;
+  advisorPayouts: number;
+  pendingWithdrawals: number;
+  totalTransactions: number;
+  thisMonthRevenue: number;
+}
+
+const AdminPayments = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [stats, setStats] = useState<PlatformStats>({
+    totalRevenue: 0,
+    platformFees: 0,
+    advisorPayouts: 0,
+    pendingWithdrawals: 0,
+    totalTransactions: 0,
+    thisMonthRevenue: 0,
+  });
+  
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null);
+  const [actionType, setActionType] = useState<"approve" | "reject" | "complete" | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      // Load all payments
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (paymentsError) throw paymentsError;
+      setPayments(paymentsData || []);
+
+      // Load all withdrawal requests with advisor names
+      const { data: withdrawalsData, error: withdrawalsError } = await supabase
+        .from("withdrawal_requests")
+        .select(`
+          *,
+          profiles!withdrawal_requests_advisor_id_fkey (full_name)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (withdrawalsError) throw withdrawalsError;
+      
+      const withdrawalsWithNames = (withdrawalsData || []).map(w => ({
+        ...w,
+        advisor_name: (w.profiles as { full_name: string } | null)?.full_name || "Unknown",
+      }));
+      setWithdrawals(withdrawalsWithNames);
+
+      // Calculate stats
+      const completedPayments = (paymentsData || []).filter(p => p.status === "completed");
+      const totalRevenue = completedPayments.reduce((sum, p) => sum + Number(p.total_amount), 0);
+      const platformFees = completedPayments.reduce((sum, p) => sum + Number(p.platform_fee || p.amount * 0.15), 0);
+      const advisorPayouts = completedPayments.reduce((sum, p) => sum + Number(p.advisor_payout || p.amount * 0.85), 0);
+      const pendingWithdrawals = (withdrawalsData || [])
+        .filter(w => w.status === "pending" || w.status === "approved")
+        .reduce((sum, w) => sum + Number(w.amount), 0);
+
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const thisMonthRevenue = completedPayments
+        .filter(p => new Date(p.created_at) >= thisMonthStart)
+        .reduce((sum, p) => sum + Number(p.total_amount), 0);
+
+      setStats({
+        totalRevenue,
+        platformFees,
+        advisorPayouts,
+        pendingWithdrawals,
+        totalTransactions: completedPayments.length,
+        thisMonthRevenue,
+      });
+
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast({
+        title: "Error loading data",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleWithdrawalAction = async () => {
+    if (!selectedWithdrawal || !actionType) return;
+
+    setIsProcessing(true);
+
+    try {
+      const updates: Record<string, unknown> = {};
+      
+      switch (actionType) {
+        case "approve":
+          updates.status = "approved";
+          break;
+        case "reject":
+          updates.status = "rejected";
+          updates.processed_at = new Date().toISOString();
+          break;
+        case "complete":
+          updates.status = "completed";
+          updates.processed_at = new Date().toISOString();
+          break;
+      }
+
+      const { error } = await supabase
+        .from("withdrawal_requests")
+        .update(updates)
+        .eq("id", selectedWithdrawal.id);
+
+      if (error) throw error;
+
+      toast({
+        title: `Withdrawal ${actionType}d`,
+        description: `The withdrawal request has been ${actionType}d.`,
+      });
+
+      loadData();
+    } catch (error) {
+      console.error("Action error:", error);
+      toast({
+        title: "Action failed",
+        description: "Failed to process the withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      setSelectedWithdrawal(null);
+      setActionType(null);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Completed</Badge>;
+      case "pending":
+        return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">Pending</Badge>;
+      case "approved":
+        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Approved</Badge>;
+      case "rejected":
+        return <Badge className="bg-red-500/10 text-red-600 border-red-500/20">Rejected</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-gold" />
+        </div>
+      </Layout>
+    );
+  }
+
+  const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
+  const approvedWithdrawals = withdrawals.filter(w => w.status === "approved");
+
+  return (
+    <Layout>
+      <section className="py-16 bg-card min-h-screen">
+        <div className="container mx-auto px-6 lg:px-8 max-w-7xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-1">
+                  Admin Panel
+                </p>
+                <h1 className="font-serif text-2xl md:text-3xl font-medium">
+                  Payments & Withdrawals
+                </h1>
+              </div>
+            </div>
+            <Button variant="outline" onClick={loadData}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Revenue
+                  </CardTitle>
+                  <DollarSign className="w-4 h-4 text-gold" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ${stats.totalRevenue.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats.totalTransactions} transactions
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Platform Fees (15%)
+                  </CardTitle>
+                  <TrendingUp className="w-4 h-4 text-gold" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    ${stats.platformFees.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your commission
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Advisor Payouts
+                  </CardTitle>
+                  <Users className="w-4 h-4 text-gold" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ${stats.advisorPayouts.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Total owed to advisors
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Pending Withdrawals
+                  </CardTitle>
+                  <ArrowDownToLine className="w-4 h-4 text-gold" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    ${stats.pendingWithdrawals.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {pendingWithdrawals.length + approvedWithdrawals.length} requests
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Tabs */}
+          <Tabs defaultValue="withdrawals" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="withdrawals" className="relative">
+                Withdrawal Requests
+                {pendingWithdrawals.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {pendingWithdrawals.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="payments">Payment History</TabsTrigger>
+            </TabsList>
+
+            {/* Withdrawals Tab */}
+            <TabsContent value="withdrawals">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Withdrawal Requests</CardTitle>
+                  <CardDescription>
+                    Review and process advisor withdrawal requests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {withdrawals.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      No withdrawal requests yet.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Advisor</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {withdrawals.map((withdrawal) => (
+                          <TableRow key={withdrawal.id}>
+                            <TableCell>
+                              {format(new Date(withdrawal.created_at), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {withdrawal.advisor_name}
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              ${Number(withdrawal.amount).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="capitalize">
+                              {withdrawal.payment_method?.replace("_", " ") || "—"}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                {withdrawal.status === "pending" && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-green-600 border-green-600"
+                                      onClick={() => {
+                                        setSelectedWithdrawal(withdrawal);
+                                        setActionType("approve");
+                                      }}
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-600 border-red-600"
+                                      onClick={() => {
+                                        setSelectedWithdrawal(withdrawal);
+                                        setActionType("reject");
+                                      }}
+                                    >
+                                      <XCircle className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                {withdrawal.status === "approved" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedWithdrawal(withdrawal);
+                                      setActionType("complete");
+                                    }}
+                                  >
+                                    Mark Complete
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Payments Tab */}
+            <TabsContent value="payments">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment History</CardTitle>
+                  <CardDescription>
+                    All completed payments on the platform
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {payments.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      No payments yet.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Total Amount</TableHead>
+                          <TableHead>Platform Fee</TableHead>
+                          <TableHead>Advisor Payout</TableHead>
+                          <TableHead>Tax</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {payments.slice(0, 50).map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell>
+                              {format(new Date(payment.created_at), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className="font-semibold">
+                              ${Number(payment.total_amount).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-green-600">
+                              +${Number(payment.platform_fee || payment.amount * 0.15).toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              ${Number(payment.advisor_payout || payment.amount * 0.85).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              ${Number(payment.tax_amount || 0).toFixed(2)}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </section>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!selectedWithdrawal && !!actionType} onOpenChange={() => {
+        setSelectedWithdrawal(null);
+        setActionType(null);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "approve" && "Approve Withdrawal?"}
+              {actionType === "reject" && "Reject Withdrawal?"}
+              {actionType === "complete" && "Mark as Complete?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve" && (
+                <>This will approve the withdrawal request for ${selectedWithdrawal?.amount.toFixed(2)}. 
+                The advisor will be notified that their request is being processed.</>
+              )}
+              {actionType === "reject" && (
+                <>This will reject the withdrawal request. The amount will be returned to the advisor's available balance.</>
+              )}
+              {actionType === "complete" && (
+                <>This confirms that the payment of ${selectedWithdrawal?.amount.toFixed(2)} has been sent to the advisor.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleWithdrawalAction}
+              disabled={isProcessing}
+              className={actionType === "reject" ? "bg-red-600 hover:bg-red-700" : ""}
+            >
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Layout>
+  );
+};
+
+export default AdminPayments;
