@@ -139,17 +139,24 @@ serve(async (req) => {
       .update({ is_booked: true })
       .eq("id", slotId);
 
-    // Record the payment
+    // Record the payment with platform fee breakdown
     const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
     const taxAmount = session.total_details?.amount_tax ? session.total_details.amount_tax / 100 : 0;
+    const baseAmount = totalAmount - taxAmount;
+    
+    // Calculate 15% platform fee and 85% advisor payout
+    const platformFee = Number((baseAmount * 0.15).toFixed(2));
+    const advisorPayout = Number((baseAmount * 0.85).toFixed(2));
 
     await supabaseClient.from("payments").insert({
       booking_id: booking.id,
       client_id: clientProfile.id,
       advisor_id: advisorId,
-      amount: totalAmount - taxAmount,
+      amount: baseAmount,
       tax_amount: taxAmount,
       total_amount: totalAmount,
+      platform_fee: platformFee,
+      advisor_payout: advisorPayout,
       stripe_checkout_session_id: sessionId,
       stripe_payment_intent_id: typeof session.payment_intent === "string" 
         ? session.payment_intent 

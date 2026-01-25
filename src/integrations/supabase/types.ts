@@ -268,12 +268,14 @@ export type Database = {
       payments: {
         Row: {
           advisor_id: string
+          advisor_payout: number | null
           amount: number
           booking_id: string | null
           client_id: string
           created_at: string | null
           currency: string | null
           id: string
+          platform_fee: number | null
           status: string | null
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -283,12 +285,14 @@ export type Database = {
         }
         Insert: {
           advisor_id: string
+          advisor_payout?: number | null
           amount: number
           booking_id?: string | null
           client_id: string
           created_at?: string | null
           currency?: string | null
           id?: string
+          platform_fee?: number | null
           status?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -298,12 +302,14 @@ export type Database = {
         }
         Update: {
           advisor_id?: string
+          advisor_payout?: number | null
           amount?: number
           booking_id?: string | null
           client_id?: string
           created_at?: string | null
           currency?: string | null
           id?: string
+          platform_fee?: number | null
           status?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
