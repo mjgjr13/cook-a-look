@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, User, Bell, Shield, CreditCard } from "lucide-react";
+import { ArrowLeft, Save, User, Bell, Shield, CreditCard, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import RewardsCard from "@/components/dashboard/RewardsCard";
+import PortfolioUpload from "@/components/advisor/PortfolioUpload";
 
 interface Profile {
   id: string;
@@ -31,6 +32,7 @@ interface Profile {
   personal_philosophy: string;
   instagram_url: string;
   portfolio_url: string;
+  portfolio_images: string[];
 }
 
 const AccountSettings = () => {
@@ -102,6 +104,7 @@ const AccountSettings = () => {
         personal_philosophy: profile.personal_philosophy,
         instagram_url: profile.instagram_url,
         portfolio_url: profile.portfolio_url,
+        portfolio_images: profile.portfolio_images,
       })
       .eq("id", profile.id);
 
@@ -338,6 +341,37 @@ const AccountSettings = () => {
                         onChange={(e) => updateProfile("portfolio_url", e.target.value)}
                         placeholder="https://..."
                       />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Portfolio Photos */}
+                  {userId && (
+                    <PortfolioUpload
+                      userId={userId}
+                      currentImages={profile?.portfolio_images || []}
+                      onImagesChange={(images) => updateProfile("portfolio_images", images)}
+                    />
+                  )}
+
+                  <Separator />
+
+                  {/* Earnings Link */}
+                  <div className="bg-muted/50 border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-start gap-3">
+                        <DollarSign className="w-5 h-5 text-gold mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Earnings & Withdrawals</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            View your earnings, request withdrawals, and track payment history.
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="outline" onClick={() => navigate("/advisor/earnings")}>
+                        View Earnings
+                      </Button>
                     </div>
                   </div>
                 </div>
