@@ -4,7 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Image, Calendar, DollarSign, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin } from "lucide-react";
+
+interface DemoAdvisor {
+  id: string;
+  full_name: string | null;
+  specialty: string | null;
+  avatar_url: string | null;
+  location: string | null;
+  rating: number | null;
+  is_demo: boolean;
+}
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -13,16 +25,23 @@ const AdminDashboard = () => {
     totalBookings: 0,
     lookbookItems: 0,
   });
+  const [demoAdvisors, setDemoAdvisors] = useState<DemoAdvisor[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      // Fetch dashboard stats - AdminRoute already verified admin access
-      const [advisorsRes, applicationsRes, bookingsRes, lookbookRes] = await Promise.all([
+    const fetchData = async () => {
+      // Fetch dashboard stats and demo advisors - AdminRoute already verified admin access
+      const [advisorsRes, applicationsRes, bookingsRes, lookbookRes, demoAdvisorsRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact" }).eq("is_advisor", true),
         supabase.from("advisor_applications").select("id", { count: "exact" }).eq("status", "pending"),
         supabase.from("bookings").select("id", { count: "exact" }),
         supabase.from("lookbook_items").select("id", { count: "exact" }),
+        supabase
+          .from("profiles")
+          .select("id, full_name, specialty, avatar_url, location, rating, is_demo")
+          .eq("is_advisor", true)
+          .eq("is_demo", true)
+          .order("full_name"),
       ]);
 
       setStats({
@@ -32,10 +51,11 @@ const AdminDashboard = () => {
         lookbookItems: lookbookRes.count || 0,
       });
 
+      setDemoAdvisors((demoAdvisorsRes.data as DemoAdvisor[]) || []);
       setLoading(false);
     };
 
-    fetchStats();
+    fetchData();
   }, []);
 
   if (loading) {
@@ -103,6 +123,60 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Demo Advisors Section */}
+        {demoAdvisors.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Demo Advisors</h2>
+            <Card>
+              <CardHeader>
+                <CardDescription>
+                  These are demo/test advisors used for showcasing the platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {demoAdvisors.map((advisor) => (
+                    <div
+                      key={advisor.id}
+                      className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30"
+                    >
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={advisor.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {(advisor.full_name || "D").charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium truncate">{advisor.full_name || "Demo Advisor"}</p>
+                          <Badge variant="outline" className="text-xs">Demo</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {advisor.specialty || "Style Advisor"}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          {advisor.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {advisor.location}
+                            </span>
+                          )}
+                          {advisor.rating && (
+                            <span className="flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              {advisor.rating.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Admin Modules */}
         <h2 className="text-xl font-semibold mb-4">Management</h2>
