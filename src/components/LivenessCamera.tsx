@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, RefreshCw, Check, AlertCircle } from "lucide-react";
+import { Camera, RefreshCw, Check, AlertCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ interface LivenessCameraProps {
   onCancel: () => void;
 }
 
-type LivenessStep = "ready" | "detecting" | "blink" | "turn" | "capturing" | "complete";
+type LivenessStep = "ready" | "initializing" | "detecting" | "blink" | "turn" | "capturing" | "complete";
 
 const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -22,23 +22,110 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
   const [turnDetected, setTurnDetected] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [instructions, setInstructions] = useState("Position your face in the frame");
+  const [browserSupported, setBrowserSupported] = useState(true);
+
+  // Check browser compatibility on mount
+  useEffect(() => {
+    const checkBrowserSupport = () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setBrowserSupported(false);
+        setError(
+          "Your browser doesn't support camera access. Please use a modern browser like Chrome, Safari, Firefox, or Edge."
+        );
+        return false;
+      }
+      
+      // Check if we're on HTTPS or localhost
+      const isSecure = window.location.protocol === "https:" || 
+                       window.location.hostname === "localhost" ||
+                       window.location.hostname === "127.0.0.1";
+      
+      if (!isSecure) {
+        setBrowserSupported(false);
+        setError(
+          "Camera access requires a secure connection (HTTPS). Please access this page via HTTPS."
+        );
+        return false;
+      }
+      
+      return true;
+    };
+
+    checkBrowserSupport();
+  }, []);
 
   const startCamera = useCallback(async () => {
+    if (!browserSupported) return;
+    
     try {
       setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "user",
-          width: { ideal: 640 },
-          height: { ideal: 480 }
+      setStep("initializing");
+      setInstructions("Starting camera...");
+
+      // Try primary configuration first
+      let stream: MediaStream | null = null;
+      const configurations = [
+        // Primary: standard front camera
+        { 
+          video: { 
+            facingMode: "user",
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false 
         },
-        audio: false
-      });
+        // Fallback 1: any front camera without dimension constraints
+        { 
+          video: { facingMode: "user" },
+          audio: false 
+        },
+        // Fallback 2: any camera at all
+        { 
+          video: true,
+          audio: false 
+        }
+      ];
+
+      for (const config of configurations) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(config);
+          break;
+        } catch (configError) {
+          console.log("Camera config failed, trying next:", config, configError);
+          continue;
+        }
+      }
+
+      if (!stream) {
+        throw new Error("No camera configuration worked");
+      }
       
       streamRef.current = stream;
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) {
+            reject(new Error("Video element not found"));
+            return;
+          }
+          
+          const video = videoRef.current;
+          
+          video.onloadedmetadata = () => {
+            video.play()
+              .then(() => resolve())
+              .catch(reject);
+          };
+          
+          video.onerror = () => reject(new Error("Video failed to load"));
+          
+          // Timeout after 10 seconds
+          setTimeout(() => reject(new Error("Camera initialization timed out")), 10000);
+        });
+        
         setStep("detecting");
         setInstructions("Hold steady - detecting your face...");
         
@@ -50,9 +137,46 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
       }
     } catch (err) {
       console.error("Camera error:", err);
-      setError("Unable to access camera. Please ensure camera permissions are granted and try again.");
+      
+      // Provide specific error messages based on error type
+      let errorMessage = "Unable to access camera. ";
+      
+      if (err instanceof DOMException) {
+        switch (err.name) {
+          case "NotAllowedError":
+          case "PermissionDeniedError":
+            errorMessage = "Camera access was denied. Please allow camera access in your browser settings:\n\n" +
+              "• Click the camera icon in your browser's address bar\n" +
+              "• Select 'Allow' for camera access\n" +
+              "• Refresh the page and try again";
+            break;
+          case "NotFoundError":
+          case "DevicesNotFoundError":
+            errorMessage = "No camera was found on your device. Please ensure:\n\n" +
+              "• Your device has a working camera\n" +
+              "• The camera is not being used by another application\n" +
+              "• Camera drivers are properly installed";
+            break;
+          case "NotReadableError":
+          case "TrackStartError":
+            errorMessage = "Camera is in use by another application. Please:\n\n" +
+              "• Close other apps using the camera (video calls, camera apps)\n" +
+              "• Refresh the page and try again";
+            break;
+          case "OverconstrainedError":
+            errorMessage = "Camera settings are not supported. Trying alternative settings...";
+            break;
+          default:
+            errorMessage += "Please check your camera permissions and try again.";
+        }
+      } else {
+        errorMessage += "Please check that your camera is working and try again.";
+      }
+      
+      setError(errorMessage);
+      setStep("ready");
     }
-  }, []);
+  }, [browserSupported]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -67,10 +191,9 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
     };
   }, [stopCamera]);
 
-  // Simulated liveness detection (in production, use a proper face detection library)
+  // Liveness detection sequence
   useEffect(() => {
     if (step === "blink") {
-      // Simulate blink detection after user interaction
       const timer = setTimeout(() => {
         setBlinkDetected(true);
         setStep("turn");
@@ -155,14 +278,28 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
     <div className="space-y-4">
       <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden">
         {step === "ready" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
             <Camera className="w-16 h-16 mb-4 opacity-50" />
-            <p className="text-sm text-center px-4 mb-4">
+            <p className="text-sm text-center mb-4">
               We'll guide you through a quick liveness check to verify your identity
             </p>
-            <Button onClick={startCamera} variant="secondary">
-              Start Camera
-            </Button>
+            {!browserSupported ? (
+              <div className="text-center">
+                <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                <p className="text-sm text-red-300 whitespace-pre-line">{error}</p>
+              </div>
+            ) : (
+              <Button onClick={startCamera} variant="secondary">
+                <Camera className="w-4 h-4 mr-2" />
+                Start Camera
+              </Button>
+            )}
+          </div>
+        ) : step === "initializing" ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+            <Loader2 className="w-12 h-12 animate-spin mb-4" />
+            <p className="text-sm">Starting camera...</p>
+            <p className="text-xs text-white/60 mt-2">Please allow camera access when prompted</p>
           </div>
         ) : (
           <>
@@ -171,6 +308,7 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
               className="w-full h-full object-cover transform scale-x-[-1]"
               playsInline
               muted
+              autoPlay
             />
             
             {/* Face guide overlay */}
@@ -237,10 +375,10 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
           </>
         )}
 
-        {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4">
+        {error && step !== "ready" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-6">
             <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-            <p className="text-sm text-center mb-4">{error}</p>
+            <p className="text-sm text-center whitespace-pre-line mb-4">{error}</p>
             <Button onClick={handleRetry} variant="secondary" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
@@ -299,7 +437,7 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
         >
           Cancel
         </Button>
-        {step !== "ready" && step !== "complete" && (
+        {step !== "ready" && step !== "complete" && step !== "initializing" && (
           <Button 
             variant="outline" 
             onClick={handleRetry}

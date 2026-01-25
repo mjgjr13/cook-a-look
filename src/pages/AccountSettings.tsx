@@ -234,6 +234,20 @@ const AccountSettings = () => {
                 <div className="bg-background border border-border p-6 space-y-6">
                   <h2 className="font-serif text-xl font-medium">Advisor Settings</h2>
 
+                  {/* Platform Fee Info Box */}
+                  <div className="bg-muted/50 border border-border rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="w-5 h-5 text-gold mt-0.5" />
+                      <div>
+                        <p className="font-medium text-sm">Platform Fee Structure</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Cook a Look charges a 15% platform fee on all bookings. The price you set is what clients pay. 
+                          You receive 85% of each booking after the platform fee is deducted.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="specialty">Specialty</Label>
@@ -251,6 +265,11 @@ const AccountSettings = () => {
                         value={profile?.price_per_session || ""}
                         onChange={(e) => updateProfile("price_per_session", parseInt(e.target.value))}
                       />
+                      {profile?.price_per_session && profile.price_per_session > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          You will receive: <span className="font-semibold text-green-600">${(profile.price_per_session * 0.85).toFixed(2)}</span> (after 15% Cook a Look fee)
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="duration">Session Duration (minutes)</Label>
