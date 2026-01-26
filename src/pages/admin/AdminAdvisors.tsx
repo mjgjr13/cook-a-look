@@ -118,10 +118,11 @@ const AdminAdvisors = () => {
         if (error) throw error;
         setApplications((data as AdvisorApplication[]) || []);
       } else {
+        // Fetch ALL advisor profiles regardless of verification/demo status
         const { data, error } = await supabase
           .from("profiles")
           .select("id, full_name, email, specialty, is_demo, advisor_approved, demo_availability_enabled, created_at")
-          .eq("is_advisor", true)
+          .or("is_advisor.eq.true,is_demo.eq.true")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
