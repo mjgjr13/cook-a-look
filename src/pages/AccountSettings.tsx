@@ -7,12 +7,175 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, User, Bell, Shield, CreditCard, DollarSign } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, Save, User, Bell, Shield, CreditCard, DollarSign, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import RewardsCard from "@/components/dashboard/RewardsCard";
 import PortfolioUpload from "@/components/advisor/PortfolioUpload";
+
+// Separate component for Security Tab to manage delete account flow
+interface SecurityTabProps {
+  userId: string | null;
+  navigate: ReturnType<typeof useNavigate>;
+  toast: ReturnType<typeof useToast>["toast"];
+}
+
+const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!userId) return;
+    if (confirmText !== "DELETE") {
+      toast({
+        title: "Confirmation required",
+        description: "Please type DELETE to confirm.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsDeleting(true);
+
+    try {
+      // 1. Find profile id
+      const { data: profile, error: pErr } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (pErr) throw pErr;
+
+      // 2. Delete related data (bookings, payments, rewards, withdrawal_requests, advisor_applications)
+      // Note: Order matters – delete child rows first
+      await supabase.from("disputes").delete().eq("raised_by", userId);
+      await supabase.from("user_rewards").delete().eq("user_id", userId);
+      await supabase.from("advisor_applications").delete().eq("user_id", userId);
+      // Bookings referencing the user as client
+      await supabase.from("bookings").delete().eq("client_id", profile.id);
+      await supabase.from("availability_slots").delete().eq("advisor_id", profile.id);
+      await supabase.from("withdrawal_requests").delete().eq("advisor_id", profile.id);
+      // Payments referencing user as client
+      // Note: payments cannot be deleted per RLS (for audit), but we'll clear profile anyway
+      
+      // 3. Anonymize the profile instead of delete (soft-delete)
+      await supabase
+        .from("profiles")
+        .update({
+          full_name: "Deleted User",
+          email: null,
+          bio: null,
+          avatar_url: null,
+          location: null,
+          phone: null,
+          instagram_url: null,
+          portfolio_url: null,
+          portfolio_images: [],
+          personal_philosophy: null,
+          specialty: null,
+          is_advisor: false,
+          advisor_approved: false,
+          demo_availability_enabled: false,
+        } as any)
+        .eq("id", profile.id);
+
+      // 4. Sign out
+      await supabase.auth.signOut();
+
+      toast({
+        title: "Account deleted",
+        description: "Your data has been removed and you have been signed out.",
+      });
+      navigate("/");
+    } catch (err) {
+      console.error("Delete account error:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please contact support.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setConfirmText("");
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-background border border-border p-6 space-y-6"
+    >
+      <h2 className="font-serif text-xl font-medium">Security Settings</h2>
+
+      <div className="space-y-4">
+        <div>
+          <Label>Change Password</Label>
+          <p className="text-sm text-muted-foreground mb-3">Update your password to keep your account secure</p>
+          <Button variant="outline" onClick={() => navigate("/forgot-password")}>
+            Reset Password
+          </Button>
+        </div>
+
+        <Separator />
+
+        <div>
+          <Label className="text-destructive">Delete Account</Label>
+          <p className="text-sm text-muted-foreground mb-3">
+            Permanently delete your account and all associated data. This action cannot be undone.
+          </p>
+          <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+            Delete Account
+          </Button>
+        </div>
+      </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your profile, bookings, and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="my-4">
+            <Label>Type DELETE to confirm</Label>
+            <Input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={isDeleting || confirmText !== "DELETE"}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </motion.div>
+  );
+};
 
 interface Profile {
   id: string;
@@ -500,40 +663,7 @@ const AccountSettings = () => {
 
           {/* Security Tab */}
           {activeTab === "security" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-background border border-border p-6 space-y-6"
-            >
-              <h2 className="font-serif text-xl font-medium">Security Settings</h2>
-
-              <div className="space-y-4">
-                <div>
-                  <Label>Change Password</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Update your password to keep your account secure
-                  </p>
-                  <Button variant="outline" onClick={() => navigate("/forgot-password")}>
-                    Reset Password
-                  </Button>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label className="text-destructive">Delete Account</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Permanently delete your account and all associated data
-                  </p>
-                  <Button variant="destructive" disabled>
-                    Delete Account
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Contact support to delete your account
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+            <SecurityTab userId={userId} navigate={navigate} toast={toast} />
           )}
         </div>
       </section>

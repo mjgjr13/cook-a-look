@@ -1,13 +1,32 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Menu, X, User, Settings, LogOut, LayoutDashboard, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CookALookLogo from "@/components/CookALookLogo";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
+
+const ADMIN_EMAIL = "marceljeangillesjr@gmail.com";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isLoading, signOut } = useAuth();
+
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const navLinks = [
     { name: "Style Advisors", path: "/advisors" },
@@ -16,6 +35,53 @@ const Navbar = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Fetch user profile info (name/avatar) once user loads
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) {
+        setProfileName(null);
+        setProfileAvatar(null);
+        setIsAdmin(false);
+        return;
+      }
+
+      // Check admin
+      if (user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+        setIsAdmin(data === true);
+      } else {
+        setIsAdmin(false);
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        setProfileName(profile.full_name);
+        setProfileAvatar(profile.avatar_url);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "U";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
@@ -33,9 +99,7 @@ const Navbar = () => {
                 key={link.path}
                 to={link.path}
                 className={`text-sm tracking-wide font-sans transition-colors duration-200 ${
-                  isActive(link.path)
-                    ? "text-foreground font-medium"
-                    : "text-muted-foreground hover:text-foreground"
+                  isActive(link.path) ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {link.name}
@@ -43,26 +107,99 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Auth Buttons */}
+          {/* Auth Buttons / User Menu */}
           <div className="hidden lg:flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/signin">Sign In</Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/signup">Create Account</Link>
-            </Button>
+            {isLoading ? (
+              <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={profileAvatar || undefined} alt={profileName || "User"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">{getInitials(profileName)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex flex-col space-y-1 p-2">
+                    <p className="text-sm font-medium leading-none">{profileName || "User"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="cursor-pointer flex items-center gap-2">
+                      <LayoutDashboard className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="cursor-pointer flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="cursor-pointer flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer flex items-center gap-2">
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/signin">Sign In</Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/signup">Create Account</Link>
+                </Button>
+              </>
+            )}
           </div>
 
-          {/* Mobile: Sign In + Menu Button */}
+          {/* Mobile: Avatar or Sign In + Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/signin">Sign In</Link>
-            </Button>
-            <button
-              className="p-2"
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle menu"
-            >
+            {!isLoading && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-9 w-9 rounded-full p-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={profileAvatar || undefined} alt={profileName || "User"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">{getInitials(profileName)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings">Settings</Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin">Admin</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : !isLoading ? (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/signin">Sign In</Link>
+              </Button>
+            ) : null}
+            <button className="p-2" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -85,26 +222,26 @@ const Navbar = () => {
                   to={link.path}
                   onClick={() => setIsOpen(false)}
                   className={`block py-2 text-lg font-sans ${
-                    isActive(link.path)
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground"
+                    isActive(link.path) ? "text-foreground font-medium" : "text-muted-foreground"
                   }`}
                 >
                   {link.name}
                 </Link>
               ))}
-              <div className="flex flex-col gap-3 pt-4 border-t border-border">
-                <Button variant="ghost" asChild>
-                  <Link to="/signin" onClick={() => setIsOpen(false)}>
-                    Sign In
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/signup" onClick={() => setIsOpen(false)}>
-                    Create Account
-                  </Link>
-                </Button>
-              </div>
+              {!user && (
+                <div className="flex flex-col gap-3 pt-4 border-t border-border">
+                  <Button variant="ghost" asChild>
+                    <Link to="/signin" onClick={() => setIsOpen(false)}>
+                      Sign In
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link to="/signup" onClick={() => setIsOpen(false)}>
+                      Create Account
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

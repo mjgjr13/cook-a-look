@@ -43,8 +43,16 @@ import {
   useUploadLookbookImage,
   LookbookItem,
 } from "@/hooks/useLookbookItems";
+import {
+  useLookbookCategories,
+  useCreateLookbookCategory,
+  useUpdateLookbookCategory,
+  useDeleteLookbookCategory,
+  LookbookCategory,
+} from "@/hooks/useLookbookCategories";
 
-const categories = ["Business", "Casual", "Evening", "Streetwear", "Formal", "Athletic"];
+// Hardcoded fallback in case DB is empty
+const DEFAULT_CATEGORIES = ["Business", "Casual", "Evening", "Streetwear", "Formal", "Athletic"];
 const aspectRatios = [
   { value: "square", label: "Square (1:1)" },
   { value: "tall", label: "Portrait (3:4)" },
@@ -74,10 +82,17 @@ const emptyForm: LookbookFormData = {
 const AdminLookbook = () => {
   const navigate = useNavigate();
   const { data: items, isLoading } = useLookbookItems(true);
+  const { data: dbCategories, isLoading: catLoading } = useLookbookCategories(true);
   const createItem = useCreateLookbookItem();
   const updateItem = useUpdateLookbookItem();
   const deleteItem = useDeleteLookbookItem();
   const uploadImage = useUploadLookbookImage();
+  const createCategory = useCreateLookbookCategory();
+  const updateCategory = useUpdateLookbookCategory();
+  const deleteCategory = useDeleteLookbookCategory();
+
+  // Merged category list (db categories first, then fallback)
+  const categories = dbCategories?.map((c) => c.name) ?? DEFAULT_CATEGORIES;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<LookbookItem | null>(null);
@@ -85,6 +100,13 @@ const AdminLookbook = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<LookbookItem | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Category management dialog state
+  const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [editCatId, setEditCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [catDeleting, setCatDeleting] = useState<string | null>(null);
 
   const handleOpenCreate = () => {
     setEditingItem(null);
@@ -504,14 +526,164 @@ const AdminLookbook = () => {
         </div>
       </section>
 
+      {/* Category Management Section */}
+      <section className="py-8 bg-card border-t border-border">
+        <div className="container mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-serif text-xl font-medium">Manage Categories</h2>
+            <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Category
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Add New Category</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div>
+                    <Label htmlFor="newCatName">Name</Label>
+                    <Input
+                      id="newCatName"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="e.g. Vacation"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setCatDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        if (!newCategoryName.trim()) {
+                          toast.error("Please enter a name");
+                          return;
+                        }
+                        try {
+                          await createCategory.mutateAsync(newCategoryName.trim());
+                          toast.success("Category added");
+                          setNewCategoryName("");
+                          setCatDialogOpen(false);
+                        } catch {
+                          toast.error("Failed to add category");
+                        }
+                      }}
+                      disabled={createCategory.isPending}
+                    >
+                      {createCategory.isPending ? "Adding..." : "Add"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {catLoading ? (
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {(dbCategories ?? []).map((cat) => (
+                <div
+                  key={cat.id}
+                  className="flex items-center gap-1 bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm group"
+                >
+                  {editCatId === cat.id ? (
+                    <>
+                      <Input
+                        value={editCatName}
+                        onChange={(e) => setEditCatName(e.target.value)}
+                        className="h-6 w-24 px-1 text-xs"
+                        autoFocus
+                        onKeyDown={async (e) => {
+                          if (e.key === "Enter") {
+                            if (!editCatName.trim()) return;
+                            await updateCategory.mutateAsync({ id: cat.id, name: editCatName.trim() });
+                            setEditCatId(null);
+                            toast.success("Updated");
+                          }
+                        }}
+                      />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-5 w-5"
+                        onClick={async () => {
+                          if (!editCatName.trim()) return;
+                          await updateCategory.mutateAsync({ id: cat.id, name: editCatName.trim() });
+                          setEditCatId(null);
+                          toast.success("Updated");
+                        }}
+                      >
+                        ✓
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-5 w-5"
+                        onClick={() => setEditCatId(null)}
+                      >
+                        ×
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span>{cat.name}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                          setEditCatId(cat.id);
+                          setEditCatName(cat.name);
+                        }}
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-5 w-5 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={async () => {
+                          setCatDeleting(cat.id);
+                          try {
+                            await deleteCategory.mutateAsync(cat.id);
+                            toast.success("Category deleted");
+                          } catch {
+                            toast.error("Failed to delete category");
+                          } finally {
+                            setCatDeleting(null);
+                          }
+                        }}
+                        disabled={catDeleting === cat.id}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ))}
+              {(!dbCategories || dbCategories.length === 0) && (
+                <p className="text-sm text-muted-foreground">No categories yet. Add one above.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Lookbook Item</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{itemToDelete?.title}"? This action cannot
-              be undone.
+              Are you sure you want to delete "{itemToDelete?.title}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
