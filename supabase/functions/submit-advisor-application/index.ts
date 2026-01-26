@@ -63,6 +63,7 @@ interface ApplicationData {
   firstName: string;
   lastName: string;
   email: string;
+  password: string;
   phone?: string;
   specialty: string;
   experience?: string;
@@ -80,6 +81,12 @@ interface ApplicationData {
   livenessVerified?: boolean;
 }
 
+const validatePassword = (password: string): boolean => {
+  if (!password || typeof password !== "string") return false;
+  if (password.length < 8 || password.length > 72) return false;
+  return true;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -89,43 +96,16 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("submit-advisor-application: Starting request processing");
 
-    // Validate Authorization header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      console.error("Missing Authorization header");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Initialize Supabase client for auth verification
+    // Initialize Supabase admin client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
     });
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error("Auth error:", authError?.message || "No user found");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    console.log("submit-advisor-application: User authenticated:", user.id);
 
     // Parse request body
     const body: ApplicationData = await req.json();
@@ -141,6 +121,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
     if (!validateEmail(body.email)) {
       validationErrors.push("Invalid email");
+    }
+    if (!validatePassword(body.password)) {
+      validationErrors.push("Password must be between 8 and 72 characters");
     }
     if (!validateSpecialty(body.specialty)) {
       validationErrors.push("Invalid specialty");
@@ -177,26 +160,52 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify email matches authenticated user
-    if (body.email.toLowerCase() !== user.email?.toLowerCase()) {
-      console.error("Email mismatch: submitted", body.email, "but user is", user.email);
+    // Check if email already exists
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const emailExists = existingUsers?.users?.some(
+      (u) => u.email?.toLowerCase() === body.email.toLowerCase()
+    );
+
+    if (emailExists) {
+      console.error("Email already registered:", body.email);
       return new Response(
-        JSON.stringify({ error: "Email must match your account email" }),
+        JSON.stringify({ error: "This email is already registered. Please sign in instead." }),
         {
-          status: 403,
+          status: 409,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
     }
 
-    // Use service role client for storage and database operations
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+    // Create new auth user
+    const { data: authData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+      email: body.email.toLowerCase().trim(),
+      password: body.password,
+      email_confirm: true, // Auto-confirm email
+      user_metadata: {
+        full_name: `${body.firstName.trim()} ${body.lastName.trim()}`,
+      },
+    });
+
+    if (signUpError || !authData.user) {
+      console.error("Signup error:", signUpError?.message);
+      return new Response(
+        JSON.stringify({ error: signUpError?.message || "Failed to create account" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const userId = authData.user.id;
+    console.log("submit-advisor-application: User created:", userId);
 
     // Check if user already has a pending or approved application
     const { data: existingApp, error: existingError } = await supabaseAdmin
       .from("advisor_applications")
       .select("id, status")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (existingError) {
@@ -248,7 +257,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const selfieExtension = body.selfieFileName.split(".").pop() || "jpg";
-        const selfiePath = `${user.id}/selfie_${Date.now()}.${selfieExtension}`;
+        const selfiePath = `${userId}/selfie_${Date.now()}.${selfieExtension}`;
         
         const { error: selfieUploadError } = await supabaseAdmin.storage
           .from("verifications")
@@ -300,7 +309,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const idExtension = body.idFileName.split(".").pop() || "jpg";
-        const idPath = `${user.id}/id_${Date.now()}.${idExtension}`;
+        const idPath = `${userId}/id_${Date.now()}.${idExtension}`;
         
         const { error: idUploadError } = await supabaseAdmin.storage
           .from("verifications")
@@ -346,7 +355,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: application, error: insertError } = await supabaseAdmin
       .from("advisor_applications")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         first_name: body.firstName.trim(),
         last_name: body.lastName.trim(),
         email: body.email.toLowerCase().trim(),
