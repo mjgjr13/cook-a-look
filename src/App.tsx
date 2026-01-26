@@ -21,6 +21,7 @@ import AdvisorAvailability from "./pages/AdvisorAvailability";
 import AccountSettings from "./pages/AccountSettings";
 import AdvisorEarnings from "./pages/AdvisorEarnings";
 import TermsOfUse from "./pages/TermsOfUse";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import AdminLookbook from "./pages/admin/AdminLookbook";
 import AdminAdvisors from "./pages/admin/AdminAdvisors";
@@ -69,6 +70,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminDashboard />

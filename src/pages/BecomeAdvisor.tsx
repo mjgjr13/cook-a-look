@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,9 @@ import {
   Camera,
   Shield,
   Upload,
-  Check
+  Check,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -29,7 +32,8 @@ import {
   emailSchema,
   specialtySchema,
   bioSchema,
-  instagramSchema
+  instagramSchema,
+  passwordSchema
 } from "@/lib/validations";
 import { z } from "zod";
 import LivenessCamera from "@/components/LivenessCamera";
@@ -69,6 +73,7 @@ interface FormErrors {
   firstName?: string;
   lastName?: string;
   email?: string;
+  password?: string;
   phone?: string;
   specialty?: string;
   bio?: string;
@@ -81,14 +86,17 @@ interface FormErrors {
 
 const BecomeAdvisor = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
+    password: "",
     phone: "",
     specialty: "",
     experience: "",
@@ -117,6 +125,9 @@ const BecomeAdvisor = () => {
         case 'email':
           emailSchema.parse(value);
           break;
+        case 'password':
+          passwordSchema.parse(value);
+          break;
         case 'specialty':
           specialtySchema.parse(value);
           break;
@@ -143,6 +154,18 @@ const BecomeAdvisor = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password before other fields
+    const passwordError = validateField('password', formData.password);
+    if (passwordError) {
+      setErrors((prev) => ({ ...prev, password: passwordError }));
+      toast({
+        title: "Validation Error",
+        description: passwordError,
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Validate all fields before submission
     try {
@@ -188,24 +211,12 @@ const BecomeAdvisor = () => {
     setIsSubmitting(true);
     
     try {
-      // Get the current session to include auth token
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to submit your application.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Prepare the request body with base64-encoded files
+      // Prepare the request body with base64-encoded files and password for signup
       const requestBody = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
+        password: formData.password,
         phone: formData.phone || undefined,
         specialty: formData.specialty,
         experience: formData.experience || undefined,
@@ -238,20 +249,51 @@ const BecomeAdvisor = () => {
       }
 
       if (data?.error) {
-        toast({
-          title: "Submission Failed",
-          description: data.error,
-          variant: "destructive",
-        });
+        // Check for existing email error
+        if (data.error.includes("already registered") || data.error.includes("already exists")) {
+          toast({
+            title: "Email Already Registered",
+            description: "This email is already in use. Please sign in instead or use a different email.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Submission Failed",
+            description: data.error,
+            variant: "destructive",
+          });
+        }
         return;
       }
 
-      // Success!
+      // Sign in the user after successful signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
+
+      if (signInError) {
+        console.error("Auto sign-in error:", signInError);
+        // Application was submitted successfully, but auto sign-in failed
+        toast({
+          title: "Application Submitted",
+          description: "Your application was submitted. Please sign in to continue.",
+        });
+        navigate("/signin");
+        return;
+      }
+
+      // Success! User is now signed in
       setIsSubmitted(true);
       toast({
         title: "Application Submitted",
-        description: "Your application has been submitted successfully!",
+        description: "Your account has been created and application submitted!",
       });
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
     } catch (err: any) {
       console.error("Error submitting application:", err);
       toast({
@@ -312,6 +354,7 @@ const BecomeAdvisor = () => {
       stepErrors.firstName = validateField('firstName', formData.firstName);
       stepErrors.lastName = validateField('lastName', formData.lastName);
       stepErrors.email = validateField('email', formData.email);
+      stepErrors.password = validateField('password', formData.password);
       stepErrors.specialty = validateField('specialty', formData.specialty);
       stepErrors.bio = validateField('bio', formData.bio);
     } else if (currentStep === 2) {
@@ -338,8 +381,8 @@ const BecomeAdvisor = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return formData.firstName && formData.lastName && formData.email && formData.specialty && formData.bio &&
-               !errors.firstName && !errors.lastName && !errors.email && !errors.specialty && !errors.bio;
+        return formData.firstName && formData.lastName && formData.email && formData.password && formData.specialty && formData.bio &&
+               !errors.firstName && !errors.lastName && !errors.email && !errors.password && !errors.specialty && !errors.bio;
       case 2:
         return formData.instagram && !errors.instagram && !errors.portfolio;
       case 3:
@@ -552,19 +595,46 @@ const BecomeAdvisor = () => {
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          className={errors.phone ? "border-destructive" : ""}
-                        />
-                        {errors.phone && (
-                          <p className="text-xs text-destructive">{errors.phone}</p>
+                        <Label htmlFor="password">Password *</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {errors.password ? (
+                          <p className="text-xs text-destructive">{errors.password}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
                         )}
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number (Optional)</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className={errors.phone ? "border-destructive" : ""}
+                      />
+                      {errors.phone && (
+                        <p className="text-xs text-destructive">{errors.phone}</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -950,8 +1020,15 @@ const BecomeAdvisor = () => {
                       />
                       <div>
                         <Label htmlFor="agreeTerms" className="font-normal cursor-pointer leading-relaxed">
-                          I agree to the Terms of Service and Privacy Policy. I confirm that all information 
-                          provided is accurate and that I am authorized to work as a style consultant.
+                          I agree to the{" "}
+                          <Link to="/terms" target="_blank" className="text-gold hover:underline">
+                            Terms of Service
+                          </Link>{" "}
+                          and{" "}
+                          <Link to="/privacy" target="_blank" className="text-gold hover:underline">
+                            Privacy Policy
+                          </Link>
+                          . I confirm that all information provided is accurate and that I am authorized to work as a style consultant.
                         </Label>
                       </div>
                     </div>
