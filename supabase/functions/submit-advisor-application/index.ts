@@ -63,7 +63,6 @@ interface ApplicationData {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
   phone?: string;
   specialty: string;
   experience?: string;
@@ -81,12 +80,6 @@ interface ApplicationData {
   livenessVerified?: boolean;
 }
 
-const validatePassword = (password: string): boolean => {
-  if (!password || typeof password !== "string") return false;
-  if (password.length < 8 || password.length > 72) return false;
-  return true;
-};
-
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -96,10 +89,47 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("submit-advisor-application: Starting request processing");
 
-    // Initialize Supabase admin client
+    // Initialize Supabase clients
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Get the authorization header to verify the user is authenticated
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("No authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required. Please sign in to submit your application." }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Create a client with the user's auth token to verify authentication
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Verify the user is authenticated by getting their user info
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    
+    if (userError || !userData?.user) {
+      console.error("Invalid auth token:", userError);
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication. Please sign in again." }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const userId = userData.user.id;
+    console.log("submit-advisor-application: Authenticated user:", userId);
+
+    // Create admin client for database operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -121,9 +151,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
     if (!validateEmail(body.email)) {
       validationErrors.push("Invalid email");
-    }
-    if (!validatePassword(body.password)) {
-      validationErrors.push("Password must be between 8 and 72 characters");
     }
     if (!validateSpecialty(body.specialty)) {
       validationErrors.push("Invalid specialty");
@@ -159,47 +186,6 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
-
-    // Check if email already exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const emailExists = existingUsers?.users?.some(
-      (u) => u.email?.toLowerCase() === body.email.toLowerCase()
-    );
-
-    if (emailExists) {
-      console.error("Email already registered:", body.email);
-      return new Response(
-        JSON.stringify({ error: "This email is already registered. Please sign in instead." }),
-        {
-          status: 409,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Create new auth user
-    const { data: authData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
-      email: body.email.toLowerCase().trim(),
-      password: body.password,
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        full_name: `${body.firstName.trim()} ${body.lastName.trim()}`,
-      },
-    });
-
-    if (signUpError || !authData.user) {
-      console.error("Signup error:", signUpError?.message);
-      return new Response(
-        JSON.stringify({ error: signUpError?.message || "Failed to create account" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    const userId = authData.user.id;
-    console.log("submit-advisor-application: User created:", userId);
 
     // Check if user already has a pending or approved application
     const { data: existingApp, error: existingError } = await supabaseAdmin

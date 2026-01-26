@@ -211,12 +211,76 @@ const BecomeAdvisor = () => {
     setIsSubmitting(true);
     
     try {
-      // Prepare the request body with base64-encoded files and password for signup
+      // Step 1: Create the Supabase Auth user on the client side
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        options: {
+          data: {
+            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+          },
+        },
+      });
+
+      if (signUpError) {
+        console.error("Signup error:", signUpError);
+        
+        // Check for existing user error
+        if (signUpError.message.includes("already registered") || 
+            signUpError.message.includes("already exists") ||
+            signUpError.message.includes("User already registered")) {
+          toast({
+            title: "Email Already Registered",
+            description: "This email is already in use. Please sign in instead or use a different email.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Account Creation Failed",
+            description: signUpError.message,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      if (!signUpData.user) {
+        toast({
+          title: "Account Creation Failed",
+          description: "Unable to create account. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Step 2: Get the session (user should be signed in after signup with auto-confirm)
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        // Try signing in if session wasn't automatically established
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+        });
+
+        if (signInError) {
+          console.error("Auto sign-in error:", signInError);
+          toast({
+            title: "Sign In Required",
+            description: "Account created but sign-in failed. Please sign in to complete your application.",
+            variant: "destructive",
+          });
+          navigate("/signin");
+          return;
+        }
+      }
+
+      // Step 3: Call the edge function to create the advisor application
+      // Now we have an authenticated session
       const requestBody = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        password: formData.password,
         phone: formData.phone || undefined,
         specialty: formData.specialty,
         experience: formData.experience || undefined,
@@ -249,41 +313,15 @@ const BecomeAdvisor = () => {
       }
 
       if (data?.error) {
-        // Check for existing email error
-        if (data.error.includes("already registered") || data.error.includes("already exists")) {
-          toast({
-            title: "Email Already Registered",
-            description: "This email is already in use. Please sign in instead or use a different email.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Submission Failed",
-            description: data.error,
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-
-      // Sign in the user after successful signup
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-      });
-
-      if (signInError) {
-        console.error("Auto sign-in error:", signInError);
-        // Application was submitted successfully, but auto sign-in failed
         toast({
-          title: "Application Submitted",
-          description: "Your application was submitted. Please sign in to continue.",
+          title: "Submission Failed",
+          description: data.error,
+          variant: "destructive",
         });
-        navigate("/signin");
         return;
       }
 
-      // Success! User is now signed in
+      // Success! User is now signed in and application submitted
       setIsSubmitted(true);
       toast({
         title: "Application Submitted",
