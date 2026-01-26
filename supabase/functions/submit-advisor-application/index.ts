@@ -374,6 +374,43 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Update the user's profile to mark them as an advisor (pending approval)
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        is_advisor: true,
+        advisor_approved: false,
+        advisor_status: "pending",
+        full_name: `${body.firstName.trim()} ${body.lastName.trim()}`,
+        specialty: body.specialty.trim(),
+        bio: body.bio.trim(),
+        instagram_url: instagramHandle,
+        virtual_available: body.virtual ?? true,
+        in_person_available: body.inPerson ?? false,
+      })
+      .eq("user_id", userId);
+
+    if (profileError) {
+      console.error("Profile update error:", profileError);
+      // Don't fail the whole request, application is already created
+    }
+
+    // Add advisor role to user_roles table (for dual-role support)
+    const { error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({
+        user_id: userId,
+        role: "user", // Start with user role, admin will upgrade when approved
+      }, {
+        onConflict: "user_id,role",
+        ignoreDuplicates: true,
+      });
+
+    if (roleError) {
+      console.error("Role assignment error:", roleError);
+      // Don't fail the whole request
+    }
+
     console.log("Application submitted successfully:", application.id);
 
     return new Response(
