@@ -27,7 +27,7 @@ import {
   ArrowLeft, 
   DollarSign, 
   TrendingUp, 
-  Users,
+  Clock,
   ArrowDownToLine,
   CheckCircle,
   XCircle,
@@ -263,7 +263,7 @@ const AdminPayments = () => {
             </Button>
           </div>
 
-          {/* Summary Cards */}
+          {/* Summary Cards - Restructured */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -296,7 +296,7 @@ const AdminPayments = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Platform Fees (15%)
+                    Net Revenue
                   </CardTitle>
                   <TrendingUp className="w-4 h-4 text-gold" />
                 </CardHeader>
@@ -305,7 +305,7 @@ const AdminPayments = () => {
                     ${stats.platformFees.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Your commission
+                    Platform commission
                   </p>
                 </CardContent>
               </Card>
@@ -319,16 +319,16 @@ const AdminPayments = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Advisor Payouts
+                    Funds in Escrow
                   </CardTitle>
-                  <Users className="w-4 h-4 text-gold" />
+                  <Clock className="w-4 h-4 text-gold" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    ${stats.advisorPayouts.toFixed(2)}
+                  <div className="text-2xl font-bold text-amber-600">
+                    ${stats.pendingWithdrawals.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Total owed to advisors
+                    Awaiting release
                   </p>
                 </CardContent>
               </Card>
@@ -342,16 +342,16 @@ const AdminPayments = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Pending Withdrawals
+                    This Month
                   </CardTitle>
                   <ArrowDownToLine className="w-4 h-4 text-gold" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    ${stats.pendingWithdrawals.toFixed(2)}
+                  <div className="text-2xl font-bold">
+                    ${stats.thisMonthRevenue.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {pendingWithdrawals.length + approvedWithdrawals.length} requests
+                    Monthly revenue
                   </p>
                 </CardContent>
               </Card>

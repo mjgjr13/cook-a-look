@@ -188,6 +188,66 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          admin_notes: string | null
+          booking_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          payment_id: string
+          raised_by: string
+          reason: string
+          recording_url: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          booking_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_id: string
+          raised_by: string
+          reason: string
+          recording_url?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          booking_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_id?: string
+          raised_by?: string
+          reason?: string
+          recording_url?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       featured_advisors: {
         Row: {
           advisor_id: string
@@ -225,6 +285,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lookbook_categories: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
       }
       lookbook_items: {
         Row: {
@@ -274,11 +358,15 @@ export type Database = {
           client_id: string
           created_at: string | null
           currency: string | null
+          escrow_release_at: string | null
+          escrow_status: string | null
           id: string
+          meeting_started_at: string | null
           platform_fee: number | null
           status: string | null
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
+          stripe_transfer_id: string | null
           tax_amount: number | null
           total_amount: number
           updated_at: string | null
@@ -291,11 +379,15 @@ export type Database = {
           client_id: string
           created_at?: string | null
           currency?: string | null
+          escrow_release_at?: string | null
+          escrow_status?: string | null
           id?: string
+          meeting_started_at?: string | null
           platform_fee?: number | null
           status?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
           tax_amount?: number | null
           total_amount: number
           updated_at?: string | null
@@ -308,11 +400,15 @@ export type Database = {
           client_id?: string
           created_at?: string | null
           currency?: string | null
+          escrow_release_at?: string | null
+          escrow_status?: string | null
           id?: string
+          meeting_started_at?: string | null
           platform_fee?: number | null
           status?: string | null
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_transfer_id?: string | null
           tax_amount?: number | null
           total_amount?: number
           updated_at?: string | null
@@ -331,6 +427,7 @@ export type Database = {
         Row: {
           account_type: string | null
           advisor_approved: boolean | null
+          advisor_status: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
@@ -345,6 +442,7 @@ export type Database = {
           is_demo: boolean
           languages: string[] | null
           location: string | null
+          onboarding_acknowledged_at: string | null
           personal_philosophy: string | null
           portfolio_images: string[] | null
           portfolio_url: string | null
@@ -363,6 +461,7 @@ export type Database = {
         Insert: {
           account_type?: string | null
           advisor_approved?: boolean | null
+          advisor_status?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -377,6 +476,7 @@ export type Database = {
           is_demo?: boolean
           languages?: string[] | null
           location?: string | null
+          onboarding_acknowledged_at?: string | null
           personal_philosophy?: string | null
           portfolio_images?: string[] | null
           portfolio_url?: string | null
@@ -395,6 +495,7 @@ export type Database = {
         Update: {
           account_type?: string | null
           advisor_approved?: boolean | null
+          advisor_status?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -409,6 +510,7 @@ export type Database = {
           is_demo?: boolean
           languages?: string[] | null
           location?: string | null
+          onboarding_acknowledged_at?: string | null
           personal_philosophy?: string | null
           portfolio_images?: string[] | null
           portfolio_url?: string | null
@@ -487,6 +589,8 @@ export type Database = {
           duration_minutes: number | null
           ended_at: string | null
           id: string
+          recording_status: string | null
+          recording_url: string | null
           room_name: string
           room_url: string
           started_at: string | null
@@ -497,6 +601,8 @@ export type Database = {
           duration_minutes?: number | null
           ended_at?: string | null
           id?: string
+          recording_status?: string | null
+          recording_url?: string | null
           room_name: string
           room_url: string
           started_at?: string | null
@@ -507,6 +613,8 @@ export type Database = {
           duration_minutes?: number | null
           ended_at?: string | null
           id?: string
+          recording_status?: string | null
+          recording_url?: string | null
           room_name?: string
           room_url?: string
           started_at?: string | null

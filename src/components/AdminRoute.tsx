@@ -8,6 +8,9 @@ interface AdminRouteProps {
   children: ReactNode;
 }
 
+// Hardcoded admin email for additional security layer
+const ADMIN_EMAIL = "marceljeangillesjr@gmail.com";
+
 const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, isLoading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -21,11 +24,24 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         return;
       }
 
+      // First check: email must match admin email
+      if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        console.warn("Admin access denied: email mismatch", user.email);
+        setIsAdmin(false);
+        setChecking(false);
+        return;
+      }
+
+      // Second check: verify role in database
       try {
         const { data } = await supabase.rpc("has_role", {
           _user_id: user.id,
           _role: "admin",
         });
+
+        if (data !== true) {
+          console.warn("Admin access denied: missing admin role in database");
+        }
 
         setIsAdmin(data === true);
       } catch (error) {

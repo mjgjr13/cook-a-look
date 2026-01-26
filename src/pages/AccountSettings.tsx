@@ -237,15 +237,15 @@ const AccountSettings = () => {
                 <div className="bg-background border border-border p-6 space-y-6">
                   <h2 className="font-serif text-xl font-medium">Advisor Settings</h2>
 
-                  {/* Platform Fee Info Box */}
+                  {/* Payout Info Box - Hide percentage from advisors */}
                   <div className="bg-muted/50 border border-border rounded-lg p-4">
                     <div className="flex items-start gap-3">
                       <CreditCard className="w-5 h-5 text-gold mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Platform Fee Structure</p>
+                        <p className="font-medium text-sm">Your Earnings</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Cook a Look charges a 15% platform fee on all bookings. The price you set is what clients pay. 
-                          You receive 85% of each booking after the platform fee is deducted.
+                          The price you set is what clients pay. Your payout is calculated after platform fees are deducted.
+                          Funds are released 48 hours after successful sessions.
                         </p>
                       </div>
                     </div>
@@ -270,7 +270,7 @@ const AccountSettings = () => {
                       />
                       {profile?.price_per_session && profile.price_per_session > 0 && (
                         <p className="text-sm text-muted-foreground">
-                          You will receive: <span className="font-semibold text-green-600">${(profile.price_per_session * 0.85).toFixed(2)}</span> (after 15% Cook a Look fee)
+                          Your payout: <span className="font-semibold text-green-600">${(profile.price_per_session * 0.85).toFixed(2)}</span> per session
                         </p>
                       )}
                     </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, RefreshCw, Check, AlertCircle, Loader2 } from "lucide-react";
+import { Camera, RefreshCw, Check, AlertCircle, Loader2, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +9,17 @@ interface LivenessCameraProps {
   onCancel: () => void;
 }
 
-type LivenessStep = "ready" | "initializing" | "detecting" | "blink" | "turn" | "capturing" | "complete";
+type LivenessStep = "ready" | "initializing" | "detecting" | "blink" | "turn" | "capturing" | "complete" | "fallback";
+
+const CAMERA_TIMEOUT_MS = 15000;
+const MAX_RETRY_ATTEMPTS = 3;
 
 const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [step, setStep] = useState<LivenessStep>("ready");
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +28,8 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
   const [countdown, setCountdown] = useState(3);
   const [instructions, setInstructions] = useState("Position your face in the frame");
   const [browserSupported, setBrowserSupported] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [showFallbackOption, setShowFallbackOption] = useState(false);
 
   // Check browser compatibility on mount
   useEffect(() => {
@@ -57,10 +64,25 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
   const startCamera = useCallback(async () => {
     if (!browserSupported) return;
     
+    // Clear any existing timeout
+    if (initTimeoutRef.current) {
+      clearTimeout(initTimeoutRef.current);
+    }
+    
     try {
       setError(null);
       setStep("initializing");
       setInstructions("Starting camera...");
+
+      // Set up timeout for camera initialization
+      initTimeoutRef.current = setTimeout(() => {
+        if (step === "initializing") {
+          setError("Camera initialization timed out. Please try again or use photo upload.");
+          setStep("ready");
+          setRetryCount(prev => prev + 1);
+          setShowFallbackOption(true);
+        }
+      }, CAMERA_TIMEOUT_MS);
 
       // Try primary configuration first
       let stream: MediaStream | null = null;
@@ -126,6 +148,12 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
           setTimeout(() => reject(new Error("Camera initialization timed out")), 10000);
         });
         
+        // Clear timeout on success
+        if (initTimeoutRef.current) {
+          clearTimeout(initTimeoutRef.current);
+          initTimeoutRef.current = null;
+        }
+        
         setStep("detecting");
         setInstructions("Hold steady - detecting your face...");
         
@@ -137,6 +165,21 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
       }
     } catch (err) {
       console.error("Camera error:", err);
+      
+      // Clear timeout on error
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+        initTimeoutRef.current = null;
+      }
+      
+      // Increment retry count and show fallback after max attempts
+      setRetryCount(prev => {
+        const newCount = prev + 1;
+        if (newCount >= MAX_RETRY_ATTEMPTS) {
+          setShowFallbackOption(true);
+        }
+        return newCount;
+      });
       
       // Provide specific error messages based on error type
       let errorMessage = "Unable to access camera. ";
@@ -179,6 +222,10 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
   }, [browserSupported]);
 
   const stopCamera = useCallback(() => {
+    if (initTimeoutRef.current) {
+      clearTimeout(initTimeoutRef.current);
+      initTimeoutRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -190,6 +237,26 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
       stopCamera();
     };
   }, [stopCamera]);
+
+  // Handle fallback file upload
+  const handleFallbackUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setStep("complete");
+      setInstructions("Photo uploaded!");
+      
+      // Convert to blob and call onCapture with livenessVerified = false
+      setTimeout(() => {
+        onCapture(file, false);
+      }, 1000);
+    }
+  }, [onCapture]);
+
+  const showFallback = () => {
+    setStep("fallback");
+    setInstructions("Upload a clear photo of your face");
+    stopCamera();
+  };
 
   // Liveness detection sequence
   useEffect(() => {
@@ -274,10 +341,47 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
     stopCamera();
   };
 
+  // Render fallback upload view
+  if (step === "fallback") {
+    return (
+      <div className="space-y-4">
+        <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden flex flex-col items-center justify-center p-6">
+          <Upload className="w-16 h-16 mb-4 text-muted-foreground" />
+          <p className="text-sm text-center mb-4 text-muted-foreground">
+            Take a clear photo of your face and upload it here
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="user"
+            onChange={handleFallbackUpload}
+            className="hidden"
+          />
+          <Button onClick={() => fileInputRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-2" />
+            Choose Photo
+          </Button>
+          <p className="text-xs text-muted-foreground mt-4 text-center">
+            Note: Uploads without live verification will be flagged for manual review
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={handleRetry} className="flex-1">
+            Try Camera Again
+          </Button>
+          <Button variant="outline" onClick={() => { stopCamera(); onCancel(); }} className="flex-1">
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden">
-        {step === "ready" ? (
+      {step === "ready" ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
             <Camera className="w-16 h-16 mb-4 opacity-50" />
             <p className="text-sm text-center mb-4">
@@ -289,10 +393,23 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
                 <p className="text-sm text-red-300 whitespace-pre-line">{error}</p>
               </div>
             ) : (
-              <Button onClick={startCamera} variant="secondary">
-                <Camera className="w-4 h-4 mr-2" />
-                Start Camera
-              </Button>
+              <div className="space-y-3">
+                <Button onClick={startCamera} variant="secondary">
+                  <Camera className="w-4 h-4 mr-2" />
+                  Start Camera
+                </Button>
+                {showFallbackOption && (
+                  <Button onClick={showFallback} variant="outline" className="w-full">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Photo Instead
+                  </Button>
+                )}
+                {retryCount > 0 && (
+                  <p className="text-xs text-white/60 text-center">
+                    Attempt {retryCount} of {MAX_RETRY_ATTEMPTS}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         ) : step === "initializing" ? (
