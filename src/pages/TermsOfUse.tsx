@@ -54,8 +54,8 @@ const TermsOfUse = () => {
                 <p className="text-muted-foreground leading-relaxed">
                   All payments are processed securely through our payment provider, Stripe. Prices displayed include 
                   the advisor's consultation fee. Applicable taxes are calculated dynamically at checkout based on 
-                  your location. Refunds and cancellations are subject to individual advisor policies and our 
-                  platform guidelines.
+                  your location. Payments are held in escrow and released to advisors 48 hours after the session 
+                  concludes, unless a dispute is raised within that period.
                 </p>
               </section>
 
@@ -75,7 +75,7 @@ const TermsOfUse = () => {
                   <p>
                     <strong>In-Person Meetings:</strong> If you choose to meet an advisor in person, you do so 
                     entirely at your own risk. Cook a Look is NOT responsible for any injury, harm, damage, loss, 
-                    or any other negative outcome that may result from in-person meetings, including but not limited to:
+                    or any other negative outcome that may result from in-person meetings.
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li>Physical injury or bodily harm</li>
@@ -85,22 +85,6 @@ const TermsOfUse = () => {
                     <li>Allergic reactions to products or materials used during consultations</li>
                     <li>Any consequences arising from advice given during sessions</li>
                   </ul>
-                  <p>
-                    <strong>No Warranty of Safety:</strong> While we require advisors to undergo verification, we 
-                    make no guarantees regarding the safety, reliability, or suitability of any advisor. Background 
-                    checks may not reveal all relevant information, and circumstances can change.
-                  </p>
-                  <p>
-                    <strong>Assumption of Risk:</strong> By booking an in-person consultation, you expressly 
-                    acknowledge and assume all risks associated with meeting a stranger, including risks that may 
-                    arise from the negligence or misconduct of the advisor or third parties.
-                  </p>
-                  <p>
-                    <strong>Release of Claims:</strong> To the fullest extent permitted by law, you release and 
-                    hold harmless Cook a Look, its owners, officers, directors, employees, and affiliates from 
-                    any and all claims, demands, damages, losses, costs, and expenses arising from your use of 
-                    the Platform or interactions with advisors.
-                  </p>
                 </div>
               </section>
 
@@ -114,21 +98,115 @@ const TermsOfUse = () => {
                   <li>Informing a friend or family member of your meeting location and time</li>
                   <li>Trusting your instincts - if something feels wrong, leave immediately</li>
                   <li>Verifying the advisor's profile and reviews before meeting</li>
-                  <li>Communicating through the Platform until you feel comfortable</li>
                 </ul>
               </section>
 
+              {/* NEW SECTION: Advisor Expectations */}
+              <section className="bg-primary/5 border border-border p-6 rounded-none">
+                <h2 className="font-serif text-2xl font-medium mb-4">
+                  7. Advisor Professional Expectations
+                </h2>
+                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                  <p>
+                    All advisors on the Cook a Look platform agree to maintain the highest standards of 
+                    professionalism. By becoming an advisor, you commit to:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 ml-4">
+                    <li><strong>Professional Conduct:</strong> Maintaining respectful, courteous, and professional behavior during all sessions</li>
+                    <li><strong>Punctuality:</strong> Being on time for all scheduled consultations</li>
+                    <li><strong>Preparedness:</strong> Arriving ready to provide quality styling advice</li>
+                    <li><strong>No Harassment:</strong> Zero tolerance for harassment, discrimination, or inappropriate behavior</li>
+                    <li><strong>Recording Compliance:</strong> Acknowledging and complying with virtual session recording policies</li>
+                  </ul>
+                  <p className="mt-4">
+                    <strong className="text-foreground">Consequences:</strong> Violations of these expectations 
+                    may result in warnings, suspension, or permanent removal from the platform at Cook a Look's 
+                    sole discretion.
+                  </p>
+                </div>
+              </section>
+
+              {/* NEW SECTION: Customer Expectations */}
+              <section className="bg-primary/5 border border-border p-6 rounded-none">
+                <h2 className="font-serif text-2xl font-medium mb-4">
+                  8. Customer Expectations
+                </h2>
+                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                  <p>
+                    Customers using Cook a Look agree to treat all advisors with respect and professionalism:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 ml-4">
+                    <li><strong>Respectful Communication:</strong> Treating advisors with courtesy and respect</li>
+                    <li><strong>No Harassment:</strong> Zero tolerance for harassment, abuse, or inappropriate conduct toward advisors</li>
+                    <li><strong>Dispute Window:</strong> Understanding that disputes must be raised within 48 hours of the session start time</li>
+                    <li><strong>Good Faith:</strong> Engaging in consultations in good faith and providing honest feedback</li>
+                  </ul>
+                  <p className="mt-4">
+                    Customers who violate these expectations may have their accounts suspended or terminated.
+                  </p>
+                </div>
+              </section>
+
+              {/* NEW SECTION: Virtual Session Recording */}
+              <section className="bg-gold/10 border border-gold/30 p-6 rounded-none">
+                <h2 className="font-serif text-2xl font-medium mb-4">
+                  9. Virtual Session Recording Policy
+                </h2>
+                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                  <p>
+                    <strong className="text-foreground">IMPORTANT NOTICE:</strong> All virtual consultations 
+                    conducted through the Cook a Look platform are automatically recorded.
+                  </p>
+                  <p>
+                    <strong>Purpose of Recordings:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 ml-4">
+                    <li>Dispute resolution and investigation</li>
+                    <li>Quality assurance and platform improvement</li>
+                    <li>Protection of both advisors and clients</li>
+                  </ul>
+                  <p>
+                    <strong>Access to Recordings:</strong> Session recordings are only accessible by Cook a Look 
+                    administrators for the purposes stated above. Recordings are never shared publicly or with 
+                    third parties except as required by law.
+                  </p>
+                  <p>
+                    <strong>Retention:</strong> Recordings are retained for a period of 90 days following the 
+                    session, after which they are permanently deleted unless a dispute is active.
+                  </p>
+                  <p>
+                    <strong>Consent:</strong> By participating in virtual sessions, both advisors and clients 
+                    consent to the recording of the session as outlined in this policy.
+                  </p>
+                </div>
+              </section>
+
+              {/* NEW SECTION: Escrow and Disputes */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">7. Advisor Responsibilities</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  Advisors agree to provide accurate profile information, maintain professional conduct, honor 
-                  confirmed bookings, and comply with all applicable laws. Advisors are solely responsible for 
-                  any advice, recommendations, or services they provide.
-                </p>
+                <h2 className="font-serif text-2xl font-medium mb-4">10. Escrow and Dispute Resolution</h2>
+                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                  <p>
+                    <strong>Escrow Period:</strong> All payments are held in escrow for 48 hours following the 
+                    scheduled session start time. After this period, funds are automatically released to the advisor.
+                  </p>
+                  <p>
+                    <strong>Raising a Dispute:</strong> Clients may raise a dispute within the 48-hour window 
+                    following the session. Disputes must include a clear description of the issue.
+                  </p>
+                  <p>
+                    <strong>Dispute Investigation:</strong> When a dispute is raised, funds remain in escrow 
+                    until Cook a Look administrators review the case. This may include reviewing session recordings 
+                    for virtual consultations.
+                  </p>
+                  <p>
+                    <strong>Resolution:</strong> Cook a Look will make a determination based on available evidence 
+                    and may issue a full or partial refund to the client, or release funds to the advisor.
+                  </p>
+                </div>
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">8. Intellectual Property</h2>
+                <h2 className="font-serif text-2xl font-medium mb-4">11. Intellectual Property</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   All content on the Platform, including but not limited to text, graphics, logos, and software, 
                   is the property of Cook a Look or its licensors and is protected by intellectual property laws.
@@ -136,7 +214,7 @@ const TermsOfUse = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">9. Limitation of Liability</h2>
+                <h2 className="font-serif text-2xl font-medium mb-4">12. Limitation of Liability</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   TO THE MAXIMUM EXTENT PERMITTED BY LAW, COOK A LOOK SHALL NOT BE LIABLE FOR ANY INDIRECT, 
                   INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF 
@@ -146,7 +224,7 @@ const TermsOfUse = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">10. Indemnification</h2>
+                <h2 className="font-serif text-2xl font-medium mb-4">13. Indemnification</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   You agree to indemnify and hold harmless Cook a Look and its affiliates from any claims, 
                   damages, losses, and expenses arising from your use of the Platform, your violation of these 
@@ -155,7 +233,7 @@ const TermsOfUse = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">11. Governing Law</h2>
+                <h2 className="font-serif text-2xl font-medium mb-4">14. Governing Law</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   These Terms shall be governed by and construed in accordance with the laws of the jurisdiction 
                   in which Cook a Look operates, without regard to its conflict of law provisions.
@@ -163,7 +241,7 @@ const TermsOfUse = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">12. Changes to Terms</h2>
+                <h2 className="font-serif text-2xl font-medium mb-4">15. Changes to Terms</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   We reserve the right to modify these Terms at any time. We will notify users of significant 
                   changes via email or through the Platform. Your continued use of the Platform after such 
@@ -172,7 +250,7 @@ const TermsOfUse = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">13. Contact Information</h2>
+                <h2 className="font-serif text-2xl font-medium mb-4">16. Contact Information</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   If you have any questions about these Terms of Use, please contact us at{" "}
                   <a href="mailto:legal@cookalook.com" className="text-gold hover:underline">

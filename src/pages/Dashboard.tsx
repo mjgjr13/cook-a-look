@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Calendar, Video, Clock, Settings, LogOut, ChevronRight } from "lucide-react";
+import { Calendar, Video, Clock, Settings, LogOut, ChevronRight, RefreshCw, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import RewardsCard from "@/components/dashboard/RewardsCard";
+import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
 
 interface Booking {
   id: string;
@@ -37,6 +38,7 @@ interface Profile {
   is_advisor: boolean;
   avatar_url: string;
   user_id: string;
+  onboarding_acknowledged_at: string | null;
 }
 
 const Dashboard = () => {
@@ -45,37 +47,82 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+  const loadDashboard = async (retryCount = 0) => {
+    const maxRetries = 3;
+    const timeoutMs = 10000;
+
+    try {
+      setLoadError(null);
+      setIsLoading(true);
+
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Loading timed out")), timeoutMs);
+      });
+
+      const loadPromise = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/signin?redirect=/dashboard");
+          return null;
+        }
+
+        setUserId(session.user.id);
+
+        // Get profile
+        let { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single();
+
+        // If no profile exists, try to create one (fallback for trigger failure)
+        if (profileError && profileError.code === "PGRST116") {
+          console.log("No profile found, attempting to create...");
+          
+          const { data: newProfile, error: createError } = await supabase
+            .from("profiles")
+            .insert({
+              user_id: session.user.id,
+              email: session.user.email,
+              full_name: session.user.user_metadata?.full_name || "New User",
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error("Failed to create profile:", createError);
+            throw new Error("Unable to create your profile. Please try again.");
+          }
+
+          profileData = newProfile;
+          profileError = null;
+        }
+
+        if (profileError || !profileData) {
+          throw new Error("Failed to load your profile");
+        }
+
+        return profileData;
+      };
+
+      // Race between load and timeout
+      const profileData = await Promise.race([loadPromise(), timeoutPromise]) as Profile | null;
       
-      if (!session) {
-        navigate("/signin?redirect=/dashboard");
-        return;
-      }
-
-      setUserId(session.user.id);
-
-      // Get profile
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .single();
-
-      if (profileError || !profileData) {
-        toast({
-          title: "Error loading profile",
-          description: "Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (!profileData) return;
 
       setProfile(profileData);
+
+      // Check if advisor needs onboarding acknowledgment
+      if (profileData.is_advisor && !profileData.onboarding_acknowledged_at) {
+        setShowOnboardingModal(true);
+      }
 
       // Get bookings based on account type
       const bookingsQuery = profileData.is_advisor
@@ -101,8 +148,21 @@ const Dashboard = () => {
       const { data: bookingsData } = await bookingsQuery;
       setBookings(bookingsData || []);
       setIsLoading(false);
-    };
+    } catch (error) {
+      console.error("Dashboard load error:", error);
+      
+      if (retryCount < maxRetries) {
+        console.log(`Retrying... (${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => loadDashboard(retryCount + 1), 1000);
+        return;
+      }
 
+      setLoadError(error instanceof Error ? error.message : "An error occurred");
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadDashboard();
   }, [navigate, toast]);
 
@@ -118,8 +178,25 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
           <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+          <p className="text-xs text-muted-foreground">This may take a moment...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+          <AlertTriangle className="w-12 h-12 text-destructive" />
+          <h2 className="font-serif text-xl">Unable to load dashboard</h2>
+          <p className="text-muted-foreground text-center max-w-md">{loadError}</p>
+          <Button onClick={() => loadDashboard()} className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Try Again
+          </Button>
         </div>
       </Layout>
     );
@@ -138,6 +215,15 @@ const Dashboard = () => {
         <VideoCall
           bookingId={activeVideoBooking}
           onClose={() => setActiveVideoBooking(null)}
+        />
+      )}
+
+      {/* Advisor Onboarding Modal */}
+      {profile?.is_advisor && showOnboardingModal && (
+        <AdvisorOnboardingModal
+          profileId={profile.id}
+          isOpen={showOnboardingModal}
+          onComplete={() => setShowOnboardingModal(false)}
         />
       )}
 
