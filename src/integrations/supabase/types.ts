@@ -95,6 +95,44 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_verification_archive: {
+        Row: {
+          application_id: string
+          archived_at: string
+          archived_by: string | null
+          id: string
+          id_document_url: string | null
+          selfie_url: string | null
+          user_id: string
+        }
+        Insert: {
+          application_id: string
+          archived_at?: string
+          archived_by?: string | null
+          id?: string
+          id_document_url?: string | null
+          selfie_url?: string | null
+          user_id: string
+        }
+        Update: {
+          application_id?: string
+          archived_at?: string
+          archived_by?: string | null
+          id?: string
+          id_document_url?: string | null
+          selfie_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_verification_archive_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "advisor_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       availability_slots: {
         Row: {
           advisor_id: string
