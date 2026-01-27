@@ -75,15 +75,31 @@ const AdvisorDashboard = () => {
         return;
       }
 
-      // Get profile
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .single();
+      // Get profile - with retry logic for newly created accounts
+      let profileData = null;
+      let retries = 0;
+      const maxRetries = 5;
 
-      if (profileError || !profileData) {
-        navigate("/dashboard");
+      while (retries < maxRetries && !profileData) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+
+        if (data) {
+          profileData = data;
+        } else {
+          retries++;
+          if (retries < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+
+      if (!profileData) {
+        console.error("No profile found after retries");
+        navigate("/become-advisor");
         return;
       }
 

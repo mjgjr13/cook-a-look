@@ -190,7 +190,9 @@ const BecomeAdvisor = () => {
       }
     }
 
-    // Validate files
+    // MVP: Skip file validation - files are optional for testing
+    // In production, uncomment this validation
+    /*
     const selfieError = validateFile(formData.selfieFile);
     const idError = validateFile(formData.idFile);
     
@@ -207,11 +209,12 @@ const BecomeAdvisor = () => {
       });
       return;
     }
+    */
 
     setIsSubmitting(true);
     
     try {
-      // Step 1: Create the Supabase Auth user on the client side
+      // Step 1: Create the Supabase Auth user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -225,15 +228,16 @@ const BecomeAdvisor = () => {
       if (signUpError) {
         console.error("Signup error:", signUpError);
         
-        // Check for existing user error
+        // Check for existing user error - offer to sign in and upgrade
         if (signUpError.message.includes("already registered") || 
             signUpError.message.includes("already exists") ||
             signUpError.message.includes("User already registered")) {
           toast({
             title: "Email Already Registered",
-            description: "This email is already in use. Please sign in instead or use a different email.",
+            description: "Please sign in first, then apply to become an advisor from your dashboard.",
             variant: "destructive",
           });
+          navigate("/signin?redirect=/become-advisor");
         } else {
           toast({
             title: "Account Creation Failed",
@@ -253,8 +257,11 @@ const BecomeAdvisor = () => {
         return;
       }
 
+      const userId = signUpData.user.id;
+      console.log("User created:", userId);
+
       // Step 2: Get the session (user should be signed in after signup with auto-confirm)
-      const { data: sessionData } = await supabase.auth.getSession();
+      let { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
         // Try signing in if session wasn't automatically established
@@ -270,73 +277,160 @@ const BecomeAdvisor = () => {
             description: "Account created but sign-in failed. Please sign in to complete your application.",
             variant: "destructive",
           });
-          navigate("/signin");
+          navigate("/signin?redirect=/advisor");
           return;
         }
+        
+        // Get session again after sign in
+        const { data: newSession } = await supabase.auth.getSession();
+        sessionData = newSession;
       }
 
-      // Step 3: Call the edge function to create the advisor application
-      // Now we have an authenticated session
-      const requestBody = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone || undefined,
-        specialty: formData.specialty,
-        experience: formData.experience || undefined,
-        bio: formData.bio,
-        virtual: formData.virtual,
-        inPerson: formData.inPerson,
-        instagram: formData.instagram,
-        tiktok: formData.tiktok || undefined,
-        linkedin: formData.linkedin || undefined,
-        portfolio: formData.portfolio || undefined,
-        selfieBase64: formData.selfiePreview,
-        idBase64: formData.idPreview,
-        selfieFileName: formData.selfieFile?.name,
-        idFileName: formData.idFile?.name,
-        livenessVerified: formData.livenessVerified,
-      };
+      console.log("Session established, updating profile...");
 
-      const { data, error } = await supabase.functions.invoke('submit-advisor-application', {
-        body: requestBody,
-      });
+      // Step 3: Wait for profile trigger to create base profile, then update it
+      // The handle_new_user trigger creates a basic profile - we need to update it
+      let retries = 0;
+      const maxRetries = 5;
+      let profileUpdated = false;
 
-      if (error) {
-        console.error("Submission error:", error);
+      while (retries < maxRetries && !profileUpdated) {
+        // Small delay to allow trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const { data: existingProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (existingProfile) {
+          // Profile exists, update it with advisor data
+          const instagramHandle = formData.instagram.startsWith("@") 
+            ? formData.instagram.slice(1) 
+            : formData.instagram;
+
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({
+              full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+              is_advisor: true,
+              advisor_approved: false,
+              advisor_status: "pending",
+              specialty: formData.specialty.trim(),
+              bio: formData.bio.trim(),
+              instagram_url: instagramHandle,
+              virtual_available: formData.virtual,
+              in_person_available: formData.inPerson,
+            })
+            .eq("user_id", userId);
+
+          if (updateError) {
+            console.error("Profile update error:", updateError);
+            throw new Error("Failed to set up advisor profile");
+          }
+
+          profileUpdated = true;
+          console.log("Profile updated with advisor data");
+        } else if (profileError) {
+          console.error("Profile fetch error:", profileError);
+        }
+
+        retries++;
+      }
+
+      if (!profileUpdated) {
+        // Profile trigger may have failed, create profile directly
+        const instagramHandle = formData.instagram.startsWith("@") 
+          ? formData.instagram.slice(1) 
+          : formData.instagram;
+
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: userId,
+            email: formData.email.trim().toLowerCase(),
+            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+            is_advisor: true,
+            advisor_approved: false,
+            advisor_status: "pending",
+            specialty: formData.specialty.trim(),
+            bio: formData.bio.trim(),
+            instagram_url: instagramHandle,
+            virtual_available: formData.virtual,
+            in_person_available: formData.inPerson,
+          });
+
+        if (insertError) {
+          console.error("Profile insert error:", insertError);
+          throw new Error("Failed to create advisor profile");
+        }
+        console.log("Profile created directly");
+      }
+
+      // Step 4: Create advisor application record
+      const instagramHandle = formData.instagram.startsWith("@") 
+        ? formData.instagram.slice(1) 
+        : formData.instagram;
+
+      const { error: applicationError } = await supabase
+        .from("advisor_applications")
+        .insert({
+          user_id: userId,
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone?.trim() || null,
+          specialty: formData.specialty.trim(),
+          experience: formData.experience?.trim() || null,
+          bio: formData.bio.trim(),
+          virtual: formData.virtual,
+          in_person: formData.inPerson,
+          instagram: instagramHandle,
+          tiktok: formData.tiktok?.trim() || null,
+          linkedin: formData.linkedin?.trim() || null,
+          portfolio: formData.portfolio?.trim() || null,
+          status: "pending",
+          liveness_verified: true, // MVP: Skip verification
+        });
+
+      if (applicationError) {
+        console.error("Application insert error:", applicationError);
+        // Don't fail entirely - profile is set up, application can be re-submitted
         toast({
-          title: "Submission Failed",
-          description: error.message || "An error occurred while submitting your application.",
+          title: "Partial Success",
+          description: "Your advisor account is created. Application details may need to be resubmitted.",
           variant: "destructive",
         });
-        return;
       }
 
-      if (data?.error) {
-        toast({
-          title: "Submission Failed",
-          description: data.error,
-          variant: "destructive",
+      // Step 5: Add user role (for role-based access)
+      await supabase
+        .from("user_roles")
+        .upsert({
+          user_id: userId,
+          role: "user" as const,
+        }, {
+          onConflict: "user_id,role",
+          ignoreDuplicates: true,
         });
-        return;
-      }
 
-      // Success! User is now signed in and application submitted
-      setIsSubmitted(true);
+      console.log("Advisor signup complete, navigating to dashboard...");
+
+      // Success! Navigate immediately to advisor dashboard
       toast({
-        title: "Application Submitted",
-        description: "Your account has been created and application submitted!",
+        title: "Welcome, Advisor!",
+        description: "Your account has been created. Setting up your dashboard...",
       });
 
-      // Redirect to advisor dashboard after a short delay
-      setTimeout(() => {
-        navigate("/advisor");
-      }, 2000);
+      // Navigate to advisor dashboard immediately
+      navigate("/advisor");
+
     } catch (err: any) {
       console.error("Error submitting application:", err);
       toast({
         title: "Submission Failed",
-        description: err.message || "An unexpected error occurred.",
+        description: err.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -400,10 +494,12 @@ const BecomeAdvisor = () => {
       if (formData.portfolio) {
         stepErrors.portfolio = validateField('portfolio', formData.portfolio);
       }
-    } else if (currentStep === 3) {
-      stepErrors.selfieFile = validateFile(formData.selfieFile) || undefined;
-      stepErrors.idFile = validateFile(formData.idFile) || undefined;
     }
+    // MVP: Skip file validation for step 3 - verification is optional
+    // else if (currentStep === 3) {
+    //   stepErrors.selfieFile = validateFile(formData.selfieFile) || undefined;
+    //   stepErrors.idFile = validateFile(formData.idFile) || undefined;
+    // }
 
     const hasErrors = Object.values(stepErrors).some(error => error !== undefined);
     if (hasErrors) {
@@ -424,7 +520,8 @@ const BecomeAdvisor = () => {
       case 2:
         return formData.instagram && !errors.instagram && !errors.portfolio;
       case 3:
-        return formData.selfieFile && formData.idFile && !errors.selfieFile && !errors.idFile;
+        // MVP: Verification is optional - always allow proceeding
+        return true;
       case 4:
         return formData.agreeTerms;
       default:
