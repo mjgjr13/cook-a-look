@@ -7,6 +7,7 @@ export interface UserProfile {
   user_id: string;
   email: string | null;
   full_name: string | null;
+  role: string;
   avatar_url: string | null;
   is_advisor: boolean;
   advisor_approved: boolean;
@@ -19,15 +20,33 @@ export interface UserProfile {
   onboarding_acknowledged_at: string | null;
 }
 
+export interface AdvisorProfile {
+  id: string;
+  user_id: string;
+  status: string;
+  is_published: boolean;
+  price: number | null;
+  bio: string | null;
+  portfolio_images: string[];
+  specialties: string[];
+  availability_set: boolean;
+  onboarding_completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserRole {
   isAdmin: boolean;
   isAdvisor: boolean;
   isApprovedAdvisor: boolean;
   isPendingAdvisor: boolean;
+  isActiveAdvisor: boolean;
+  role: "client" | "advisor" | "admin";
 }
 
 interface UseProfileResult {
   profile: UserProfile | null;
+  advisorProfile: AdvisorProfile | null;
   roles: UserRole;
   isLoading: boolean;
   error: string | null;
@@ -41,11 +60,14 @@ interface UseProfileResult {
 export const useProfile = (): UseProfileResult => {
   const { user, isLoading: authLoading } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [advisorProfile, setAdvisorProfile] = useState<AdvisorProfile | null>(null);
   const [roles, setRoles] = useState<UserRole>({
     isAdmin: false,
     isAdvisor: false,
     isApprovedAdvisor: false,
     isPendingAdvisor: false,
+    isActiveAdvisor: false,
+    role: "client",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +75,14 @@ export const useProfile = (): UseProfileResult => {
   const fetchProfile = useCallback(async () => {
     if (!user) {
       setProfile(null);
+      setAdvisorProfile(null);
       setRoles({
         isAdmin: false,
         isAdvisor: false,
         isApprovedAdvisor: false,
         isPendingAdvisor: false,
+        isActiveAdvisor: false,
+        role: "client",
       });
       setIsLoading(false);
       return;
@@ -66,10 +91,15 @@ export const useProfile = (): UseProfileResult => {
     try {
       setError(null);
 
-      // Fetch profile and admin role in parallel
-      const [profileResult, adminResult] = await Promise.all([
+      // Fetch profile, advisor_profiles, and admin role in parallel
+      const [profileResult, advisorProfileResult, adminResult] = await Promise.all([
         supabase
           .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("advisor_profiles")
           .select("*")
           .eq("user_id", user.id)
           .maybeSingle(),
@@ -81,26 +111,47 @@ export const useProfile = (): UseProfileResult => {
       }
 
       const profileData = profileResult.data;
+      const advisorData = advisorProfileResult.data;
       const isAdmin = adminResult.data === true;
 
-      if (profileData) {
-        setProfile(profileData as UserProfile);
-        setRoles({
-          isAdmin,
-          isAdvisor: profileData.is_advisor === true,
-          isApprovedAdvisor: profileData.is_advisor === true && profileData.advisor_approved === true,
-          isPendingAdvisor: profileData.is_advisor === true && profileData.advisor_status === "pending",
-        });
-      } else {
-        // No profile yet - this can happen during signup
-        setProfile(null);
-        setRoles({
-          isAdmin,
-          isAdvisor: false,
-          isApprovedAdvisor: false,
-          isPendingAdvisor: false,
-        });
+      setProfile(profileData as UserProfile | null);
+      setAdvisorProfile(advisorData as AdvisorProfile | null);
+
+      // Determine roles based on advisor_profiles (authoritative) or fallback to profiles
+      let userRole: "client" | "advisor" | "admin" = "client";
+      let isAdvisor = false;
+      let isPendingAdvisor = false;
+      let isApprovedAdvisor = false;
+      let isActiveAdvisor = false;
+
+      if (isAdmin) {
+        userRole = "admin";
       }
+
+      // Check advisor_profiles first (single source of truth for advisor state)
+      if (advisorData) {
+        isAdvisor = true;
+        userRole = isAdmin ? "admin" : "advisor";
+        
+        isPendingAdvisor = ["applied", "pending"].includes(advisorData.status);
+        isApprovedAdvisor = advisorData.status === "approved";
+        isActiveAdvisor = advisorData.status === "active" && advisorData.is_published;
+      } else if (profileData?.is_advisor || profileData?.role === "advisor") {
+        // Fallback to profile.is_advisor or profile.role
+        isAdvisor = true;
+        userRole = isAdmin ? "admin" : "advisor";
+        isPendingAdvisor = profileData.advisor_status === "pending" || !profileData.advisor_approved;
+        isApprovedAdvisor = profileData.advisor_approved === true && profileData.advisor_status === "approved";
+      }
+
+      setRoles({
+        isAdmin,
+        isAdvisor,
+        isApprovedAdvisor,
+        isPendingAdvisor,
+        isActiveAdvisor,
+        role: userRole,
+      });
     } catch (err) {
       console.error("Error fetching profile:", err);
       setError(err instanceof Error ? err.message : "Failed to load profile");
@@ -117,6 +168,7 @@ export const useProfile = (): UseProfileResult => {
 
   return {
     profile,
+    advisorProfile,
     roles,
     isLoading: authLoading || isLoading,
     error,
@@ -135,10 +187,10 @@ export const calculatePlatformFee = async (advisorProfileId: string): Promise<{ 
     
     const { data, error } = await supabase
       .from("bookings")
-      .select("id")
+      .select("id, completed_at")
       .eq("advisor_id", advisorProfileId)
       .eq("status", "completed")
-      .gte("created_at", startOfMonth.toISOString());
+      .gte("completed_at", startOfMonth.toISOString());
 
     if (error) {
       console.error("Error fetching bookings for fee calculation:", error);

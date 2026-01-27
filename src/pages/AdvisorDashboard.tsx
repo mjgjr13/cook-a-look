@@ -16,14 +16,14 @@ import {
   Users,
   ArrowRight,
   Percent,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 
 interface Booking {
@@ -45,7 +45,7 @@ interface Booking {
 const AdvisorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, roles, isLoading: profileLoading, refetch } = useProfile();
+  const { profile, advisorProfile, roles, isLoading: profileLoading, refetch } = useProfile();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,19 +55,21 @@ const AdvisorDashboard = () => {
   const [platformFee, setPlatformFee] = useState({ feePercent: 15, bookingsThisMonth: 0 });
 
   useEffect(() => {
-    if (!profileLoading && profile) {
+    if (!profileLoading) {
+      if (!roles.isAdvisor) {
+        navigate("/become-advisor");
+        return;
+      }
       loadDashboard();
-    } else if (!profileLoading && !profile) {
-      navigate("/become-advisor");
     }
-  }, [profileLoading, profile]);
+  }, [profileLoading, roles.isAdvisor]);
 
   const loadDashboard = async () => {
     if (!profile) return;
 
     try {
-      // Check if advisor needs onboarding
-      if (!profile.onboarding_acknowledged_at) {
+      // Check if advisor needs onboarding (after approval)
+      if (roles.isApprovedAdvisor && !advisorProfile?.onboarding_completed_at) {
         setShowOnboardingModal(true);
       }
 
@@ -163,8 +165,11 @@ const AdvisorDashboard = () => {
     return bookingDate === today;
   });
 
-  const isPending = roles.isPendingAdvisor;
-  const isApproved = roles.isApprovedAdvisor;
+  // Determine status from advisor_profiles or fallback to profile
+  const advisorStatus = advisorProfile?.status || profile.advisor_status || "pending";
+  const isPending = ["applied", "pending"].includes(advisorStatus);
+  const isApproved = advisorStatus === "approved";
+  const isActive = advisorStatus === "active" && advisorProfile?.is_published;
 
   return (
     <Layout>
@@ -175,11 +180,14 @@ const AdvisorDashboard = () => {
         />
       )}
 
-      {showOnboardingModal && (
+      {showOnboardingModal && profile && (
         <AdvisorOnboardingModal
           profileId={profile.id}
           isOpen={showOnboardingModal}
-          onComplete={() => setShowOnboardingModal(false)}
+          onComplete={() => {
+            setShowOnboardingModal(false);
+            refetch();
+          }}
         />
       )}
 
@@ -194,7 +202,7 @@ const AdvisorDashboard = () => {
                 </p>
                 {isPending && (
                   <Badge variant="outline" className="text-gold border-gold/50">
-                    Pending Approval
+                    Under Review
                   </Badge>
                 )}
                 {isApproved && (
@@ -203,13 +211,18 @@ const AdvisorDashboard = () => {
                     Approved
                   </Badge>
                 )}
+                {isActive && (
+                  <Badge variant="default" className="bg-primary">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Active & Published
+                  </Badge>
+                )}
               </div>
               <h1 className="font-serif text-3xl md:text-4xl font-medium">
                 Welcome, {profile.full_name?.split(" ")[0] || "Advisor"}
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <RoleSwitcher currentRole="advisor" />
               <Button variant="outline" asChild>
                 <Link to="/settings">
                   <Settings className="w-4 h-4 mr-2" />
@@ -224,25 +237,58 @@ const AdvisorDashboard = () => {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-accent/50 border border-accent rounded-lg p-4 mb-8"
+              className="bg-accent/50 border border-accent rounded-lg p-6 mb-8"
             >
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-gold mt-0.5" />
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full bg-gold/20">
+                  <Clock className="w-6 h-6 text-gold" />
+                </div>
                 <div>
-                  <h3 className="font-medium text-foreground mb-1">
+                  <h3 className="font-serif text-xl font-medium text-foreground mb-2">
                     Application Under Review
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mb-4">
                     Your advisor application is being reviewed by our team. You'll receive an email once approved.
-                    In the meantime, you can set up your availability and complete your profile.
+                    This typically takes 2-5 business days.
                   </p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>You cannot receive bookings until your application is approved.</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* Platform Fee Incentive */}
-          {isApproved && (
+          {/* Approved but not onboarded notice */}
+          {isApproved && !advisorProfile?.onboarding_completed_at && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-primary/10 border border-primary/30 rounded-lg p-6 mb-8"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full bg-primary/20">
+                  <CheckCircle className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-serif text-xl font-medium text-foreground mb-2">
+                    Congratulations! You're Approved
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Complete your onboarding to become visible to clients. Set your pricing, availability, and upload portfolio images.
+                  </p>
+                  <Button onClick={() => setShowOnboardingModal(true)}>
+                    Complete Onboarding
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Platform Fee Incentive - only show for active advisors */}
+          {(isApproved || isActive) && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -256,7 +302,7 @@ const AdvisorDashboard = () => {
                       Platform Fee: <span className="text-gold">{platformFee.feePercent}%</span>
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {platformFee.bookingsThisMonth}/10 bookings this month
+                      {platformFee.bookingsThisMonth}/10 completed bookings this month
                       {platformFee.bookingsThisMonth < 10 && (
                         <span> • Complete {10 - platformFee.bookingsThisMonth} more to unlock 10% fee!</span>
                       )}
@@ -327,7 +373,7 @@ const AdvisorDashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Clients
+                    Total Sessions
                   </CardTitle>
                   <Users className="w-4 h-4 text-gold" />
                 </CardHeader>
@@ -342,14 +388,19 @@ const AdvisorDashboard = () => {
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <Card className="hover:border-gold/50 transition-colors cursor-pointer" onClick={() => navigate("/advisor-availability")}>
+              <Card 
+                className={`hover:border-gold/50 transition-colors ${isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={() => !isPending && navigate("/advisor-availability")}
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <Calendar className="w-8 h-8 text-gold" />
                     <ArrowRight className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <CardTitle className="text-lg">Manage Availability</CardTitle>
-                  <CardDescription>Set your available time slots for bookings</CardDescription>
+                  <CardDescription>
+                    {isPending ? "Available after approval" : "Set your available time slots"}
+                  </CardDescription>
                 </CardHeader>
               </Card>
             </motion.div>
@@ -390,16 +441,20 @@ const AdvisorDashboard = () => {
                   <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">No upcoming sessions</p>
                   <p className="text-sm text-muted-foreground mb-6">
-                    {isApproved 
-                      ? "Make sure you have availability set so clients can book you"
-                      : "Once approved, clients will be able to book sessions with you"}
+                    {isPending 
+                      ? "You'll be able to receive bookings once your application is approved."
+                      : isApproved && !advisorProfile?.onboarding_completed_at
+                      ? "Complete your onboarding to become visible to clients."
+                      : "Make sure you have availability set so clients can book you."}
                   </p>
-                  <Button variant="outline" asChild>
-                    <Link to="/advisor-availability">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Set Availability
-                    </Link>
-                  </Button>
+                  {!isPending && (
+                    <Button variant="outline" asChild>
+                      <Link to="/advisor-availability">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Set Availability
+                      </Link>
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (

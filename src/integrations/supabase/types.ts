@@ -95,6 +95,51 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_profiles: {
+        Row: {
+          availability_set: boolean | null
+          bio: string | null
+          created_at: string | null
+          id: string
+          is_published: boolean
+          onboarding_completed_at: string | null
+          portfolio_images: string[] | null
+          price: number | null
+          specialties: string[] | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          availability_set?: boolean | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean
+          onboarding_completed_at?: string | null
+          portfolio_images?: string[] | null
+          price?: number | null
+          specialties?: string[] | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          availability_set?: boolean | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean
+          onboarding_completed_at?: string | null
+          portfolio_images?: string[] | null
+          price?: number | null
+          specialties?: string[] | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       advisor_verification_archive: {
         Row: {
           application_id: string
@@ -175,6 +220,7 @@ export type Database = {
         Row: {
           advisor_id: string
           client_id: string
+          completed_at: string | null
           created_at: string | null
           id: string
           notes: string | null
@@ -185,6 +231,7 @@ export type Database = {
         Insert: {
           advisor_id: string
           client_id: string
+          completed_at?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
@@ -195,6 +242,7 @@ export type Database = {
         Update: {
           advisor_id?: string
           client_id?: string
+          completed_at?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
@@ -487,6 +535,7 @@ export type Database = {
           price_per_session: number | null
           rating: number | null
           review_count: number | null
+          role: string
           session_duration: number | null
           specialty: string | null
           style_tags: string[] | null
@@ -521,6 +570,7 @@ export type Database = {
           price_per_session?: number | null
           rating?: number | null
           review_count?: number | null
+          role?: string
           session_duration?: number | null
           specialty?: string | null
           style_tags?: string[] | null
@@ -555,6 +605,7 @@ export type Database = {
           price_per_session?: number | null
           rating?: number | null
           review_count?: number | null
+          role?: string
           session_duration?: number | null
           specialty?: string | null
           style_tags?: string[] | null
@@ -722,6 +773,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_active_published_advisors: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          bio: string
+          experience_years: number
+          full_name: string
+          id: string
+          in_person_available: boolean
+          location: string
+          portfolio_images: string[]
+          price: number
+          rating: number
+          review_count: number
+          specialty: string
+          user_id: string
+          verified: boolean
+          virtual_available: boolean
+        }[]
+      }
       get_advisor_public_profile: {
         Args: { advisor_profile_id: string }
         Returns: {

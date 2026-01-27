@@ -38,12 +38,17 @@ const Dashboard = () => {
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profileLoading && profile) {
-      loadBookings();
-    } else if (!profileLoading && !profile) {
-      navigate("/signin?redirect=/dashboard");
+    if (!profileLoading) {
+      if (!profile) {
+        navigate("/signin?redirect=/dashboard");
+      } else if (roles.isAdvisor && roles.role === "advisor") {
+        // Advisors should be on the advisor dashboard by default
+        navigate("/advisor");
+      } else {
+        loadBookings();
+      }
     }
-  }, [profileLoading, profile]);
+  }, [profileLoading, profile, roles]);
 
   const loadBookings = async () => {
     if (!profile) return;
