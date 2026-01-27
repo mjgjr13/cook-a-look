@@ -159,7 +159,8 @@ const AdminAdvisors = () => {
 
       if (appError) throw appError;
 
-      // If user has an account, update their profile to be an advisor
+      // Update the user's profile to be an approved advisor
+      // This makes them visible on the public Style Advisors page
       if (selectedApplication.email) {
         const { data: userProfile } = await supabase
           .from("profiles")
@@ -173,11 +174,13 @@ const AdminAdvisors = () => {
             .update({
               is_advisor: true,
               advisor_approved: true,
+              advisor_status: "approved", // Set status to approved
               specialty: selectedApplication.specialty,
               bio: selectedApplication.bio,
               instagram_url: selectedApplication.instagram,
               portfolio_url: selectedApplication.portfolio,
               full_name: `${selectedApplication.first_name} ${selectedApplication.last_name}`,
+              verified: true, // Mark as verified
             })
             .eq("id", userProfile.id);
 
@@ -185,7 +188,7 @@ const AdminAdvisors = () => {
         }
       }
 
-      toast.success("Application approved successfully");
+      toast.success("Application approved! Advisor is now publicly visible.");
       setIsReviewDialogOpen(false);
       setConfirmAction(null);
       loadData();
@@ -202,7 +205,8 @@ const AdminAdvisors = () => {
     setIsProcessing(true);
 
     try {
-      const { error } = await supabase
+      // Update application status to denied
+      const { error: appError } = await supabase
         .from("advisor_applications")
         .update({
           status: "denied",
@@ -211,7 +215,26 @@ const AdminAdvisors = () => {
         })
         .eq("id", selectedApplication.id);
 
-      if (error) throw error;
+      if (appError) throw appError;
+
+      // Also update the profile status if exists
+      if (selectedApplication.email) {
+        const { data: userProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", selectedApplication.email)
+          .single();
+
+        if (userProfile) {
+          await supabase
+            .from("profiles")
+            .update({
+              advisor_approved: false,
+              advisor_status: "rejected",
+            })
+            .eq("id", userProfile.id);
+        }
+      }
 
       toast.success("Application denied");
       setIsReviewDialogOpen(false);

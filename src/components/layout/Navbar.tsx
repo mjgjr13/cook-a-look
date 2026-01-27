@@ -9,24 +9,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, X, User, Settings, LogOut, LayoutDashboard, Shield } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, LayoutDashboard, Shield, Briefcase } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CookALookLogo from "@/components/CookALookLogo";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
-
-// Admin access is validated server-side via has_role() RPC
+import { useProfile } from "@/hooks/useProfile";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoading, signOut } = useAuth();
-
-  const [profileName, setProfileName] = useState<string | null>(null);
-  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { profile, roles } = useProfile();
 
   const navLinks = [
     { name: "Style Advisors", path: "/advisors" },
@@ -35,35 +29,6 @@ const Navbar = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
-
-  // Fetch user profile info (name/avatar) once user loads
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) {
-        setProfileName(null);
-        setProfileAvatar(null);
-        setIsAdmin(false);
-        return;
-      }
-
-      // Check admin role via server-side RPC
-      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-      setIsAdmin(data === true);
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("user_id", user.id)
-        .single();
-
-      if (profile) {
-        setProfileName(profile.full_name);
-        setProfileAvatar(profile.avatar_url);
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -78,6 +43,9 @@ const Navbar = () => {
     }
     return name.slice(0, 2).toUpperCase();
   };
+
+  // Determine default dashboard based on role
+  const defaultDashboard = roles.isAdvisor ? "/advisor" : "/dashboard";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
@@ -112,30 +80,54 @@ const Navbar = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={profileAvatar || undefined} alt={profileName || "User"} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">{getInitials(profileName)}</AvatarFallback>
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || "User"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">{getInitials(profile?.full_name || null)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex flex-col space-y-1 p-2">
-                    <p className="text-sm font-medium leading-none">{profileName || "User"}</p>
+                    <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
                     <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  
+                  {/* Dashboard link - route based on role */}
                   <DropdownMenuItem asChild>
-                    <Link to="/dashboard" className="cursor-pointer flex items-center gap-2">
+                    <Link to={defaultDashboard} className="cursor-pointer flex items-center gap-2">
                       <LayoutDashboard className="w-4 h-4" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
+                  
+                  {/* Show advisor dashboard option for advisors currently in client view */}
+                  {roles.isAdvisor && location.pathname === "/dashboard" && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/advisor" className="cursor-pointer flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        Advisor Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Show client dashboard option for advisors currently in advisor view */}
+                  {roles.isAdvisor && location.pathname.startsWith("/advisor") && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard" className="cursor-pointer flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Client Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer flex items-center gap-2">
                       <Settings className="w-4 h-4" />
                       Settings
                     </Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
+                  
+                  {roles.isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="cursor-pointer flex items-center gap-2">
                         <Shield className="w-4 h-4" />
@@ -169,19 +161,29 @@ const Navbar = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-9 w-9 rounded-full p-0">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={profileAvatar || undefined} alt={profileName || "User"} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">{getInitials(profileName)}</AvatarFallback>
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || "User"} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">{getInitials(profile?.full_name || null)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link to="/dashboard">Dashboard</Link>
+                    <Link to={defaultDashboard}>Dashboard</Link>
                   </DropdownMenuItem>
+                  {roles.isAdvisor && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/advisor">Advisor Dashboard</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard">Client Dashboard</Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
+                  {roles.isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin">Admin</Link>
                     </DropdownMenuItem>

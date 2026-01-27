@@ -14,7 +14,9 @@ import {
   TrendingUp,
   ChevronRight,
   Users,
-  ArrowRight
+  ArrowRight,
+  Percent,
+  CheckCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
 import RoleSwitcher from "@/components/RoleSwitcher";
+import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 
 interface Booking {
   id: string;
@@ -39,115 +42,66 @@ interface Booking {
   };
 }
 
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  is_advisor: boolean;
-  advisor_status: string;
-  avatar_url: string;
-  user_id: string;
-  onboarding_acknowledged_at: string | null;
-  price_per_session: number;
-  specialty: string;
-}
-
 const AdvisorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, roles, isLoading: profileLoading, refetch } = useProfile();
+  
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [earnings, setEarnings] = useState({ available: 0, pending: 0, total: 0 });
+  const [platformFee, setPlatformFee] = useState({ feePercent: 15, bookingsThisMonth: 0 });
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    if (!profileLoading && profile) {
+      loadDashboard();
+    } else if (!profileLoading && !profile) {
+      navigate("/become-advisor");
+    }
+  }, [profileLoading, profile]);
 
   const loadDashboard = async () => {
+    if (!profile) return;
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/signin?redirect=/advisor");
-        return;
-      }
-
-      // Get profile - with retry logic for newly created accounts
-      let profileData = null;
-      let retries = 0;
-      const maxRetries = 5;
-
-      while (retries < maxRetries && !profileData) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-
-        if (data) {
-          profileData = data;
-        } else {
-          retries++;
-          if (retries < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-      }
-
-      if (!profileData) {
-        console.error("No profile found after retries");
-        navigate("/become-advisor");
-        return;
-      }
-
-      // Check if user is an advisor
-      if (!profileData.is_advisor) {
-        toast({
-          title: "Not an Advisor",
-          description: "You need to apply as an advisor to access this dashboard.",
-        });
-        navigate("/become-advisor");
-        return;
-      }
-
-      setProfile(profileData);
-
       // Check if advisor needs onboarding
-      if (!profileData.onboarding_acknowledged_at) {
+      if (!profile.onboarding_acknowledged_at) {
         setShowOnboardingModal(true);
       }
 
-      // Get bookings where user is the advisor
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select(`
-          *,
-          slot:availability_slots(*),
-          client:profiles!bookings_client_id_fkey(full_name, email, avatar_url)
-        `)
-        .eq("advisor_id", profileData.id)
-        .order("created_at", { ascending: false });
+      // Fetch bookings, earnings, and platform fee in parallel
+      const [bookingsResult, paymentsResult, feeResult] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select(`
+            *,
+            slot:availability_slots(*),
+            client:profiles!bookings_client_id_fkey(full_name, email, avatar_url)
+          `)
+          .eq("advisor_id", profile.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("payments")
+          .select("*")
+          .eq("advisor_id", profile.id),
+        calculatePlatformFee(profile.id),
+      ]);
 
-      setBookings(bookingsData || []);
+      setBookings(bookingsResult.data || []);
+      setPlatformFee(feeResult);
 
-      // Get earnings summary
-      const { data: paymentsData } = await supabase
-        .from("payments")
-        .select("*")
-        .eq("advisor_id", profileData.id);
-
-      if (paymentsData) {
-        const total = paymentsData
+      // Calculate earnings
+      if (paymentsResult.data) {
+        const total = paymentsResult.data
           .filter(p => p.status === "completed")
-          .reduce((sum, p) => sum + Number(p.advisor_payout || p.amount * 0.85), 0);
+          .reduce((sum, p) => sum + Number(p.advisor_payout || p.amount * (1 - feeResult.feePercent / 100)), 0);
 
         const { data: withdrawalsData } = await supabase
           .from("withdrawal_requests")
           .select("*")
-          .eq("advisor_id", profileData.id);
+          .eq("advisor_id", profile.id);
 
         const pending = (withdrawalsData || [])
           .filter(w => w.status === "pending" || w.status === "approved")
@@ -176,7 +130,7 @@ const AdvisorDashboard = () => {
     }
   };
 
-  if (isLoading) {
+  if (profileLoading || isLoading) {
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -186,7 +140,7 @@ const AdvisorDashboard = () => {
     );
   }
 
-  if (!profile) {
+  if (!profile || !roles.isAdvisor) {
     return (
       <Layout>
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -209,7 +163,8 @@ const AdvisorDashboard = () => {
     return bookingDate === today;
   });
 
-  const pendingApproval = profile.advisor_status === "pending";
+  const isPending = roles.isPendingAdvisor;
+  const isApproved = roles.isApprovedAdvisor;
 
   return (
     <Layout>
@@ -237,9 +192,15 @@ const AdvisorDashboard = () => {
                 <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase">
                   Advisor Dashboard
                 </p>
-                {pendingApproval && (
-                  <Badge variant="outline" className="text-muted-foreground border-muted">
+                {isPending && (
+                  <Badge variant="outline" className="text-gold border-gold/50">
                     Pending Approval
+                  </Badge>
+                )}
+                {isApproved && (
+                  <Badge variant="default" className="bg-primary">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Approved
                   </Badge>
                 )}
               </div>
@@ -259,17 +220,53 @@ const AdvisorDashboard = () => {
           </div>
 
           {/* Pending Approval Notice */}
-          {pendingApproval && (
+          {isPending && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-accent/50 border border-accent rounded-lg p-4 mb-8"
             >
-              <h3 className="font-medium text-foreground mb-1">Application Under Review</h3>
-              <p className="text-sm text-muted-foreground">
-                Your advisor application is being reviewed. You'll receive an email once approved.
-                In the meantime, you can set up your availability and profile.
-              </p>
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-gold mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-foreground mb-1">
+                    Application Under Review
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your advisor application is being reviewed by our team. You'll receive an email once approved.
+                    In the meantime, you can set up your availability and complete your profile.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Platform Fee Incentive */}
+          {isApproved && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-gold/10 to-transparent border border-gold/30 rounded-lg p-4 mb-8"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Percent className="w-5 h-5 text-gold" />
+                  <div>
+                    <p className="font-medium">
+                      Platform Fee: <span className="text-gold">{platformFee.feePercent}%</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {platformFee.bookingsThisMonth}/10 bookings this month
+                      {platformFee.bookingsThisMonth < 10 && (
+                        <span> • Complete {10 - platformFee.bookingsThisMonth} more to unlock 10% fee!</span>
+                      )}
+                      {platformFee.feePercent === 10 && (
+                        <span className="text-primary"> • 🎉 Reduced fee unlocked!</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
 
@@ -393,7 +390,9 @@ const AdvisorDashboard = () => {
                   <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">No upcoming sessions</p>
                   <p className="text-sm text-muted-foreground mb-6">
-                    Make sure you have availability set so clients can book you
+                    {isApproved 
+                      ? "Make sure you have availability set so clients can book you"
+                      : "Once approved, clients will be able to book sessions with you"}
                   </p>
                   <Button variant="outline" asChild>
                     <Link to="/advisor-availability">
