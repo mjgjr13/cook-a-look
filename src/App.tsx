@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import AdvisorRoute from "@/components/AdvisorRoute";
 import Index from "./pages/Index";
 import Advisors from "./pages/Advisors";
 import AdvisorProfile from "./pages/AdvisorProfile";
@@ -41,6 +42,7 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/advisors" element={<Advisors />} />
             <Route path="/advisors/:id" element={<AdvisorProfile />} />
@@ -50,24 +52,37 @@ const App = () => (
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            
+            {/* Client Dashboard - Protected */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
             } />
+            
+            {/* Advisor Routes - Advisor Protected */}
             <Route path="/advisor" element={
-              <ProtectedRoute>
+              <AdvisorRoute>
                 <AdvisorDashboard />
-              </ProtectedRoute>
+              </AdvisorRoute>
             } />
+            <Route path="/advisor-availability" element={
+              <AdvisorRoute>
+                <AdvisorAvailability />
+              </AdvisorRoute>
+            } />
+            <Route path="/advisor/earnings" element={
+              <AdvisorRoute>
+                <AdvisorEarnings />
+              </AdvisorRoute>
+            } />
+            
+            {/* General Protected Routes */}
             <Route path="/booking-success" element={
               <ProtectedRoute>
                 <BookingSuccess />
-              </ProtectedRoute>
-            } />
-            <Route path="/advisor-availability" element={
-              <ProtectedRoute>
-                <AdvisorAvailability />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
@@ -75,8 +90,8 @@ const App = () => (
                 <AccountSettings />
               </ProtectedRoute>
             } />
-            <Route path="/terms" element={<TermsOfUse />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
+            
+            {/* Admin Routes */}
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminDashboard />
@@ -97,11 +112,7 @@ const App = () => (
                 <AdminPayments />
               </AdminRoute>
             } />
-            <Route path="/advisor/earnings" element={
-              <ProtectedRoute>
-                <AdvisorEarnings />
-              </ProtectedRoute>
-            } />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

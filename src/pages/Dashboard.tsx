@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import RewardsCard from "@/components/dashboard/RewardsCard";
-import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
 import RoleSwitcher from "@/components/RoleSwitcher";
+import { useProfile } from "@/hooks/useProfile";
 
 interface Booking {
   id: string;
@@ -25,147 +25,53 @@ interface Booking {
     specialty: string;
     avatar_url: string;
   };
-  client?: {
-    full_name: string;
-    email: string;
-  };
-}
-
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  account_type: string;
-  is_advisor: boolean;
-  avatar_url: string;
-  user_id: string;
-  onboarding_acknowledged_at: string | null;
 }
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, roles, isLoading: profileLoading, refetch } = useProfile();
+  
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
-  const loadDashboard = async (retryCount = 0) => {
-    const maxRetries = 3;
-    const timeoutMs = 10000;
+  useEffect(() => {
+    if (!profileLoading && profile) {
+      loadBookings();
+    } else if (!profileLoading && !profile) {
+      navigate("/signin?redirect=/dashboard");
+    }
+  }, [profileLoading, profile]);
+
+  const loadBookings = async () => {
+    if (!profile) return;
 
     try {
       setLoadError(null);
-      setIsLoading(true);
-
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Loading timed out")), timeoutMs);
-      });
-
-      const loadPromise = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          navigate("/signin?redirect=/dashboard");
-          return null;
-        }
-
-        setUserId(session.user.id);
-
-        // Get profile
-        let { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single();
-
-        // If no profile exists, try to create one (fallback for trigger failure)
-        if (profileError && profileError.code === "PGRST116") {
-          console.log("No profile found, attempting to create...");
-          
-          const { data: newProfile, error: createError } = await supabase
-            .from("profiles")
-            .insert({
-              user_id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || "New User",
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error("Failed to create profile:", createError);
-            throw new Error("Unable to create your profile. Please try again.");
-          }
-
-          profileData = newProfile;
-          profileError = null;
-        }
-
-        if (profileError || !profileData) {
-          throw new Error("Failed to load your profile");
-        }
-
-        return profileData;
-      };
-
-      // Race between load and timeout
-      const profileData = await Promise.race([loadPromise(), timeoutPromise]) as Profile | null;
       
-      if (!profileData) return;
+      // Fetch client bookings
+      const { data: bookingsData, error } = await supabase
+        .from("bookings")
+        .select(`
+          *,
+          slot:availability_slots(*),
+          advisor:profiles!bookings_advisor_id_fkey(full_name, specialty, avatar_url)
+        `)
+        .eq("client_id", profile.id)
+        .order("created_at", { ascending: false });
 
-      setProfile(profileData);
-
-      // Check if advisor needs onboarding acknowledgment
-      if (profileData.is_advisor && !profileData.onboarding_acknowledged_at) {
-        setShowOnboardingModal(true);
-      }
-
-      // Get bookings based on account type
-      const bookingsQuery = profileData.is_advisor
-        ? supabase
-            .from("bookings")
-            .select(`
-              *,
-              slot:availability_slots(*),
-              client:profiles!bookings_client_id_fkey(full_name, email, avatar_url)
-            `)
-            .eq("advisor_id", profileData.id)
-            .order("created_at", { ascending: false })
-        : supabase
-            .from("bookings")
-            .select(`
-              *,
-              slot:availability_slots(*),
-              advisor:profiles!bookings_advisor_id_fkey(full_name, specialty, avatar_url)
-            `)
-            .eq("client_id", profileData.id)
-            .order("created_at", { ascending: false });
-
-      const { data: bookingsData } = await bookingsQuery;
+      if (error) throw error;
+      
       setBookings(bookingsData || []);
-      setIsLoading(false);
     } catch (error) {
       console.error("Dashboard load error:", error);
-      
-      if (retryCount < maxRetries) {
-        console.log(`Retrying... (${retryCount + 1}/${maxRetries})`);
-        setTimeout(() => loadDashboard(retryCount + 1), 1000);
-        return;
-      }
-
       setLoadError(error instanceof Error ? error.message : "An error occurred");
+    } finally {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadDashboard();
-  }, [navigate, toast]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -176,7 +82,7 @@ const Dashboard = () => {
     setActiveVideoBooking(bookingId);
   };
 
-  if (isLoading) {
+  if (profileLoading || isLoading) {
     return (
       <Layout>
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -194,9 +100,23 @@ const Dashboard = () => {
           <AlertTriangle className="w-12 h-12 text-destructive" />
           <h2 className="font-serif text-xl">Unable to load dashboard</h2>
           <p className="text-muted-foreground text-center max-w-md">{loadError}</p>
-          <Button onClick={() => loadDashboard()} className="gap-2">
+          <Button onClick={() => loadBookings()} className="gap-2">
             <RefreshCw className="w-4 h-4" />
             Try Again
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+          <h2 className="font-serif text-xl">Session Expired</h2>
+          <p className="text-muted-foreground">Please sign in to view your dashboard.</p>
+          <Button asChild>
+            <Link to="/signin">Sign In</Link>
           </Button>
         </div>
       </Layout>
@@ -219,15 +139,6 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Advisor Onboarding Modal */}
-      {profile?.is_advisor && showOnboardingModal && (
-        <AdvisorOnboardingModal
-          profileId={profile.id}
-          isOpen={showOnboardingModal}
-          onComplete={() => setShowOnboardingModal(false)}
-        />
-      )}
-
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
@@ -240,7 +151,8 @@ const Dashboard = () => {
               </h1>
             </div>
             <div className="flex gap-3 flex-wrap">
-              {profile?.is_advisor && (
+              {/* Only show role switcher if user is also an advisor */}
+              {roles.isAdvisor && (
                 <RoleSwitcher currentRole="client" />
               )}
               <Button variant="outline" asChild>
@@ -256,7 +168,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - Show rewards for clients instead of total bookings amount */}
+          {/* Stats Grid - Client rewards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -278,20 +190,9 @@ const Dashboard = () => {
               <p className="text-muted-foreground">Completed Sessions</p>
             </motion.div>
             
-            {/* Rewards card for clients, session count for advisors */}
-            {!profile?.is_advisor && userId ? (
-              <RewardsCard userId={userId} />
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-background border border-border p-6"
-              >
-                <Calendar className="w-8 h-8 text-gold mb-3" />
-                <p className="text-3xl font-serif font-medium">{bookings.length}</p>
-                <p className="text-muted-foreground">Total Sessions</p>
-              </motion.div>
+            {/* Rewards card for clients */}
+            {profile.user_id && (
+              <RewardsCard userId={profile.user_id} />
             )}
           </div>
 
@@ -302,11 +203,9 @@ const Dashboard = () => {
               <div className="bg-background border border-border p-8 text-center">
                 <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">No upcoming sessions</p>
-                {!profile?.is_advisor && (
-                  <Button variant="hero" asChild>
-                    <Link to="/advisors">Book a Consultation</Link>
-                  </Button>
-                )}
+                <Button variant="hero" asChild>
+                  <Link to="/advisors">Book a Consultation</Link>
+                </Button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -323,9 +222,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <p className="font-serif font-medium">
-                          {profile?.is_advisor
-                            ? `Session with ${booking.client?.full_name}`
-                            : `Session with ${booking.advisor?.full_name}`}
+                          Session with {booking.advisor?.full_name}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(booking.slot.start_time).toLocaleDateString("en-US", {
@@ -371,9 +268,7 @@ const Dashboard = () => {
                   >
                     <div>
                       <p className="font-serif">
-                        {profile?.is_advisor
-                          ? `Session with ${booking.client?.full_name}`
-                          : `Session with ${booking.advisor?.full_name}`}
+                        Session with {booking.advisor?.full_name}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(booking.slot.start_time).toLocaleDateString("en-US", {
