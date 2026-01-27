@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import RewardsCard from "@/components/dashboard/RewardsCard";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 interface Booking {
   id: string;
@@ -232,20 +233,15 @@ const Dashboard = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
             <div>
               <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-2">
-                {profile?.is_advisor ? "Advisor Dashboard" : "Client Dashboard"}
+                Client Dashboard
               </p>
               <h1 className="font-serif text-3xl md:text-4xl font-medium">
                 Welcome, {profile?.full_name?.split(" ")[0] || "there"}
               </h1>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               {profile?.is_advisor && (
-                <Button variant="outline" asChild>
-                  <Link to="/advisor-availability">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Manage Availability
-                  </Link>
-                </Button>
+                <RoleSwitcher currentRole="client" />
               )}
               <Button variant="outline" asChild>
                 <Link to="/settings">

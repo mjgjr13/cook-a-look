@@ -328,9 +328,9 @@ const BecomeAdvisor = () => {
         description: "Your account has been created and application submitted!",
       });
 
-      // Redirect to dashboard after a short delay
+      // Redirect to advisor dashboard after a short delay
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/advisor");
       }, 2000);
     } catch (err: any) {
       console.error("Error submitting application:", err);

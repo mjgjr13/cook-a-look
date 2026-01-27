@@ -16,6 +16,7 @@ import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
+import AdvisorDashboard from "./pages/AdvisorDashboard";
 import BookingSuccess from "./pages/BookingSuccess";
 import AdvisorAvailability from "./pages/AdvisorAvailability";
 import AccountSettings from "./pages/AccountSettings";
@@ -52,6 +53,11 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/advisor" element={
+              <ProtectedRoute>
+                <AdvisorDashboard />
               </ProtectedRoute>
             } />
             <Route path="/booking-success" element={
