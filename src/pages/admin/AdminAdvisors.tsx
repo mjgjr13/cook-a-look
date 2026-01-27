@@ -54,6 +54,7 @@ import { format } from "date-fns";
 
 interface AdvisorApplication {
   id: string;
+  user_id: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -78,12 +79,24 @@ interface AdvisorApplication {
 
 interface AdvisorProfile {
   id: string;
+  user_id: string;
   full_name: string | null;
   email: string | null;
   specialty: string | null;
   is_demo: boolean;
   advisor_approved: boolean;
+  advisor_status: string | null;
   demo_availability_enabled: boolean;
+  created_at: string;
+}
+
+interface AdvisorProfileRecord {
+  id: string;
+  user_id: string;
+  status: string;
+  is_published: boolean;
+  price: number | null;
+  bio: string | null;
   created_at: string;
 }
 
@@ -92,9 +105,10 @@ const AdminAdvisors = () => {
   const [activeTab, setActiveTab] = useState("applications");
   const [applications, setApplications] = useState<AdvisorApplication[]>([]);
   const [advisors, setAdvisors] = useState<AdvisorProfile[]>([]);
+  const [advisorProfiles, setAdvisorProfiles] = useState<AdvisorProfileRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("pending");
   
   const [selectedApplication, setSelectedApplication] = useState<AdvisorApplication | null>(null);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
@@ -110,6 +124,7 @@ const AdminAdvisors = () => {
     setIsLoading(true);
     try {
       if (activeTab === "applications") {
+        // Only show pending applications
         const { data, error } = await supabase
           .from("advisor_applications")
           .select("*")
@@ -118,15 +133,23 @@ const AdminAdvisors = () => {
         if (error) throw error;
         setApplications((data as AdvisorApplication[]) || []);
       } else {
-        // Fetch ALL advisor profiles regardless of verification/demo status
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, full_name, email, specialty, is_demo, advisor_approved, demo_availability_enabled, created_at")
-          .or("is_advisor.eq.true,is_demo.eq.true")
-          .order("created_at", { ascending: false });
+        // Fetch active advisors from advisor_profiles with status approved or active
+        const [profilesResult, advisorProfilesResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, user_id, full_name, email, specialty, is_demo, advisor_approved, advisor_status, demo_availability_enabled, created_at")
+            .or("is_advisor.eq.true,is_demo.eq.true")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("advisor_profiles")
+            .select("*")
+            .in("status", ["approved", "active"])
+            .order("created_at", { ascending: false }),
+        ]);
 
-        if (error) throw error;
-        setAdvisors((data as AdvisorProfile[]) || []);
+        if (profilesResult.error) throw profilesResult.error;
+        setAdvisors((profilesResult.data as AdvisorProfile[]) || []);
+        setAdvisorProfiles((advisorProfilesResult.data as AdvisorProfileRecord[]) || []);
       }
     } catch (err) {
       console.error("Error loading data:", err);
@@ -147,48 +170,68 @@ const AdminAdvisors = () => {
     setIsProcessing(true);
 
     try {
-      // Update application status
-      const { error: appError } = await supabase
-        .from("advisor_applications")
+      const userId = selectedApplication.user_id;
+
+      // 1. Update advisor_profiles status to 'approved'
+      const { error: advisorProfileError } = await supabase
+        .from("advisor_profiles")
         .update({
           status: "approved",
-          admin_notes: adminNotes,
-          reviewed_at: new Date().toISOString(),
+          is_published: false, // Not published until onboarding complete
         })
-        .eq("id", selectedApplication.id);
+        .eq("user_id", userId);
 
-      if (appError) throw appError;
-
-      // Update the user's profile to be an approved advisor
-      // This makes them visible on the public Style Advisors page
-      if (selectedApplication.email) {
-        const { data: userProfile } = await supabase
-          .from("profiles")
-          .select("id, user_id")
-          .eq("email", selectedApplication.email)
-          .single();
-
-        if (userProfile) {
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .update({
-              is_advisor: true,
-              advisor_approved: true,
-              advisor_status: "approved", // Set status to approved
-              specialty: selectedApplication.specialty,
-              bio: selectedApplication.bio,
-              instagram_url: selectedApplication.instagram,
-              portfolio_url: selectedApplication.portfolio,
-              full_name: `${selectedApplication.first_name} ${selectedApplication.last_name}`,
-              verified: true, // Mark as verified
-            })
-            .eq("id", userProfile.id);
-
-          if (profileError) throw profileError;
-        }
+      if (advisorProfileError) {
+        console.error("Advisor profile update error:", advisorProfileError);
+        // If no advisor_profile exists, create one
+        await supabase
+          .from("advisor_profiles")
+          .insert({
+            user_id: userId,
+            status: "approved",
+            is_published: false,
+            bio: selectedApplication.bio,
+            specialties: [selectedApplication.specialty],
+          });
       }
 
-      toast.success("Application approved! Advisor is now publicly visible.");
+      // 2. Update the profiles table
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          is_advisor: true,
+          advisor_approved: true,
+          advisor_status: "approved",
+          specialty: selectedApplication.specialty,
+          bio: selectedApplication.bio,
+          instagram_url: selectedApplication.instagram,
+          portfolio_url: selectedApplication.portfolio,
+          full_name: `${selectedApplication.first_name} ${selectedApplication.last_name}`,
+          verified: true,
+        })
+        .eq("user_id", userId);
+
+      if (profileError) throw profileError;
+
+      // 3. Delete from advisor_applications (approved = no longer pending)
+      const { error: deleteError } = await supabase
+        .from("advisor_applications")
+        .delete()
+        .eq("id", selectedApplication.id);
+
+      if (deleteError) {
+        // If delete fails, just update status
+        await supabase
+          .from("advisor_applications")
+          .update({
+            status: "approved",
+            admin_notes: adminNotes,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("id", selectedApplication.id);
+      }
+
+      toast.success("Advisor approved! They will be prompted to complete onboarding.");
       setIsReviewDialogOpen(false);
       setConfirmAction(null);
       loadData();
@@ -205,8 +248,28 @@ const AdminAdvisors = () => {
     setIsProcessing(true);
 
     try {
-      // Update application status to denied
-      const { error: appError } = await supabase
+      const userId = selectedApplication.user_id;
+
+      // Update advisor_profiles status to rejected
+      await supabase
+        .from("advisor_profiles")
+        .update({
+          status: "rejected",
+          is_published: false,
+        })
+        .eq("user_id", userId);
+
+      // Update profiles
+      await supabase
+        .from("profiles")
+        .update({
+          advisor_approved: false,
+          advisor_status: "rejected",
+        })
+        .eq("user_id", userId);
+
+      // Update application status
+      await supabase
         .from("advisor_applications")
         .update({
           status: "denied",
@@ -214,27 +277,6 @@ const AdminAdvisors = () => {
           reviewed_at: new Date().toISOString(),
         })
         .eq("id", selectedApplication.id);
-
-      if (appError) throw appError;
-
-      // Also update the profile status if exists
-      if (selectedApplication.email) {
-        const { data: userProfile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", selectedApplication.email)
-          .single();
-
-        if (userProfile) {
-          await supabase
-            .from("profiles")
-            .update({
-              advisor_approved: false,
-              advisor_status: "rejected",
-            })
-            .eq("id", userProfile.id);
-        }
-      }
 
       toast.success("Application denied");
       setIsReviewDialogOpen(false);
@@ -258,7 +300,6 @@ const AdminAdvisors = () => {
       if (error) throw error;
 
       if (enabled) {
-        // Generate demo availability slots for next 14 days
         await generateDemoSlots(advisorId);
       }
 
@@ -278,10 +319,8 @@ const AdminAdvisors = () => {
       const date = new Date(now);
       date.setDate(date.getDate() + day);
       
-      // Skip weekends
       if (date.getDay() === 0 || date.getDay() === 6) continue;
 
-      // Generate 3 slots per day: 10am, 2pm, 4pm
       for (const hour of [10, 14, 16]) {
         const startTime = new Date(date);
         startTime.setHours(hour, 0, 0, 0);
@@ -289,7 +328,6 @@ const AdminAdvisors = () => {
         const endTime = new Date(startTime);
         endTime.setHours(hour + 1);
 
-        // Only add future slots
         if (startTime > now) {
           slots.push({
             advisor_id: advisorId,
@@ -303,30 +341,27 @@ const AdminAdvisors = () => {
     }
 
     if (slots.length > 0) {
-      const { error } = await supabase
-        .from("availability_slots")
-        .insert(slots);
-
-      if (error) {
-        console.error("Error generating slots:", error);
-      }
+      await supabase.from("availability_slots").insert(slots);
     }
   };
 
-  const toggleAdvisorApproval = async (advisorId: string, approved: boolean) => {
+  const toggleAdvisorPublished = async (userId: string, published: boolean) => {
     try {
       const { error } = await supabase
-        .from("profiles")
-        .update({ advisor_approved: approved })
-        .eq("id", advisorId);
+        .from("advisor_profiles")
+        .update({ 
+          is_published: published,
+          status: published ? "active" : "approved",
+        })
+        .eq("user_id", userId);
 
       if (error) throw error;
 
-      toast.success(approved ? "Advisor activated" : "Advisor deactivated");
+      toast.success(published ? "Advisor is now publicly visible" : "Advisor hidden from public");
       loadData();
     } catch (err) {
-      console.error("Error toggling approval:", err);
-      toast.error("Failed to update advisor status");
+      console.error("Error toggling published:", err);
+      toast.error("Failed to update advisor visibility");
     }
   };
 
@@ -342,6 +377,12 @@ const AdminAdvisors = () => {
     (advisor.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (advisor.email || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Get advisor profile status for each advisor
+  const getAdvisorStatus = (userId: string) => {
+    const ap = advisorProfiles.find(p => p.user_id === userId);
+    return ap ? { status: ap.status, is_published: ap.is_published } : null;
+  };
 
   if (isLoading) {
     return (
@@ -509,62 +550,74 @@ const AdminAdvisors = () => {
             <TabsContent value="advisors">
               {filteredAdvisors.length === 0 ? (
                 <div className="text-center py-16 border border-dashed border-border rounded-lg">
-                  <p className="text-muted-foreground">No advisors found</p>
+                  <p className="text-muted-foreground">No active advisors found</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredAdvisors.map((advisor, index) => (
-                    <motion.div
-                      key={advisor.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-card border border-border p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="font-medium">{advisor.full_name || "Unnamed"}</h3>
+                  {filteredAdvisors.map((advisor, index) => {
+                    const apStatus = getAdvisorStatus(advisor.user_id);
+                    return (
+                      <motion.div
+                        key={advisor.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-card border border-border p-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-medium">{advisor.full_name || "Unnamed"}</h3>
+                              {advisor.is_demo && (
+                                <Badge variant="outline">Demo</Badge>
+                              )}
+                              {apStatus?.is_published && (
+                                <Badge variant="default" className="bg-primary">Published</Badge>
+                              )}
+                              {apStatus && !apStatus.is_published && (
+                                <Badge variant="secondary">Not Published</Badge>
+                              )}
+                              {advisor.advisor_status === "approved" && (
+                                <Badge variant="outline" className="border-primary text-primary">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Approved
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {advisor.email} • {advisor.specialty || "No specialty"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-4">
                             {advisor.is_demo && (
-                              <Badge variant="outline">Demo</Badge>
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor={`demo-${advisor.id}`} className="text-sm">
+                                  Demo Availability
+                                </Label>
+                                <Switch
+                                  id={`demo-${advisor.id}`}
+                                  checked={advisor.demo_availability_enabled}
+                                  onCheckedChange={(checked) => toggleDemoAvailability(advisor.id, checked)}
+                                />
+                              </div>
                             )}
-                            <Badge variant={advisor.advisor_approved ? "default" : "secondary"}>
-                              {advisor.advisor_approved ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {advisor.email} • {advisor.specialty || "No specialty"}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor={`demo-${advisor.id}`} className="text-sm">
-                              Demo Availability
-                            </Label>
-                            <Switch
-                              id={`demo-${advisor.id}`}
-                              checked={advisor.demo_availability_enabled}
-                              onCheckedChange={(checked) =>
-                                toggleDemoAvailability(advisor.id, checked)
-                              }
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor={`active-${advisor.id}`} className="text-sm">
-                              Active
-                            </Label>
-                            <Switch
-                              id={`active-${advisor.id}`}
-                              checked={advisor.advisor_approved}
-                              onCheckedChange={(checked) =>
-                                toggleAdvisorApproval(advisor.id, checked)
-                              }
-                            />
+                            {advisor.user_id && (
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor={`published-${advisor.id}`} className="text-sm">
+                                  Published
+                                </Label>
+                                <Switch
+                                  id={`published-${advisor.id}`}
+                                  checked={apStatus?.is_published || false}
+                                  onCheckedChange={(checked) => toggleAdvisorPublished(advisor.user_id, checked)}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
@@ -572,44 +625,49 @@ const AdminAdvisors = () => {
         </div>
       </section>
 
-      {/* Review Application Dialog */}
+      {/* Review Dialog */}
       <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Review Application</DialogTitle>
             <DialogDescription>
-              Review the applicant's information and verification documents
+              Review the advisor application and make a decision
             </DialogDescription>
           </DialogHeader>
 
           {selectedApplication && (
-            <div className="space-y-6">
-              {/* Basic Info */}
+            <div className="space-y-6 py-4">
+              {/* Applicant Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground text-xs">Name</Label>
+                  <p className="text-sm text-muted-foreground">Name</p>
                   <p className="font-medium">
                     {selectedApplication.first_name} {selectedApplication.last_name}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Email</Label>
-                  <p>{selectedApplication.email}</p>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedApplication.email}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Phone</Label>
-                  <p>{selectedApplication.phone || "Not provided"}</p>
+                  <p className="text-sm text-muted-foreground">Specialty</p>
+                  <p className="font-medium">{selectedApplication.specialty}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Specialty</Label>
-                  <p>{selectedApplication.specialty}</p>
+                  <p className="text-sm text-muted-foreground">Session Types</p>
+                  <div className="flex gap-2">
+                    {selectedApplication.virtual && <Badge>Virtual</Badge>}
+                    {selectedApplication.in_person && <Badge>In-Person</Badge>}
+                  </div>
                 </div>
               </div>
 
               {/* Bio */}
               <div>
-                <Label className="text-muted-foreground text-xs">Bio</Label>
-                <p className="text-sm mt-1">{selectedApplication.bio}</p>
+                <p className="text-sm text-muted-foreground mb-1">Bio</p>
+                <p className="text-sm bg-secondary/50 p-3 rounded">
+                  {selectedApplication.bio}
+                </p>
               </div>
 
               {/* Social Links */}
@@ -622,7 +680,7 @@ const AdminAdvisors = () => {
                     className="flex items-center gap-2 text-sm text-primary hover:underline"
                   >
                     <Instagram className="w-4 h-4" />
-                    {selectedApplication.instagram}
+                    @{selectedApplication.instagram.replace("@", "")}
                   </a>
                 )}
                 {selectedApplication.portfolio && (
@@ -638,90 +696,48 @@ const AdminAdvisors = () => {
                 )}
               </div>
 
-              {/* Verification Documents */}
-              <div>
-                <Label className="text-muted-foreground text-xs mb-2 block">
-                  Verification Documents
-                </Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border border-border rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-2">Selfie</p>
-                    {selectedApplication.selfie_url ? (
-                      <img
-                        src={selectedApplication.selfie_url}
-                        alt="Selfie"
-                        className="w-full aspect-square object-cover rounded"
-                      />
-                    ) : (
-                      <div className="aspect-square bg-muted flex items-center justify-center rounded">
-                        <span className="text-muted-foreground text-sm">Not uploaded</span>
-                      </div>
-                    )}
-                    {selectedApplication.liveness_verified && (
-                      <Badge variant="outline" className="mt-2 gap-1">
-                        <Shield className="w-3 h-3" />
-                        Liveness Verified
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="border border-border rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-2">Government ID</p>
-                    {selectedApplication.id_document_url ? (
-                      <img
-                        src={selectedApplication.id_document_url}
-                        alt="ID Document"
-                        className="w-full aspect-video object-cover rounded"
-                      />
-                    ) : (
-                      <div className="aspect-video bg-muted flex items-center justify-center rounded">
-                        <span className="text-muted-foreground text-sm">Not uploaded</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {/* Admin Notes */}
               <div>
                 <Label htmlFor="adminNotes">Admin Notes</Label>
                 <Textarea
                   id="adminNotes"
+                  placeholder="Add notes about this application..."
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add notes about this application..."
                   className="mt-1"
-                  rows={3}
                 />
               </div>
 
-              {/* Actions */}
-              {selectedApplication.status === "pending" && (
-                <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    variant="destructive"
-                    onClick={() => setConfirmAction("deny")}
-                    disabled={isProcessing}
-                    className="flex-1 gap-2"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Deny Application
-                  </Button>
-                  <Button
-                    onClick={() => setConfirmAction("approve")}
-                    disabled={isProcessing}
-                    className="flex-1 gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Approve Application
-                  </Button>
-                </div>
-              )}
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsReviewDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setConfirmAction("deny")}
+                  disabled={isProcessing}
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Deny
+                </Button>
+                <Button
+                  onClick={() => setConfirmAction("approve")}
+                  disabled={isProcessing}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Approve
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Confirm Action Dialog */}
+      {/* Confirm Dialog */}
       <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -730,8 +746,8 @@ const AdminAdvisors = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === "approve"
-                ? "This will approve the application and create/update their advisor profile. They will be able to receive bookings."
-                : "This will deny the application. The applicant will be notified via email."}
+                ? "This will approve the advisor and remove them from the applications list. They'll be prompted to complete onboarding before becoming publicly visible."
+                : "This will deny the application. The applicant will be notified."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -11,20 +11,21 @@ import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilter
 
 interface AdvisorData {
   id: string;
+  user_id?: string;
   full_name: string | null;
   specialty: string | null;
   bio: string | null;
   rating: number | null;
   review_count: number | null;
-  price_per_session: number | null;
+  price?: number | null;
+  price_per_session?: number | null;
   avatar_url: string | null;
   virtual_available: boolean | null;
   in_person_available: boolean | null;
   location: string | null;
-  style_tags: string[] | null;
-  target_demographics: string[] | null;
+  portfolio_images: string[] | null;
+  style_tags?: string[] | null;
   verified: boolean | null;
-  is_demo?: boolean | null;
 }
 
 const badgeColors = {
@@ -48,11 +49,19 @@ const Advisors = () => {
   useEffect(() => {
     const fetchAdvisors = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_public_advisor_profiles');
+        // Use the new RPC function that only returns active + published advisors
+        const { data, error } = await supabase.rpc('get_active_published_advisors');
         
         if (error) {
           console.error('Error fetching advisors:', error);
-          setAdvisors([]);
+          // Fallback to old method if new function doesn't exist yet
+          const { data: fallbackData, error: fallbackError } = await supabase.rpc('get_public_advisor_profiles');
+          if (fallbackError) {
+            console.error('Fallback error:', fallbackError);
+            setAdvisors([]);
+          } else {
+            setAdvisors((fallbackData || []) as AdvisorData[]);
+          }
         } else {
           setAdvisors((data || []) as AdvisorData[]);
         }
@@ -71,9 +80,7 @@ const Advisors = () => {
     let result = advisors.filter((advisor) => {
       const name = advisor.full_name || "";
       const specialty = advisor.specialty || "";
-      const styleTags = advisor.style_tags || [];
-      const demographics = advisor.target_demographics || [];
-      const price = advisor.price_per_session || 0;
+      const price = advisor.price || advisor.price_per_session || 0;
 
       // Search filter
       const matchesSearch =
@@ -87,43 +94,28 @@ const Advisors = () => {
         (filters.sessionTypes.includes("virtual") && advisor.virtual_available) ||
         (filters.sessionTypes.includes("in-person") && advisor.in_person_available);
 
-      // Style filter - match any selected style
-      const matchesStyle =
-        filters.styles.length === 0 ||
-        filters.styles.some((style) => 
-          styleTags.some((tag) => tag.toLowerCase().includes(style.toLowerCase()))
-        );
-
-      // Client focus filter - match any selected demographic
-      const matchesClientFocus =
-        filters.clientFocus.length === 0 ||
-        filters.clientFocus.some((focus) => 
-          demographics.some((demo) => demo.toLowerCase().includes(focus.toLowerCase()))
-        );
-
       // Price range filter
       const minPrice = filters.minPrice ? parseFloat(filters.minPrice) : 0;
       const maxPrice = filters.maxPrice ? parseFloat(filters.maxPrice) : Infinity;
       const matchesPrice = price >= minPrice && price <= maxPrice;
 
-      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesPrice;
+      return matchesSearch && matchesSessionType && matchesPrice;
     });
 
     // Sort results
     switch (filters.sortBy) {
       case "price-low":
         result = [...result].sort((a, b) => 
-          (a.price_per_session || 0) - (b.price_per_session || 0)
+          (a.price || a.price_per_session || 0) - (b.price || b.price_per_session || 0)
         );
         break;
       case "price-high":
         result = [...result].sort((a, b) => 
-          (b.price_per_session || 0) - (a.price_per_session || 0)
+          (b.price || b.price_per_session || 0) - (a.price || a.price_per_session || 0)
         );
         break;
       case "featured":
       default:
-        // Featured sorting: prioritize by rating and review count
         result = [...result].sort((a, b) => {
           const aScore = (a.rating || 0) * 10 + (a.review_count || 0);
           const bScore = (b.rating || 0) * 10 + (b.review_count || 0);
@@ -205,12 +197,11 @@ const Advisors = () => {
 
           {/* Advisors Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-            {filteredAndSortedAdvisors.map((advisor, index) => {
+          {filteredAndSortedAdvisors.map((advisor, index) => {
               const displayName = advisor.full_name || "Style Advisor";
-              const displayPrice = advisor.price_per_session || 100;
+              const displayPrice = advisor.price || advisor.price_per_session || 100;
               const displayRating = advisor.rating || 0;
               const displayReviews = advisor.review_count || 0;
-              const styleTags = advisor.style_tags || [];
 
               return (
                 <motion.article
@@ -257,16 +248,6 @@ const Advisors = () => {
                     <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
                       {advisor.specialty || "Style Consultant"}
                     </p>
-
-                    {styleTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2 hidden sm:flex">
-                        {styleTags.slice(0, 2).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
 
                     <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground font-sans">
                       {advisor.virtual_available && (

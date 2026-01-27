@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,6 @@ import {
   ArrowLeft,
   Instagram,
   Link as LinkIcon,
-  Camera,
-  Shield,
-  Upload,
   Check,
   Eye,
   EyeOff
@@ -27,7 +24,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { 
   advisorApplicationSchema, 
-  validateFile,
   nameSchema,
   emailSchema,
   specialtySchema,
@@ -36,8 +32,8 @@ import {
   passwordSchema
 } from "@/lib/validations";
 import { z } from "zod";
-import LivenessCamera from "@/components/LivenessCamera";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const benefits = [
   {
@@ -65,8 +61,7 @@ const benefits = [
 const steps = [
   { number: 1, title: "Personal Info" },
   { number: 2, title: "Social & Portfolio" },
-  { number: 3, title: "Verification" },
-  { number: 4, title: "Review" },
+  { number: 3, title: "Review" },
 ];
 
 interface FormErrors {
@@ -79,16 +74,14 @@ interface FormErrors {
   bio?: string;
   instagram?: string;
   portfolio?: string;
-  selfieFile?: string;
-  idFile?: string;
   agreeTerms?: string;
 }
 
 const BecomeAdvisor = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -101,19 +94,24 @@ const BecomeAdvisor = () => {
     specialty: "",
     experience: "",
     bio: "",
-    virtual: false,
+    virtual: true,
     inPerson: false,
     instagram: "",
     tiktok: "",
     linkedin: "",
     portfolio: "",
-    selfieFile: null as File | null,
-    selfiePreview: "",
-    livenessVerified: false,
-    idFile: null as File | null,
-    idPreview: "",
     agreeTerms: false,
   });
+
+  // Pre-fill if user is already logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || "",
+      }));
+    }
+  }, [user]);
 
   const validateField = (field: string, value: unknown): string | undefined => {
     try {
@@ -126,7 +124,7 @@ const BecomeAdvisor = () => {
           emailSchema.parse(value);
           break;
         case 'password':
-          passwordSchema.parse(value);
+          if (!user) passwordSchema.parse(value);
           break;
         case 'specialty':
           specialtySchema.parse(value);
@@ -155,22 +153,25 @@ const BecomeAdvisor = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate password before other fields
-    const passwordError = validateField('password', formData.password);
-    if (passwordError) {
-      setErrors((prev) => ({ ...prev, password: passwordError }));
-      toast({
-        title: "Validation Error",
-        description: passwordError,
-        variant: "destructive",
-      });
-      return;
+    // Validate password for new users
+    if (!user) {
+      const passwordError = validateField('password', formData.password);
+      if (passwordError) {
+        setErrors((prev) => ({ ...prev, password: passwordError }));
+        toast({
+          title: "Validation Error",
+          description: passwordError,
+          variant: "destructive",
+        });
+        return;
+      }
     }
     
-    // Validate all fields before submission
+    // Validate all fields
     try {
       advisorApplicationSchema.parse({
         ...formData,
+        password: user ? "placeholder" : formData.password, // Skip password validation for logged-in users
         agreeTerms: formData.agreeTerms as true,
       });
     } catch (err) {
@@ -190,167 +191,99 @@ const BecomeAdvisor = () => {
       }
     }
 
-    // MVP: Skip file validation - files are optional for testing
-    // In production, uncomment this validation
-    /*
-    const selfieError = validateFile(formData.selfieFile);
-    const idError = validateFile(formData.idFile);
-    
-    if (selfieError || idError) {
-      setErrors({
-        ...errors,
-        selfieFile: selfieError || undefined,
-        idFile: idError || undefined,
-      });
-      toast({
-        title: "File Validation Error",
-        description: selfieError || idError,
-        variant: "destructive",
-      });
-      return;
-    }
-    */
-
     setIsSubmitting(true);
     
     try {
-      // Step 1: Create the Supabase Auth user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-        options: {
-          data: {
-            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-          },
-        },
-      });
+      let userId = user?.id;
 
-      if (signUpError) {
-        console.error("Signup error:", signUpError);
-        
-        // Check for existing user error - offer to sign in and upgrade
-        if (signUpError.message.includes("already registered") || 
-            signUpError.message.includes("already exists") ||
-            signUpError.message.includes("User already registered")) {
-          toast({
-            title: "Email Already Registered",
-            description: "Please sign in first, then apply to become an advisor from your dashboard.",
-            variant: "destructive",
-          });
-          navigate("/signin?redirect=/become-advisor");
-        } else {
-          toast({
-            title: "Account Creation Failed",
-            description: signUpError.message,
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-
-      if (!signUpData.user) {
-        toast({
-          title: "Account Creation Failed",
-          description: "Unable to create account. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const userId = signUpData.user.id;
-      console.log("User created:", userId);
-
-      // Step 2: Get the session (user should be signed in after signup with auto-confirm)
-      let { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        // Try signing in if session wasn't automatically established
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+      // Step 1: Create Supabase Auth user if not logged in
+      if (!user) {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
+          options: {
+            data: {
+              full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+            },
+          },
         });
 
-        if (signInError) {
-          console.error("Auto sign-in error:", signInError);
-          toast({
-            title: "Sign In Required",
-            description: "Account created but sign-in failed. Please sign in to complete your application.",
-            variant: "destructive",
-          });
-          navigate("/signin?redirect=/advisor");
-          return;
-        }
-        
-        // Get session again after sign in
-        const { data: newSession } = await supabase.auth.getSession();
-        sessionData = newSession;
-      }
-
-      console.log("Session established, updating profile...");
-
-      // Step 3: Wait for profile trigger to create base profile, then update it
-      // The handle_new_user trigger creates a basic profile - we need to update it
-      let retries = 0;
-      const maxRetries = 5;
-      let profileUpdated = false;
-
-      while (retries < maxRetries && !profileUpdated) {
-        // Small delay to allow trigger to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const { data: existingProfile, error: profileError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (existingProfile) {
-          // Profile exists, update it with advisor data
-          const instagramHandle = formData.instagram.startsWith("@") 
-            ? formData.instagram.slice(1) 
-            : formData.instagram;
-
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update({
-              full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-              is_advisor: true,
-              advisor_approved: false,
-              advisor_status: "pending",
-              specialty: formData.specialty.trim(),
-              bio: formData.bio.trim(),
-              instagram_url: instagramHandle,
-              virtual_available: formData.virtual,
-              in_person_available: formData.inPerson,
-            })
-            .eq("user_id", userId);
-
-          if (updateError) {
-            console.error("Profile update error:", updateError);
-            throw new Error("Failed to set up advisor profile");
+        if (signUpError) {
+          console.error("Signup error:", signUpError);
+          
+          if (signUpError.message.includes("already registered") || 
+              signUpError.message.includes("already exists")) {
+            toast({
+              title: "Email Already Registered",
+              description: "Please sign in first, then apply to become an advisor.",
+              variant: "destructive",
+            });
+            navigate("/signin?redirect=/become-advisor");
+            return;
           }
-
-          profileUpdated = true;
-          console.log("Profile updated with advisor data");
-        } else if (profileError) {
-          console.error("Profile fetch error:", profileError);
+          throw signUpError;
         }
 
-        retries++;
+        if (!signUpData.user) {
+          throw new Error("Failed to create account");
+        }
+
+        userId = signUpData.user.id;
+
+        // Sign in immediately if not auto-signed in
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) {
+          await supabase.auth.signInWithPassword({
+            email: formData.email.trim().toLowerCase(),
+            password: formData.password,
+          });
+        }
       }
 
-      if (!profileUpdated) {
-        // Profile trigger may have failed, create profile directly
-        const instagramHandle = formData.instagram.startsWith("@") 
-          ? formData.instagram.slice(1) 
-          : formData.instagram;
+      if (!userId) {
+        throw new Error("No user ID available");
+      }
 
+      // Step 2: Wait for profile trigger, then update with role = 'advisor'
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const instagramHandle = formData.instagram.startsWith("@") 
+        ? formData.instagram.slice(1) 
+        : formData.instagram;
+
+      // Update or create profile with role = 'advisor'
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingProfile) {
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({
+            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+            role: "advisor",
+            is_advisor: true,
+            advisor_approved: false,
+            advisor_status: "pending",
+            specialty: formData.specialty.trim(),
+            bio: formData.bio.trim(),
+            instagram_url: instagramHandle,
+            virtual_available: formData.virtual,
+            in_person_available: formData.inPerson,
+          })
+          .eq("user_id", userId);
+
+        if (updateError) throw updateError;
+      } else {
         const { error: insertError } = await supabase
           .from("profiles")
           .insert({
             user_id: userId,
             email: formData.email.trim().toLowerCase(),
             full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+            role: "advisor",
             is_advisor: true,
             advisor_approved: false,
             advisor_status: "pending",
@@ -361,18 +294,28 @@ const BecomeAdvisor = () => {
             in_person_available: formData.inPerson,
           });
 
-        if (insertError) {
-          console.error("Profile insert error:", insertError);
-          throw new Error("Failed to create advisor profile");
-        }
-        console.log("Profile created directly");
+        if (insertError) throw insertError;
       }
 
-      // Step 4: Create advisor application record
-      const instagramHandle = formData.instagram.startsWith("@") 
-        ? formData.instagram.slice(1) 
-        : formData.instagram;
+      // Step 3: Create advisor_profiles with status = 'applied'
+      const { error: advisorProfileError } = await supabase
+        .from("advisor_profiles")
+        .upsert({
+          user_id: userId,
+          status: "applied",
+          is_published: false,
+          bio: formData.bio.trim(),
+          specialties: [formData.specialty.trim()],
+        }, {
+          onConflict: "user_id",
+        });
 
+      if (advisorProfileError) {
+        console.error("Advisor profile error:", advisorProfileError);
+        // Continue - main profile is set up
+      }
+
+      // Step 4: Create advisor_applications record
       const { error: applicationError } = await supabase
         .from("advisor_applications")
         .insert({
@@ -391,46 +334,27 @@ const BecomeAdvisor = () => {
           linkedin: formData.linkedin?.trim() || null,
           portfolio: formData.portfolio?.trim() || null,
           status: "pending",
-          liveness_verified: true, // MVP: Skip verification
+          liveness_verified: true,
         });
 
       if (applicationError) {
-        console.error("Application insert error:", applicationError);
-        // Don't fail entirely - profile is set up, application can be re-submitted
-        toast({
-          title: "Partial Success",
-          description: "Your advisor account is created. Application details may need to be resubmitted.",
-          variant: "destructive",
-        });
+        console.error("Application error:", applicationError);
+        // Continue - main profile is set up
       }
 
-      // Step 5: Add user role (for role-based access)
-      await supabase
-        .from("user_roles")
-        .upsert({
-          user_id: userId,
-          role: "user" as const,
-        }, {
-          onConflict: "user_id,role",
-          ignoreDuplicates: true,
-        });
-
-      console.log("Advisor signup complete, navigating to dashboard...");
-
-      // Success! Navigate immediately to advisor dashboard
       toast({
-        title: "Welcome, Advisor!",
-        description: "Your account has been created. Setting up your dashboard...",
+        title: "Application Submitted!",
+        description: "Redirecting to your advisor dashboard...",
       });
 
-      // Navigate to advisor dashboard immediately
+      // Navigate to advisor dashboard - they'll see "Under Review" status
       navigate("/advisor");
 
     } catch (err: any) {
       console.error("Error submitting application:", err);
       toast({
         title: "Submission Failed",
-        description: err.message || "An unexpected error occurred. Please try again.",
+        description: err.message || "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -444,49 +368,20 @@ const BecomeAdvisor = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     
-    // Clear error and validate on change
     const error = validateField(name, value);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'selfieFile' | 'idFile') => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file
-      const fileError = validateFile(file);
-      if (fileError) {
-        setErrors((prev) => ({ ...prev, [field]: fileError }));
-        toast({
-          title: "Invalid File",
-          description: fileError,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const previewField = field === 'selfieFile' ? 'selfiePreview' : 'idPreview';
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ 
-          ...formData, 
-          [field]: file,
-          [previewField]: reader.result as string
-        });
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const nextStep = () => {
-    // Validate current step before proceeding
     const stepErrors: FormErrors = {};
     
     if (currentStep === 1) {
       stepErrors.firstName = validateField('firstName', formData.firstName);
       stepErrors.lastName = validateField('lastName', formData.lastName);
       stepErrors.email = validateField('email', formData.email);
-      stepErrors.password = validateField('password', formData.password);
+      if (!user) {
+        stepErrors.password = validateField('password', formData.password);
+      }
       stepErrors.specialty = validateField('specialty', formData.specialty);
       stepErrors.bio = validateField('bio', formData.bio);
     } else if (currentStep === 2) {
@@ -495,11 +390,6 @@ const BecomeAdvisor = () => {
         stepErrors.portfolio = validateField('portfolio', formData.portfolio);
       }
     }
-    // MVP: Skip file validation for step 3 - verification is optional
-    // else if (currentStep === 3) {
-    //   stepErrors.selfieFile = validateFile(formData.selfieFile) || undefined;
-    //   stepErrors.idFile = validateFile(formData.idFile) || undefined;
-    // }
 
     const hasErrors = Object.values(stepErrors).some(error => error !== undefined);
     if (hasErrors) {
@@ -507,7 +397,7 @@ const BecomeAdvisor = () => {
       return;
     }
 
-    setCurrentStep((prev) => Math.min(prev + 1, 4));
+    setCurrentStep((prev) => Math.min(prev + 1, 3));
   };
   
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
@@ -515,59 +405,18 @@ const BecomeAdvisor = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return formData.firstName && formData.lastName && formData.email && formData.password && formData.specialty && formData.bio &&
-               !errors.firstName && !errors.lastName && !errors.email && !errors.password && !errors.specialty && !errors.bio;
+        const hasBasicFields = formData.firstName && formData.lastName && formData.email && formData.specialty && formData.bio;
+        const hasPassword = user || formData.password;
+        const noErrors = !errors.firstName && !errors.lastName && !errors.email && !errors.password && !errors.specialty && !errors.bio;
+        return hasBasicFields && hasPassword && noErrors;
       case 2:
         return formData.instagram && !errors.instagram && !errors.portfolio;
       case 3:
-        // MVP: Verification is optional - always allow proceeding
-        return true;
-      case 4:
         return formData.agreeTerms;
       default:
         return false;
     }
   };
-
-  if (isSubmitted) {
-    return (
-      <Layout>
-        <section className="py-24 bg-background min-h-[80vh] flex items-center">
-          <div className="container mx-auto px-6 lg:px-8 max-w-2xl">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="text-center"
-            >
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gold/20 mb-8">
-                <CheckCircle className="w-10 h-10 text-gold" />
-              </div>
-              <h1 className="font-serif text-4xl md:text-5xl font-medium mb-6">
-                Application Submitted
-              </h1>
-              <p className="font-sans text-lg text-muted-foreground mb-4">
-                Thank you for your interest in becoming a Cook a Look advisor.
-              </p>
-              <div className="bg-card border border-border p-6 mb-8">
-                <p className="font-sans text-foreground">
-                  Your application is now <span className="font-medium text-gold">under review</span>. 
-                  Our team typically responds within <span className="font-medium">2–5 business days</span>.
-                </p>
-              </div>
-              <p className="font-sans text-sm text-muted-foreground mb-8">
-                A confirmation email has been sent to <span className="font-medium">{formData.email}</span>. 
-                Please check your inbox (and spam folder) for next steps.
-              </p>
-              <Button variant="outline" asChild>
-                <a href="/">Return to Home</a>
-              </Button>
-            </motion.div>
-          </div>
-        </section>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
@@ -631,7 +480,7 @@ const BecomeAdvisor = () => {
                 Apply to Join
               </h2>
               <p className="font-sans text-muted-foreground">
-                Complete the application below. We review every submission carefully to maintain our high standards.
+                Complete the application below. We review every submission carefully.
               </p>
             </div>
 
@@ -713,22 +562,27 @@ const BecomeAdvisor = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address *</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className={errors.email ? "border-destructive" : ""}
-                          required
-                        />
-                        {errors.email && (
-                          <p className="text-xs text-destructive">{errors.email}</p>
-                        )}
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={errors.email ? "border-destructive" : ""}
+                        disabled={!!user}
+                        required
+                      />
+                      {errors.email && (
+                        <p className="text-xs text-destructive">{errors.email}</p>
+                      )}
+                      {user && (
+                        <p className="text-xs text-muted-foreground">Logged in as {user.email}</p>
+                      )}
+                    </div>
+
+                    {!user && (
                       <div className="space-y-2">
                         <Label htmlFor="password">Password *</Label>
                         <div className="relative">
@@ -749,102 +603,68 @@ const BecomeAdvisor = () => {
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
-                        {errors.password ? (
+                        {errors.password && (
                           <p className="text-xs text-destructive">{errors.password}</p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
                         )}
+                        <p className="text-xs text-muted-foreground">
+                          At least 8 characters with uppercase, lowercase, and number
+                        </p>
                       </div>
-                    </div>
+                    )}
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number (Optional)</Label>
+                      <Label htmlFor="specialty">Style Specialty *</Label>
                       <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
+                        id="specialty"
+                        name="specialty"
+                        placeholder="e.g., Corporate, Casual, Streetwear"
+                        value={formData.specialty}
                         onChange={handleInputChange}
-                        className={errors.phone ? "border-destructive" : ""}
+                        className={errors.specialty ? "border-destructive" : ""}
+                        required
                       />
-                      {errors.phone && (
-                        <p className="text-xs text-destructive">{errors.phone}</p>
+                      {errors.specialty && (
+                        <p className="text-xs text-destructive">{errors.specialty}</p>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="specialty">Style Specialty *</Label>
-                        <Input
-                          id="specialty"
-                          name="specialty"
-                          placeholder="e.g., Menswear, Occasion Styling"
-                          value={formData.specialty}
-                          onChange={handleInputChange}
-                          className={errors.specialty ? "border-destructive" : ""}
-                          required
-                        />
-                        {errors.specialty && (
-                          <p className="text-xs text-destructive">{errors.specialty}</p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Years of Experience</Label>
-                        <Input
-                          id="experience"
-                          name="experience"
-                          placeholder="e.g., 5 years"
-                          value={formData.experience}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="bio">Tell Us About Yourself *</Label>
+                      <Label htmlFor="bio">Bio *</Label>
                       <Textarea
                         id="bio"
                         name="bio"
-                        placeholder="Describe your background, style philosophy, and what makes you unique..."
-                        rows={5}
+                        placeholder="Tell clients about your style philosophy and experience..."
                         value={formData.bio}
                         onChange={handleInputChange}
-                        className={errors.bio ? "border-destructive" : ""}
+                        className={`min-h-[120px] ${errors.bio ? "border-destructive" : ""}`}
                         required
                       />
                       {errors.bio && (
                         <p className="text-xs text-destructive">{errors.bio}</p>
                       )}
-                      <p className="text-xs text-muted-foreground">{formData.bio.length}/2000 characters</p>
                     </div>
 
-                    <div className="space-y-4">
-                      <Label>Consultation Types</Label>
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-center space-x-2">
+                    <div className="space-y-3">
+                      <Label>Session Types</Label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
                           <Checkbox
-                            id="virtual"
                             checked={formData.virtual}
                             onCheckedChange={(checked) =>
-                              setFormData({ ...formData, virtual: checked as boolean })
+                              setFormData({ ...formData, virtual: !!checked })
                             }
                           />
-                          <Label htmlFor="virtual" className="font-normal cursor-pointer">
-                            Virtual Consultations
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
+                          <span className="text-sm">Virtual Sessions</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
                           <Checkbox
-                            id="inPerson"
                             checked={formData.inPerson}
                             onCheckedChange={(checked) =>
-                              setFormData({ ...formData, inPerson: checked as boolean })
+                              setFormData({ ...formData, inPerson: !!checked })
                             }
                           />
-                          <Label htmlFor="inPerson" className="font-normal cursor-pointer">
-                            In-Person Consultations
-                          </Label>
-                        </div>
+                          <span className="text-sm">In-Person Sessions</span>
+                        </label>
                       </div>
                     </div>
                   </motion.div>
@@ -860,241 +680,50 @@ const BecomeAdvisor = () => {
                     transition={{ duration: 0.3 }}
                     className="space-y-6"
                   >
-                    <div className="bg-card border border-border p-4 mb-6">
-                      <p className="font-sans text-sm text-muted-foreground">
-                        <Instagram className="w-4 h-4 inline mr-2" />
-                        We use your social profiles to verify your identity and review your body of work. 
-                        This helps us maintain trust and quality on the platform.
-                      </p>
-                    </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="instagram">Instagram Handle *</Label>
-                      <div className="relative">
-                        <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          id="instagram"
-                          name="instagram"
-                          placeholder="@yourusername"
-                          value={formData.instagram}
-                          onChange={handleInputChange}
-                          className={`pl-10 ${errors.instagram ? "border-destructive" : ""}`}
-                          required
-                        />
-                      </div>
-                      {errors.instagram ? (
+                      <Label htmlFor="instagram" className="flex items-center gap-2">
+                        <Instagram className="w-4 h-4" />
+                        Instagram Handle *
+                      </Label>
+                      <Input
+                        id="instagram"
+                        name="instagram"
+                        placeholder="@yourusername"
+                        value={formData.instagram}
+                        onChange={handleInputChange}
+                        className={errors.instagram ? "border-destructive" : ""}
+                        required
+                      />
+                      {errors.instagram && (
                         <p className="text-xs text-destructive">{errors.instagram}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Required — your primary showcase of style work</p>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="tiktok">TikTok Handle (Optional)</Label>
+                      <Label htmlFor="portfolio" className="flex items-center gap-2">
+                        <LinkIcon className="w-4 h-4" />
+                        Portfolio Website (Optional)
+                      </Label>
                       <Input
-                        id="tiktok"
-                        name="tiktok"
-                        placeholder="@yourusername"
-                        value={formData.tiktok}
+                        id="portfolio"
+                        name="portfolio"
+                        type="url"
+                        placeholder="https://yourportfolio.com"
+                        value={formData.portfolio}
                         onChange={handleInputChange}
+                        className={errors.portfolio ? "border-destructive" : ""}
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="linkedin">LinkedIn Profile (Optional)</Label>
-                      <Input
-                        id="linkedin"
-                        name="linkedin"
-                        placeholder="linkedin.com/in/yourprofile"
-                        value={formData.linkedin}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="portfolio">Portfolio or Website (Optional)</Label>
-                      <div className="relative">
-                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          id="portfolio"
-                          name="portfolio"
-                          placeholder="https://yourwebsite.com"
-                          value={formData.portfolio}
-                          onChange={handleInputChange}
-                          className={`pl-10 ${errors.portfolio ? "border-destructive" : ""}`}
-                        />
-                      </div>
-                      {errors.portfolio ? (
+                      {errors.portfolio && (
                         <p className="text-xs text-destructive">{errors.portfolio}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Share a link to your portfolio, Behance, or personal website</p>
                       )}
                     </div>
                   </motion.div>
                 )}
 
-                {/* Step 3: Verification */}
+                {/* Step 3: Review */}
                 {currentStep === 3 && (
                   <motion.div
                     key="step3"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-8"
-                  >
-                    <div className="bg-card border border-border p-4 mb-6">
-                      <p className="font-sans text-sm text-muted-foreground">
-                        <Shield className="w-4 h-4 inline mr-2" />
-                        Verification keeps our community safe and builds trust with clients. 
-                        Your documents are securely encrypted and never shared publicly.
-                      </p>
-                    </div>
-
-                    {/* Selfie with Liveness Detection */}
-                    <div className="space-y-4">
-                      <Label>Profile Photo (Live Capture) *</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Take a live photo using your camera. This verifies your identity and will be your public profile image.
-                      </p>
-                      {formData.selfiePreview ? (
-                        <div className="border-2 border-green-500 rounded-lg p-6 text-center bg-green-500/5">
-                          <div className="relative inline-block">
-                            <img 
-                              src={formData.selfiePreview} 
-                              alt="Selfie preview" 
-                              className="max-h-48 mx-auto rounded-lg"
-                            />
-                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center">
-                              <Check className="w-4 h-4" />
-                            </div>
-                          </div>
-                          <p className="text-sm text-green-600 mt-3 flex items-center justify-center gap-2">
-                            <Shield className="w-4 h-4" />
-                            Liveness verified
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="mt-3"
-                            onClick={() => setFormData({ ...formData, selfieFile: null, selfiePreview: "" })}
-                          >
-                            Retake Photo
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <LivenessCamera
-                            onCapture={(blob, isVerified) => {
-                              const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                setFormData({ 
-                                  ...formData, 
-                                  selfieFile: file,
-                                  selfiePreview: reader.result as string,
-                                  livenessVerified: isVerified
-                                });
-                                if (isVerified) {
-                                  toast({
-                                    title: "Liveness verified!",
-                                    description: "Your photo has been captured successfully.",
-                                  });
-                                }
-                              };
-                              reader.readAsDataURL(blob);
-                            }}
-                            onCancel={() => {}}
-                          />
-                          
-                          {/* Test Mode Bypass - Remove in production */}
-                          <div className="border-2 border-dashed border-amber-500/50 rounded-lg p-4 bg-amber-500/5">
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-2">
-                              <span className="font-semibold">⚠️ TEST MODE</span>
-                              Skip camera verification for testing purposes only
-                            </p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="w-full border-amber-500 text-amber-600 hover:bg-amber-500/10"
-                              onClick={() => {
-                                // Create a placeholder file for test mode
-                                const placeholderBlob = new Blob(['test-mode-placeholder'], { type: 'image/jpeg' });
-                                const testFile = new File([placeholderBlob], "test-selfie.jpg", { type: "image/jpeg" });
-                                
-                                setFormData({
-                                  ...formData,
-                                  selfieFile: testFile,
-                                  selfiePreview: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjOTk5Ij5UZXN0IE1vZGU8L3RleHQ+PC9zdmc+",
-                                  livenessVerified: true, // Mark as verified for test mode
-                                });
-                                
-                                toast({
-                                  title: "Test Mode Activated",
-                                  description: "Camera verification skipped. This will be flagged for manual review.",
-                                  variant: "default",
-                                });
-                              }}
-                            >
-                              Skip for now (test mode)
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-
-                    {/* ID Upload */}
-                    <div className="space-y-4">
-                      <Label>Government-Issued ID *</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Upload a photo of your ID (passport, driver's license, or national ID). 
-                        We only verify your name and photo match — sensitive details remain private.
-                      </p>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors">
-                        {formData.idPreview ? (
-                          <div className="relative inline-block">
-                            <img 
-                              src={formData.idPreview} 
-                              alt="ID preview" 
-                              className="max-h-48 mx-auto rounded-lg"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, idFile: null, idPreview: "" })}
-                              className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full text-xs"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="cursor-pointer block">
-                            <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                            <span className="font-sans text-sm text-muted-foreground">
-                              Click to upload your ID
-                            </span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleFileChange(e, 'idFile')}
-                              className="hidden"
-                            />
-                          </label>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground italic">
-                        Your ID is stored securely and encrypted. We never share this information with third parties.
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Step 4: Review */}
-                {currentStep === 4 && (
-                  <motion.div
-                    key="step4"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
@@ -1103,76 +732,52 @@ const BecomeAdvisor = () => {
                   >
                     <div className="bg-card border border-border p-6 space-y-4">
                       <h3 className="font-serif text-lg font-medium">Application Summary</h3>
-                      
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Name:</span>
+                          <p className="text-muted-foreground">Name</p>
                           <p className="font-medium">{formData.firstName} {formData.lastName}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Email:</span>
+                          <p className="text-muted-foreground">Email</p>
                           <p className="font-medium">{formData.email}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Specialty:</span>
+                          <p className="text-muted-foreground">Specialty</p>
                           <p className="font-medium">{formData.specialty}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Instagram:</span>
+                          <p className="text-muted-foreground">Instagram</p>
                           <p className="font-medium">{formData.instagram}</p>
                         </div>
                       </div>
-
-                      <div className="flex gap-4 pt-4">
-                        {formData.selfiePreview && (
-                          <div>
-                            <span className="text-xs text-muted-foreground block mb-2">Profile Photo</span>
-                            <img 
-                              src={formData.selfiePreview} 
-                              alt="Profile" 
-                              className="w-20 h-20 object-cover rounded-lg"
-                            />
-                          </div>
-                        )}
-                        {formData.idPreview && (
-                          <div>
-                            <span className="text-xs text-muted-foreground block mb-2">ID Uploaded</span>
-                            <div className="w-20 h-20 bg-secondary rounded-lg flex items-center justify-center">
-                              <Shield className="w-8 h-8 text-gold" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </div>
 
-                    <div className="flex items-start space-x-3 p-4 bg-secondary rounded-lg">
+                    <label className="flex items-start gap-3 cursor-pointer">
                       <Checkbox
-                        id="agreeTerms"
                         checked={formData.agreeTerms}
                         onCheckedChange={(checked) =>
-                          setFormData({ ...formData, agreeTerms: checked as boolean })
+                          setFormData({ ...formData, agreeTerms: !!checked })
                         }
+                        className="mt-1"
                       />
-                      <div>
-                        <Label htmlFor="agreeTerms" className="font-normal cursor-pointer leading-relaxed">
-                          I agree to the{" "}
-                          <Link to="/terms" target="_blank" className="text-gold hover:underline">
-                            Terms of Service
-                          </Link>{" "}
-                          and{" "}
-                          <Link to="/privacy" target="_blank" className="text-gold hover:underline">
-                            Privacy Policy
-                          </Link>
-                          . I confirm that all information provided is accurate and that I am authorized to work as a style consultant.
-                        </Label>
-                      </div>
-                    </div>
+                      <span className="text-sm text-muted-foreground">
+                        I agree to the{" "}
+                        <Link to="/terms" className="text-primary underline">
+                          Terms of Use
+                        </Link>{" "}
+                        and{" "}
+                        <Link to="/privacy" className="text-primary underline">
+                          Privacy Policy
+                        </Link>
+                        . I understand that my application will be reviewed before approval.
+                      </span>
+                    </label>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               {/* Navigation Buttons */}
-              <div className="flex justify-between mt-10 pt-6 border-t border-border">
+              <div className="flex justify-between mt-8">
                 {currentStep > 1 ? (
                   <Button type="button" variant="outline" onClick={prevStep}>
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1182,10 +787,9 @@ const BecomeAdvisor = () => {
                   <div />
                 )}
 
-                {currentStep < 4 ? (
-                  <Button 
-                    type="button" 
-                    variant="hero" 
+                {currentStep < 3 ? (
+                  <Button
+                    type="button"
                     onClick={nextStep}
                     disabled={!canProceed()}
                   >
@@ -1193,13 +797,13 @@ const BecomeAdvisor = () => {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 ) : (
-                  <Button 
-                    type="submit" 
-                    variant="hero" 
-                    size="lg"
+                  <Button
+                    type="submit"
+                    variant="hero"
                     disabled={!canProceed() || isSubmitting}
                   >
                     {isSubmitting ? "Submitting..." : "Submit Application"}
+                    <CheckCircle className="w-4 h-4 ml-2" />
                   </Button>
                 )}
               </div>
