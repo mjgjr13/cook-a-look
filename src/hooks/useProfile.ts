@@ -41,6 +41,7 @@ export interface UserRole {
   isApprovedAdvisor: boolean;
   isPendingAdvisor: boolean;
   isActiveAdvisor: boolean;
+  isSubmittedAdvisor: boolean;
   role: "client" | "advisor" | "admin";
 }
 
@@ -67,6 +68,7 @@ export const useProfile = (): UseProfileResult => {
     isApprovedAdvisor: false,
     isPendingAdvisor: false,
     isActiveAdvisor: false,
+    isSubmittedAdvisor: false,
     role: "client",
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -82,6 +84,7 @@ export const useProfile = (): UseProfileResult => {
         isApprovedAdvisor: false,
         isPendingAdvisor: false,
         isActiveAdvisor: false,
+        isSubmittedAdvisor: false,
         role: "client",
       });
       setIsLoading(false);
@@ -117,10 +120,11 @@ export const useProfile = (): UseProfileResult => {
       setProfile(profileData as UserProfile | null);
       setAdvisorProfile(advisorData as AdvisorProfile | null);
 
-      // Determine roles based on advisor_profiles (authoritative) or fallback to profiles
+      // Determine roles based on advisor_profiles (authoritative)
       let userRole: "client" | "advisor" | "admin" = "client";
       let isAdvisor = false;
       let isPendingAdvisor = false;
+      let isSubmittedAdvisor = false;
       let isApprovedAdvisor = false;
       let isActiveAdvisor = false;
 
@@ -133,14 +137,22 @@ export const useProfile = (): UseProfileResult => {
         isAdvisor = true;
         userRole = isAdmin ? "admin" : "advisor";
         
-        isPendingAdvisor = ["applied", "pending"].includes(advisorData.status);
-        isApprovedAdvisor = advisorData.status === "approved";
-        isActiveAdvisor = advisorData.status === "active" && advisorData.is_published;
+        // Status mapping:
+        // - draft: still filling out onboarding
+        // - submitted/applied/pending: under admin review
+        // - approved: approved but not yet published
+        // - active: fully active and published
+        // - rejected: application rejected
+        const status = advisorData.status;
+        isPendingAdvisor = ["draft"].includes(status);
+        isSubmittedAdvisor = ["submitted", "applied", "pending"].includes(status);
+        isApprovedAdvisor = status === "approved";
+        isActiveAdvisor = status === "active" && advisorData.is_published;
       } else if (profileData?.is_advisor || profileData?.role === "advisor") {
         // Fallback to profile.is_advisor or profile.role
         isAdvisor = true;
         userRole = isAdmin ? "admin" : "advisor";
-        isPendingAdvisor = profileData.advisor_status === "pending" || !profileData.advisor_approved;
+        isSubmittedAdvisor = profileData.advisor_status === "pending" || !profileData.advisor_approved;
         isApprovedAdvisor = profileData.advisor_approved === true && profileData.advisor_status === "approved";
       }
 
@@ -150,6 +162,7 @@ export const useProfile = (): UseProfileResult => {
         isApprovedAdvisor,
         isPendingAdvisor,
         isActiveAdvisor,
+        isSubmittedAdvisor,
         role: userRole,
       });
     } catch (err) {

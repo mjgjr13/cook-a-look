@@ -12,10 +12,8 @@ import {
   DollarSign, 
   Image as ImageIcon,
   TrendingUp,
-  ChevronRight,
   Users,
   ArrowRight,
-  Percent,
   CheckCircle,
   AlertCircle
 } from "lucide-react";
@@ -24,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
+import PlatformFeeStatus from "@/components/advisor/PlatformFeeStatus";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 
 interface Booking {
@@ -68,8 +67,14 @@ const AdvisorDashboard = () => {
     if (!profile) return;
 
     try {
-      // Check if advisor needs onboarding (after approval)
-      if (roles.isApprovedAdvisor && !advisorProfile?.onboarding_completed_at) {
+      // Check if advisor needs onboarding modal (approved but NOT acknowledged yet)
+      // CRITICAL: Only show if onboarding_acknowledged_at is NULL in profiles table
+      const needsOnboardingModal = 
+        roles.isApprovedAdvisor && 
+        !profile.onboarding_acknowledged_at &&
+        (!advisorProfile?.onboarding_completed_at);
+
+      if (needsOnboardingModal) {
         setShowOnboardingModal(true);
       }
 
@@ -165,11 +170,12 @@ const AdvisorDashboard = () => {
     return bookingDate === today;
   });
 
-  // Determine status from advisor_profiles or fallback to profile
-  const advisorStatus = advisorProfile?.status || profile.advisor_status || "pending";
-  const isPending = ["applied", "pending"].includes(advisorStatus);
+  // Determine status from advisor_profiles (authoritative) or fallback to profile
+  const advisorStatus = advisorProfile?.status || profile.advisor_status || "submitted";
+  const isSubmitted = ["submitted", "applied", "pending"].includes(advisorStatus);
   const isApproved = advisorStatus === "approved";
   const isActive = advisorStatus === "active" && advisorProfile?.is_published;
+  const isRejected = advisorStatus === "rejected";
 
   return (
     <Layout>
@@ -200,7 +206,7 @@ const AdvisorDashboard = () => {
                 <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase">
                   Advisor Dashboard
                 </p>
-                {isPending && (
+                {isSubmitted && (
                   <Badge variant="outline" className="text-gold border-gold/50">
                     Under Review
                   </Badge>
@@ -215,6 +221,11 @@ const AdvisorDashboard = () => {
                   <Badge variant="default" className="bg-primary">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Active & Published
+                  </Badge>
+                )}
+                {isRejected && (
+                  <Badge variant="destructive">
+                    Application Not Approved
                   </Badge>
                 )}
               </div>
@@ -232,8 +243,8 @@ const AdvisorDashboard = () => {
             </div>
           </div>
 
-          {/* Pending Approval Notice */}
-          {isPending && (
+          {/* Under Review Notice */}
+          {isSubmitted && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -261,7 +272,7 @@ const AdvisorDashboard = () => {
           )}
 
           {/* Approved but not onboarded notice */}
-          {isApproved && !advisorProfile?.onboarding_completed_at && (
+          {isApproved && !profile.onboarding_acknowledged_at && !advisorProfile?.onboarding_completed_at && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -276,7 +287,7 @@ const AdvisorDashboard = () => {
                     Congratulations! You're Approved
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Complete your onboarding to become visible to clients. Set your pricing, availability, and upload portfolio images.
+                    Complete your onboarding to become visible to clients. Review our policies and set up your profile.
                   </p>
                   <Button onClick={() => setShowOnboardingModal(true)}>
                     Complete Onboarding
@@ -287,36 +298,17 @@ const AdvisorDashboard = () => {
             </motion.div>
           )}
 
-          {/* Platform Fee Incentive - only show for active advisors */}
+          {/* Platform Fee Status - only show for approved/active advisors (read-only, NOT rewards) */}
           {(isApproved || isActive) && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-gold/10 to-transparent border border-gold/30 rounded-lg p-4 mb-8"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Percent className="w-5 h-5 text-gold" />
-                  <div>
-                    <p className="font-medium">
-                      Platform Fee: <span className="text-gold">{platformFee.feePercent}%</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {platformFee.bookingsThisMonth}/10 completed bookings this month
-                      {platformFee.bookingsThisMonth < 10 && (
-                        <span> • Complete {10 - platformFee.bookingsThisMonth} more to unlock 10% fee!</span>
-                      )}
-                      {platformFee.feePercent === 10 && (
-                        <span className="text-primary"> • 🎉 Reduced fee unlocked!</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <div className="mb-8">
+              <PlatformFeeStatus 
+                feePercent={platformFee.feePercent} 
+                bookingsThisMonth={platformFee.bookingsThisMonth} 
+              />
+            </div>
           )}
 
-          {/* Quick Stats */}
+          {/* Quick Stats - NO REWARDS/POINTS for advisors */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card>
@@ -385,12 +377,12 @@ const AdvisorDashboard = () => {
             </motion.div>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - navigate to /advisor paths */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <Card 
-                className={`hover:border-gold/50 transition-colors ${isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                onClick={() => !isPending && navigate("/advisor-availability")}
+                className={`hover:border-gold/50 transition-colors ${isSubmitted ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={() => !isSubmitted && navigate("/advisor-availability")}
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -399,7 +391,7 @@ const AdvisorDashboard = () => {
                   </div>
                   <CardTitle className="text-lg">Manage Availability</CardTitle>
                   <CardDescription>
-                    {isPending ? "Available after approval" : "Set your available time slots"}
+                    {isSubmitted ? "Available after approval" : "Set your available time slots"}
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -439,27 +431,16 @@ const AdvisorDashboard = () => {
               <Card>
                 <CardContent className="py-12 text-center">
                   <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-4">No upcoming sessions</p>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    {isPending 
-                      ? "You'll be able to receive bookings once your application is approved."
-                      : isApproved && !advisorProfile?.onboarding_completed_at
-                      ? "Complete your onboarding to become visible to clients."
-                      : "Make sure you have availability set so clients can book you."}
+                  <p className="text-muted-foreground">
+                    {isSubmitted 
+                      ? "Sessions will appear here once you're approved" 
+                      : "No upcoming sessions scheduled"}
                   </p>
-                  {!isPending && (
-                    <Button variant="outline" asChild>
-                      <Link to="/advisor-availability">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Set Availability
-                      </Link>
-                    </Button>
-                  )}
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
-                {upcomingBookings.slice(0, 5).map((booking) => (
+                {upcomingBookings.map((booking) => (
                   <motion.div
                     key={booking.id}
                     initial={{ opacity: 0 }}
@@ -495,10 +476,6 @@ const AdvisorDashboard = () => {
                           Start Call
                         </Button>
                       )}
-                      <Button variant="outline" size="sm">
-                        View Details
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                      </Button>
                     </div>
                   </motion.div>
                 ))}
