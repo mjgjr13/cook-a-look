@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 
-const ADMIN_EMAIL = "marceljeangillesjr@gmail.com";
+// Admin access is validated server-side via has_role() RPC
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,13 +46,9 @@ const Navbar = () => {
         return;
       }
 
-      // Check admin
-      if (user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-        const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-        setIsAdmin(data === true);
-      } else {
-        setIsAdmin(false);
-      }
+      // Check admin role via server-side RPC
+      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      setIsAdmin(data === true);
 
       const { data: profile } = await supabase
         .from("profiles")

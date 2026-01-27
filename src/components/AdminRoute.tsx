@@ -8,8 +8,7 @@ interface AdminRouteProps {
   children: ReactNode;
 }
 
-// Hardcoded admin email for additional security layer
-const ADMIN_EMAIL = "marceljeangillesjr@gmail.com";
+// Admin access is validated server-side via has_role() RPC
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, isLoading: authLoading } = useAuth();
@@ -24,13 +23,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         return;
       }
 
-      // First check: email must match admin email
-      if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-        console.warn("Admin access denied: email mismatch", user.email);
-        setIsAdmin(false);
-        setChecking(false);
-        return;
-      }
+      // Server-side role validation only - no client-side email checks
 
       // Second check: verify role in database
       try {
