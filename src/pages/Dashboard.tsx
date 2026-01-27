@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import RewardsCard from "@/components/dashboard/RewardsCard";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { useProfile } from "@/hooks/useProfile";
 
 interface Booking {
@@ -30,7 +29,7 @@ interface Booking {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, roles, isLoading: profileLoading, refetch } = useProfile();
+  const { profile, roles, isLoading: profileLoading } = useProfile();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,8 +40,8 @@ const Dashboard = () => {
     if (!profileLoading) {
       if (!profile) {
         navigate("/signin?redirect=/dashboard");
-      } else if (roles.isAdvisor && roles.role === "advisor") {
-        // Advisors should be on the advisor dashboard by default
+      } else if (roles.isAdvisor) {
+        // Advisors should ALWAYS be on the advisor dashboard - no switching allowed
         navigate("/advisor");
       } else {
         loadBookings();
@@ -156,10 +155,7 @@ const Dashboard = () => {
               </h1>
             </div>
             <div className="flex gap-3 flex-wrap">
-              {/* Only show role switcher if user is also an advisor */}
-              {roles.isAdvisor && (
-                <RoleSwitcher currentRole="client" />
-              )}
+              {/* NO role switcher - clients stay as clients, advisors go to /advisor */}
               <Button variant="outline" asChild>
                 <Link to="/settings">
                   <Settings className="w-4 h-4 mr-2" />
@@ -173,7 +169,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - Client rewards */}
+          {/* Stats Grid - Client rewards (only for clients, NOT advisors) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -195,7 +191,7 @@ const Dashboard = () => {
               <p className="text-muted-foreground">Completed Sessions</p>
             </motion.div>
             
-            {/* Rewards card for clients */}
+            {/* Rewards card for clients ONLY */}
             {profile.user_id && (
               <RewardsCard userId={profile.user_id} />
             )}
