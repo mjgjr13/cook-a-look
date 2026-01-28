@@ -102,6 +102,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_published: boolean
+          legal_accepted_at: string | null
           onboarding_completed_at: string | null
           portfolio_images: string[] | null
           price: number | null
@@ -109,6 +110,8 @@ export type Database = {
           status: string
           updated_at: string | null
           user_id: string
+          verification_completed_at: string | null
+          years_experience: number | null
         }
         Insert: {
           availability_set?: boolean | null
@@ -116,6 +119,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_published?: boolean
+          legal_accepted_at?: string | null
           onboarding_completed_at?: string | null
           portfolio_images?: string[] | null
           price?: number | null
@@ -123,6 +127,8 @@ export type Database = {
           status?: string
           updated_at?: string | null
           user_id: string
+          verification_completed_at?: string | null
+          years_experience?: number | null
         }
         Update: {
           availability_set?: boolean | null
@@ -130,6 +136,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_published?: boolean
+          legal_accepted_at?: string | null
           onboarding_completed_at?: string | null
           portfolio_images?: string[] | null
           price?: number | null
@@ -137,6 +144,8 @@ export type Database = {
           status?: string
           updated_at?: string | null
           user_id?: string
+          verification_completed_at?: string | null
+          years_experience?: number | null
         }
         Relationships: []
       }
@@ -533,6 +542,7 @@ export type Database = {
           portfolio_images: string[] | null
           portfolio_url: string | null
           price_per_session: number | null
+          profile_photos: string[] | null
           rating: number | null
           review_count: number | null
           role: string
@@ -540,8 +550,10 @@ export type Database = {
           specialty: string | null
           style_tags: string[] | null
           target_demographics: string[] | null
+          terms_accepted_at: string | null
           updated_at: string | null
           user_id: string | null
+          verification_status: string | null
           verified: boolean | null
           virtual_available: boolean | null
         }
@@ -568,6 +580,7 @@ export type Database = {
           portfolio_images?: string[] | null
           portfolio_url?: string | null
           price_per_session?: number | null
+          profile_photos?: string[] | null
           rating?: number | null
           review_count?: number | null
           role?: string
@@ -575,8 +588,10 @@ export type Database = {
           specialty?: string | null
           style_tags?: string[] | null
           target_demographics?: string[] | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
           user_id?: string | null
+          verification_status?: string | null
           verified?: boolean | null
           virtual_available?: boolean | null
         }
@@ -603,6 +618,7 @@ export type Database = {
           portfolio_images?: string[] | null
           portfolio_url?: string | null
           price_per_session?: number | null
+          profile_photos?: string[] | null
           rating?: number | null
           review_count?: number | null
           role?: string
@@ -610,8 +626,10 @@ export type Database = {
           specialty?: string | null
           style_tags?: string[] | null
           target_demographics?: string[] | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
           user_id?: string | null
+          verification_status?: string | null
           verified?: boolean | null
           virtual_available?: boolean | null
         }
@@ -896,7 +914,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "client"
+        | "advisor_applicant"
+        | "advisor_active"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1024,7 +1048,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: [
+        "admin",
+        "moderator",
+        "user",
+        "client",
+        "advisor_applicant",
+        "advisor_active",
+      ],
     },
   },
 } as const
