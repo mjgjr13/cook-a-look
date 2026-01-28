@@ -15,7 +15,10 @@ import {
   Users,
   ArrowRight,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  User,
+  Camera,
+  Eye,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +26,11 @@ import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
 import PlatformFeeStatus from "@/components/advisor/PlatformFeeStatus";
+import ListingStatusPanel from "@/components/advisor/ListingStatusPanel";
+import OnboardingChecklist from "@/components/advisor/OnboardingChecklist";
+import CameraVerificationModal from "@/components/advisor/CameraVerificationModal";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Booking {
   id: string;
@@ -44,14 +51,18 @@ interface Booking {
 const AdvisorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { profile, advisorProfile, roles, isLoading: profileLoading, refetch } = useProfile();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [showCameraVerification, setShowCameraVerification] = useState(false);
   const [earnings, setEarnings] = useState({ available: 0, pending: 0, total: 0 });
   const [platformFee, setPlatformFee] = useState({ feePercent: 15, bookingsThisMonth: 0 });
+  const [availabilityCount, setAvailabilityCount] = useState(0);
+  const [isTogglingListing, setIsTogglingListing] = useState(false);
 
   useEffect(() => {
     if (!profileLoading) {
@@ -68,9 +79,10 @@ const AdvisorDashboard = () => {
 
     try {
       // Check if advisor needs onboarding modal (approved but NOT acknowledged yet)
-      // CRITICAL: Only show if onboarding_acknowledged_at is NULL in profiles table
+      // Use the new onboarding_status field from advisor_profiles
+      const onboardingStatusVal = advisorProfile?.onboarding_status;
       const needsOnboardingModal = 
-        roles.isApprovedAdvisor && 
+        onboardingStatusVal === "required" &&
         !profile.onboarding_acknowledged_at &&
         (!advisorProfile?.onboarding_completed_at);
 
@@ -78,8 +90,8 @@ const AdvisorDashboard = () => {
         setShowOnboardingModal(true);
       }
 
-      // Fetch bookings, earnings, and platform fee in parallel
-      const [bookingsResult, paymentsResult, feeResult] = await Promise.all([
+      // Fetch bookings, earnings, platform fee, and availability count in parallel
+      const [bookingsResult, paymentsResult, feeResult, availabilityResult] = await Promise.all([
         supabase
           .from("bookings")
           .select(`
@@ -94,10 +106,17 @@ const AdvisorDashboard = () => {
           .select("*")
           .eq("advisor_id", profile.id),
         calculatePlatformFee(profile.id),
+        supabase
+          .from("availability_slots")
+          .select("id", { count: "exact" })
+          .eq("advisor_id", profile.id)
+          .eq("is_booked", false)
+          .gte("start_time", new Date().toISOString()),
       ]);
 
       setBookings(bookingsResult.data || []);
       setPlatformFee(feeResult);
+      setAvailabilityCount(availabilityResult.count || 0);
 
       // Calculate earnings
       if (paymentsResult.data) {
@@ -137,6 +156,42 @@ const AdvisorDashboard = () => {
     }
   };
 
+  // Handle listing toggle
+  const handleToggleListing = async (listed: boolean) => {
+    if (!user) return;
+    setIsTogglingListing(true);
+
+    try {
+      const { error } = await supabase
+        .from("advisor_profiles")
+        .update({
+          is_listed: listed,
+          is_published: listed,
+        })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: listed ? "Profile is now live!" : "Profile hidden",
+        description: listed
+          ? "Clients can now find and book you."
+          : "Your profile is no longer visible to clients.",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error("Error toggling listing:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update listing status.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingListing(false);
+    }
+  };
+
   if (profileLoading || isLoading) {
     return (
       <Layout>
@@ -170,12 +225,93 @@ const AdvisorDashboard = () => {
     return bookingDate === today;
   });
 
-  // Determine status from advisor_profiles (authoritative) or fallback to profile
+  // Determine status from advisor_profiles (authoritative) using new fields
+  const applicationStatus = advisorProfile?.application_status || "pending";
+  const onboardingStatus = advisorProfile?.onboarding_status || "not_started";
   const advisorStatus = advisorProfile?.status || profile.advisor_status || "submitted";
-  const isSubmitted = ["submitted", "applied", "pending"].includes(advisorStatus);
-  const isApproved = advisorStatus === "approved";
-  const isActive = advisorStatus === "active" && advisorProfile?.is_published;
-  const isRejected = advisorStatus === "rejected";
+  const isListed = advisorProfile?.is_listed || false;
+  
+  const isSubmitted = applicationStatus === "pending";
+  const isApproved = applicationStatus === "approved" && onboardingStatus !== "complete";
+  const isOnboardingRequired = onboardingStatus === "required";
+  const isOnboardingComplete = onboardingStatus === "complete";
+  const isActive = advisorStatus === "active" && isListed;
+  const isRejected = applicationStatus === "denied" || advisorStatus === "rejected";
+
+  // Determine verification status
+  const verificationStatus = profile.verification_status || "pending";
+  const isVerified = verificationStatus === "approved";
+
+  // Calculate onboarding requirements
+  const hasProfileInfo = !!(profile.full_name && profile.bio && profile.specialty);
+  const hasProfilePhoto = !!(profile.avatar_url || (profile.profile_photos && profile.profile_photos.length > 0));
+  const hasPrice = !!(advisorProfile?.price || profile.price_per_session);
+  const hasAvailability = availabilityCount > 0;
+  const hasCameraVerification = !!advisorProfile?.verification_completed_at;
+
+  // Build listing requirements
+  const listingRequirements = [
+    { id: "profile", label: "Profile completed", completed: hasProfileInfo, description: "Name, bio, and specialty" },
+    { id: "photo", label: "Profile photo uploaded", completed: hasProfilePhoto },
+    { id: "price", label: "Session price set", completed: hasPrice },
+    { id: "availability", label: "Availability added", completed: hasAvailability, description: `${availabilityCount} slots available` },
+    { id: "verification", label: "Identity verified", completed: hasCameraVerification },
+    { id: "admin_verified", label: "Admin verification", completed: isVerified, description: "Pending admin review" },
+  ];
+
+  // Build onboarding steps
+  const onboardingSteps = [
+    {
+      id: "profile",
+      title: "Complete Your Profile",
+      description: "Add your name, bio, and specialty",
+      completed: hasProfileInfo,
+      action: () => navigate("/settings"),
+      actionLabel: "Edit Profile",
+      icon: User,
+    },
+    {
+      id: "photo",
+      title: "Upload Profile Photo",
+      description: "Add a professional photo",
+      completed: hasProfilePhoto,
+      action: () => navigate("/settings"),
+      actionLabel: "Add Photo",
+      icon: ImageIcon,
+    },
+    {
+      id: "price",
+      title: "Set Your Rate",
+      description: "Define your hourly session price",
+      completed: hasPrice,
+      action: () => navigate("/settings"),
+      actionLabel: "Set Price",
+      icon: DollarSign,
+    },
+    {
+      id: "availability",
+      title: "Add Availability",
+      description: "Create at least one available time slot",
+      completed: hasAvailability,
+      action: () => navigate("/advisor-availability"),
+      actionLabel: "Add Slots",
+      icon: Calendar,
+    },
+    {
+      id: "verification",
+      title: "Verify Your Identity",
+      description: "Complete camera-based verification",
+      completed: hasCameraVerification,
+      action: () => setShowCameraVerification(true),
+      actionLabel: "Start Verification",
+      icon: Camera,
+      locked: true,
+    },
+  ];
+
+  // Determine if user can toggle listing
+  const allOnboardingComplete = hasProfileInfo && hasProfilePhoto && hasPrice && hasAvailability && hasCameraVerification;
+  const canToggleListing = allOnboardingComplete && isVerified;
 
   return (
     <Layout>
@@ -197,6 +333,18 @@ const AdvisorDashboard = () => {
         />
       )}
 
+      {showCameraVerification && user && (
+        <CameraVerificationModal
+          isOpen={showCameraVerification}
+          onClose={() => setShowCameraVerification(false)}
+          userId={user.id}
+          onVerificationComplete={() => {
+            refetch();
+            loadDashboard();
+          }}
+        />
+      )}
+
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8">
           {/* Header */}
@@ -211,16 +359,22 @@ const AdvisorDashboard = () => {
                     Under Review
                   </Badge>
                 )}
-                {isApproved && (
+                {isApproved && !isOnboardingComplete && (
                   <Badge variant="default" className="bg-primary">
                     <CheckCircle className="w-3 h-3 mr-1" />
-                    Approved
+                    Approved - Complete Onboarding
+                  </Badge>
+                )}
+                {isOnboardingComplete && !isVerified && (
+                  <Badge variant="outline" className="border-gold text-gold">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Awaiting Admin Verification
                   </Badge>
                 )}
                 {isActive && (
                   <Badge variant="default" className="bg-primary">
                     <CheckCircle className="w-3 h-3 mr-1" />
-                    Active & Published
+                    Active & Listed
                   </Badge>
                 )}
                 {isRejected && (
@@ -240,6 +394,14 @@ const AdvisorDashboard = () => {
                   Settings
                 </Link>
               </Button>
+              {isActive && (
+                <Button variant="outline" asChild>
+                  <Link to={`/advisors/${advisorProfile?.id}`}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview Profile
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -271,35 +433,39 @@ const AdvisorDashboard = () => {
             </motion.div>
           )}
 
-          {/* Approved but not onboarded notice */}
-          {isApproved && !profile.onboarding_acknowledged_at && !advisorProfile?.onboarding_completed_at && (
+          {/* Onboarding Required - Show checklist */}
+          {(isApproved || isOnboardingRequired) && !isOnboardingComplete && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-primary/10 border border-primary/30 rounded-lg p-6 mb-8"
+              className="mb-8"
             >
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-full bg-primary/20">
-                  <CheckCircle className="w-6 h-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-serif text-xl font-medium text-foreground mb-2">
-                    Congratulations! You're Approved
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Complete your onboarding to become visible to clients. Review our policies and set up your profile.
-                  </p>
-                  <Button onClick={() => setShowOnboardingModal(true)}>
-                    Complete Onboarding
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
+              <OnboardingChecklist
+                steps={onboardingSteps}
+                onStartVerification={() => setShowCameraVerification(true)}
+              />
             </motion.div>
           )}
 
-          {/* Platform Fee Status - only show for approved/active advisors (read-only, NOT rewards) */}
-          {(isApproved || isActive) && (
+          {/* Listing Status Panel - Show for approved advisors who have completed onboarding */}
+          {isOnboardingComplete && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <ListingStatusPanel
+                requirements={listingRequirements}
+                isListed={isListed}
+                canToggleListing={canToggleListing}
+                onToggleListing={handleToggleListing}
+                isLoading={isTogglingListing}
+              />
+            </motion.div>
+          )}
+
+          {/* Platform Fee Status - only show for approved/active advisors */}
+          {(isOnboardingComplete || isActive) && (
             <div className="mb-8">
               <PlatformFeeStatus 
                 feePercent={platformFee.feePercent} 
@@ -308,7 +474,7 @@ const AdvisorDashboard = () => {
             </div>
           )}
 
-          {/* Quick Stats - NO REWARDS/POINTS for advisors */}
+          {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card>
@@ -377,7 +543,7 @@ const AdvisorDashboard = () => {
             </motion.div>
           </div>
 
-          {/* Quick Actions - navigate to /advisor paths */}
+          {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               <Card 
@@ -434,49 +600,63 @@ const AdvisorDashboard = () => {
                   <p className="text-muted-foreground">
                     {isSubmitted 
                       ? "Sessions will appear here once you're approved" 
+                      : !isListed
+                      ? "Complete onboarding and enable your listing to receive bookings"
                       : "No upcoming sessions scheduled"}
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
-                {upcomingBookings.map((booking) => (
+              <div className="grid gap-4">
+                {upcomingBookings.slice(0, 5).map((booking) => (
                   <motion.div
                     key={booking.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="bg-background border border-border p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
-                        <Video className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-serif font-medium">
-                          Session with {booking.client?.full_name || "Client"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(booking.slot.start_time).toLocaleDateString("en-US", {
-                            weekday: "long",
-                            month: "long",
-                            day: "numeric",
-                          })}{" "}
-                          at{" "}
-                          {new Date(booking.slot.start_time).toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      {booking.slot.is_virtual && (
-                        <Button variant="hero" size="sm" onClick={() => setActiveVideoBooking(booking.id)}>
-                          <Video className="w-4 h-4 mr-2" />
-                          Start Call
-                        </Button>
-                      )}
-                    </div>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                              {booking.client?.avatar_url ? (
+                                <img
+                                  src={booking.client.avatar_url}
+                                  alt={booking.client.full_name || "Client"}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <User className="w-6 h-6 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium">{booking.client?.full_name || "Client"}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(booking.slot.start_time).toLocaleDateString()} at{" "}
+                                {new Date(booking.slot.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {booking.slot.is_virtual && (
+                              <Badge variant="outline" className="gap-1">
+                                <Video className="w-3 h-3" />
+                                Virtual
+                              </Badge>
+                            )}
+                            {booking.slot.is_virtual && new Date(booking.slot.start_time) <= new Date(Date.now() + 15 * 60 * 1000) && (
+                              <Button
+                                size="sm"
+                                onClick={() => setActiveVideoBooking(booking.id)}
+                              >
+                                <Video className="w-4 h-4 mr-2" />
+                                Join Call
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </motion.div>
                 ))}
               </div>

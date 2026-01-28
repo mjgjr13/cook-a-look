@@ -18,6 +18,9 @@ export interface UserProfile {
   virtual_available: boolean;
   in_person_available: boolean;
   onboarding_acknowledged_at: string | null;
+  verification_status: string | null;
+  profile_photos: string[] | null;
+  portfolio_images: string[] | null;
 }
 
 export interface AdvisorProfile {
@@ -31,6 +34,10 @@ export interface AdvisorProfile {
   specialties: string[];
   availability_set: boolean;
   onboarding_completed_at: string | null;
+  verification_completed_at: string | null;
+  application_status: string | null;
+  onboarding_status: string | null;
+  is_listed: boolean;
   created_at: string;
   updated_at: string;
 }
