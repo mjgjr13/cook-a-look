@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cook a Look - Luxury Fashion Design System */
+
+@layer base {
+  :root {
+    --background: 45 30% 98%;
+    --foreground: 0 0% 8%;
+
+    --card: 45 25% 96%;
+    --card-foreground: 0 0% 8%;
+
+    --popover: 45 30% 98%;
+    --popover-foreground: 0 0% 8%;
+
+    --primary: 0 0% 8%;
+    --primary-foreground: 45 30% 98%;
+
+    --secondary: 45 20% 92%;
+    --secondary-foreground: 0 0% 15%;
+
+    --muted: 45 15% 90%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 35 30% 65%;
+    --accent-foreground: 0 0% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 45 20% 88%;
+    --input: 45 20% 88%;
+    --ring: 35 30% 65%;
+
+    --radius: 0.25rem;
+
+    /* Custom tokens */
+    --gold: 35 30% 65%;
+    --gold-light: 35 25% 75%;
+    --silver: 0 0% 65%;
+    --bronze: 30 50% 45%;
+    --cream: 45 30% 96%;
+    --charcoal: 0 0% 15%;
+    --warm-white: 45 40% 99%;
+
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    --sidebar-background: 45 30% 98%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 0 0% 8%;
+    --sidebar-primary-foreground: 45 30% 98%;
+    --sidebar-accent: 45 20% 92%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 45 20% 88%;
+    --sidebar-ring: 38 70% 50%;
+  }
+
+  .dark {
+    --background: 0 0% 6%;
+    --foreground: 45 30% 95%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 45 30% 95%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 45 30% 95%;
+
+    --primary: 45 30% 95%;
+    --primary-foreground: 0 0% 6%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 45 30% 90%;
+
+    --muted: 0 0% 18%;
+    --muted-foreground: 45 15% 60%;
+
+    --accent: 38 70% 55%;
+    --accent-foreground: 0 0% 6%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 38 70% 55%;
+
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 45 30% 90%;
+    --sidebar-primary: 38 70% 55%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 45 30% 90%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 38 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-gold via-gold-light to-gold bg-clip-text text-transparent;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .editorial-spacing {
+    @apply tracking-wide;
+  }
+}
