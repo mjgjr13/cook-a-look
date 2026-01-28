@@ -92,13 +92,33 @@ const Navbar = () => {
                   </div>
                   <DropdownMenuSeparator />
                   
-                  {/* Dashboard link - route strictly based on role (no switching) */}
+                  {/* Dashboard link - route based on role */}
                   <DropdownMenuItem asChild>
                     <Link to={defaultDashboard} className="cursor-pointer flex items-center gap-2">
                       <LayoutDashboard className="w-4 h-4" />
-                      {roles.isAdvisor ? "Advisor Dashboard" : "Dashboard"}
+                      Dashboard
                     </Link>
                   </DropdownMenuItem>
+                  
+                  {/* Show advisor dashboard option for advisors currently in client view */}
+                  {roles.isAdvisor && location.pathname === "/dashboard" && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/advisor" className="cursor-pointer flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        Advisor Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Show client dashboard option for advisors currently in advisor view */}
+                  {roles.isAdvisor && location.pathname.startsWith("/advisor") && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard" className="cursor-pointer flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Client Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer flex items-center gap-2">
@@ -148,10 +168,18 @@ const Navbar = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link to={defaultDashboard}>
-                      {roles.isAdvisor ? "Advisor Dashboard" : "Dashboard"}
-                    </Link>
+                    <Link to={defaultDashboard}>Dashboard</Link>
                   </DropdownMenuItem>
+                  {roles.isAdvisor && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/advisor">Advisor Dashboard</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard">Client Dashboard</Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>

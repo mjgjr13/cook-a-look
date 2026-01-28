@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,53 +18,6 @@ interface AdvisorOnboardingModalProps {
   onComplete: () => void;
 }
 
-const sections = [
-  {
-    icon: Shield,
-    title: "Professional Expectations",
-    content: [
-      "Maintain professional conduct during all sessions (virtual and in-person)",
-      "Be punctual and prepared for every consultation",
-      "Communicate respectfully with all clients",
-      "No harassment, discrimination, or inappropriate behavior of any kind",
-      "Violations may result in suspension or permanent removal from the platform",
-    ],
-  },
-  {
-    icon: Video,
-    title: "Virtual Session Recording Policy",
-    content: [
-      "All virtual sessions are automatically recorded for quality assurance and dispute resolution",
-      "Recordings are securely stored and only accessible by platform administrators",
-      "Recordings may be reviewed in the event of a dispute or quality review",
-      "Clients are informed of this policy before joining calls",
-      "Recording retention follows our data privacy guidelines",
-    ],
-  },
-  {
-    icon: Clock,
-    title: "Dispute & Escrow Process",
-    content: [
-      "Client payments are held in escrow until 48 hours after the session",
-      "Clients may raise disputes within 48 hours of the session start time",
-      "If a dispute is raised, funds remain held until admin review",
-      "Disputes are resolved by our team after reviewing session details and recordings",
-      "Fair resolution is our priority - both advisor and client interests are considered",
-    ],
-  },
-  {
-    icon: DollarSign,
-    title: "Payout Schedule",
-    content: [
-      "You set your own session rates - clients see your full price",
-      "A platform fee is deducted from each booking",
-      "Your net payout is automatically calculated and shown in your dashboard",
-      "Funds are released 48 hours after successful sessions (no disputes)",
-      "You can request withdrawals once funds are available",
-    ],
-  },
-];
-
 const AdvisorOnboardingModal = ({
   profileId,
   isOpen,
@@ -74,6 +27,53 @@ const AdvisorOnboardingModal = ({
   const [currentSection, setCurrentSection] = useState(0);
   const [acknowledged, setAcknowledged] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const sections = [
+    {
+      icon: Shield,
+      title: "Professional Expectations",
+      content: [
+        "Maintain professional conduct during all sessions (virtual and in-person)",
+        "Be punctual and prepared for every consultation",
+        "Communicate respectfully with all clients",
+        "No harassment, discrimination, or inappropriate behavior of any kind",
+        "Violations may result in suspension or permanent removal from the platform",
+      ],
+    },
+    {
+      icon: Video,
+      title: "Virtual Session Recording Policy",
+      content: [
+        "All virtual sessions are automatically recorded for quality assurance and dispute resolution",
+        "Recordings are securely stored and only accessible by platform administrators",
+        "Recordings may be reviewed in the event of a dispute or quality review",
+        "Clients are informed of this policy before joining calls",
+        "Recording retention follows our data privacy guidelines",
+      ],
+    },
+    {
+      icon: Clock,
+      title: "Dispute & Escrow Process",
+      content: [
+        "Client payments are held in escrow until 48 hours after the session",
+        "Clients may raise disputes within 48 hours of the session start time",
+        "If a dispute is raised, funds remain held until admin review",
+        "Disputes are resolved by our team after reviewing session details and recordings",
+        "Fair resolution is our priority - both advisor and client interests are considered",
+      ],
+    },
+    {
+      icon: DollarSign,
+      title: "Payout Schedule",
+      content: [
+        "You set your own session rates - clients see your full price",
+        "A platform fee is deducted from each booking",
+        "Your net payout is automatically calculated and shown in your dashboard",
+        "Funds are released 48 hours after successful sessions (no disputes)",
+        "You can request withdrawals once funds are available",
+      ],
+    },
+  ];
 
   const handleNext = () => {
     if (currentSection < sections.length - 1) {
@@ -100,25 +100,12 @@ const AdvisorOnboardingModal = ({
     setIsSubmitting(true);
 
     try {
-      const timestamp = new Date().toISOString();
-      
-      // Update BOTH profiles.onboarding_acknowledged_at AND advisor_profiles.onboarding_completed_at
-      // This ensures the modal never shows again
-      const [profileUpdate, advisorProfileUpdate] = await Promise.all([
-        supabase
-          .from("profiles")
-          .update({ onboarding_acknowledged_at: timestamp })
-          .eq("id", profileId),
-        supabase
-          .from("advisor_profiles")
-          .update({ onboarding_completed_at: timestamp })
-          .eq("user_id", (await supabase.auth.getUser()).data.user?.id),
-      ]);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ onboarding_acknowledged_at: new Date().toISOString() })
+        .eq("id", profileId);
 
-      if (profileUpdate.error) throw profileUpdate.error;
-      if (advisorProfileUpdate.error) {
-        console.warn("Could not update advisor_profiles:", advisorProfileUpdate.error);
-      }
+      if (error) throw error;
 
       toast({
         title: "Welcome aboard!",

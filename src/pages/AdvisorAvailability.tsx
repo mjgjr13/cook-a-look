@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Clock, Save, ArrowLeft, CalendarDays } from "lucide-react";
+import { Plus, Trash2, Clock, Save, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +51,7 @@ const AdvisorAvailability = () => {
           description: "Only advisors can manage availability.",
           variant: "destructive",
         });
-        navigate("/advisor"); // Navigate back to advisor dashboard
+        navigate("/dashboard");
         return;
       }
 
@@ -192,7 +192,7 @@ const AdvisorAvailability = () => {
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8 max-w-5xl">
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/advisor")}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
@@ -237,16 +237,10 @@ const AdvisorAvailability = () => {
               </div>
 
               {slots.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-border rounded-lg">
-                  <CalendarDays className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <h4 className="font-medium text-foreground mb-2">No Availability Set</h4>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    You haven't added any time slots for this date.
-                  </p>
-                  <Button variant="outline" size="sm" onClick={addSlot} disabled={!selectedDate}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Slot
-                  </Button>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No time slots for this date</p>
+                  <p className="text-sm mt-1">Click "Add Slot" to create availability</p>
                 </div>
               ) : (
                 <div className="space-y-4">

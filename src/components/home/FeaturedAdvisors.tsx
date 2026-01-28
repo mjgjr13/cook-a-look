@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Star, Video, MapPin, Loader2, Users } from "lucide-react";
+import { Star, Video, MapPin, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +11,7 @@ interface FeaturedAdvisor {
   specialty: string | null;
   rating: number | null;
   review_count: number | null;
-  price_per_session?: number | null;
-  price?: number | null;
+  price_per_session: number | null;
   avatar_url: string | null;
   virtual_available: boolean | null;
   in_person_available: boolean | null;
@@ -23,31 +22,28 @@ const useFeaturedAdvisors = () => {
   return useQuery({
     queryKey: ['featured-advisors'],
     queryFn: async () => {
-      // Fetch only active + published advisors using the RPC function
-      // NO fake or placeholder advisors - only real data
-      const { data, error } = await supabase.rpc('get_active_published_advisors');
+      // First get featured advisor IDs
+      const { data: featuredData, error: featuredError } = await supabase
+        .rpc('get_public_featured_advisors');
       
-      if (error) {
-        console.error('Error fetching advisors:', error);
-        return [];
-      }
+      if (featuredError) throw featuredError;
+      if (!featuredData || featuredData.length === 0) return [];
 
-      // Filter to only advisors with real names, limit to 4
-      // Sort by rating/review count to show "top" advisors
-      const realAdvisors = (data || [])
-        .filter((a: FeaturedAdvisor) => a.full_name && a.full_name.trim() !== '')
-        .sort((a: FeaturedAdvisor, b: FeaturedAdvisor) => {
-          const aScore = (a.rating || 0) * 10 + (a.review_count || 0);
-          const bScore = (b.rating || 0) * 10 + (b.review_count || 0);
-          return bScore - aScore;
-        })
-        .slice(0, 4);
+      const advisorIds = featuredData.map(f => f.advisor_id);
 
-      return realAdvisors as FeaturedAdvisor[];
+      // Then get full advisor profiles
+      const { data: advisorsData, error: advisorsError } = await supabase
+        .rpc('get_public_advisor_profiles');
+      
+      if (advisorsError) throw advisorsError;
+
+      // Filter to only featured advisors and limit to 4
+      return (advisorsData || [])
+        .filter(a => advisorIds.includes(a.id))
+        .slice(0, 4) as FeaturedAdvisor[];
     }
   });
 };
-
 const FeaturedAdvisors = () => {
   const { data: advisors, isLoading } = useFeaturedAdvisors();
   const navigate = useNavigate();
@@ -55,11 +51,6 @@ const FeaturedAdvisors = () => {
   const handleCardClick = (advisorId: string) => {
     navigate(`/advisors/${advisorId}`);
   };
-
-  // Don't render the section at all if there are no real advisors
-  if (!isLoading && (!advisors || advisors.length === 0)) {
-    return null;
-  }
 
   return (
     <section className="py-24 bg-card overflow-hidden">
@@ -99,19 +90,11 @@ const FeaturedAdvisors = () => {
                 onClick={() => handleCardClick(advisor.id)}
               >
                 <div className="relative aspect-[4/5] overflow-hidden">
-                  {advisor.avatar_url ? (
-                    <img
-                      src={advisor.avatar_url}
-                      alt={advisor.full_name || 'Style Advisor'}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                      <span className="text-6xl font-serif text-muted-foreground">
-                        {(advisor.full_name || 'A').charAt(0)}
-                      </span>
-                    </div>
-                  )}
+                  <img
+                    src={advisor.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(advisor.full_name || 'Advisor')}&background=C9A961&color=1A1A1A&size=400&bold=true`}
+                    alt={advisor.full_name || 'Style Advisor'}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
                 </div>
 
                 <div className="p-6">
@@ -148,7 +131,7 @@ const FeaturedAdvisors = () => {
                   <div className="flex items-center justify-between pt-4 border-t border-border">
                     <span className="font-sans">
                       <span className="text-lg font-medium">
-                        ${advisor.price || advisor.price_per_session || 0}
+                        ${advisor.price_per_session || 0}
                       </span>
                       <span className="text-sm text-muted-foreground">/session</span>
                     </span>
@@ -165,7 +148,11 @@ const FeaturedAdvisors = () => {
               </motion.article>
             ))}
           </div>
-        ) : null}
+        ) : (
+          <p className="text-center text-muted-foreground py-16">
+            No featured advisors available at this time.
+          </p>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

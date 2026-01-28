@@ -11,7 +11,7 @@ interface AdvisorRouteProps {
  * Non-advisors are redirected to become-advisor page.
  */
 const AdvisorRoute = ({ children }: AdvisorRouteProps) => {
-  const { profile, advisorProfile, roles, isLoading } = useProfile();
+  const { profile, roles, isLoading } = useProfile();
   const location = useLocation();
 
   if (isLoading) {
@@ -30,10 +30,8 @@ const AdvisorRoute = ({ children }: AdvisorRouteProps) => {
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
-  // Check if user is an advisor (either via advisor_profiles or profiles.is_advisor)
-  const isAdvisor = roles.isAdvisor || advisorProfile || profile.is_advisor;
-
-  if (!isAdvisor) {
+  // Not an advisor - redirect to become advisor page
+  if (!roles.isAdvisor) {
     return <Navigate to="/become-advisor" replace />;
   }
 

@@ -95,69 +95,6 @@ export type Database = {
         }
         Relationships: []
       }
-      advisor_profiles: {
-        Row: {
-          application_status: string
-          availability_set: boolean | null
-          bio: string | null
-          created_at: string | null
-          id: string
-          is_listed: boolean
-          is_published: boolean
-          legal_accepted_at: string | null
-          onboarding_completed_at: string | null
-          onboarding_status: string
-          portfolio_images: string[] | null
-          price: number | null
-          specialties: string[] | null
-          status: string
-          updated_at: string | null
-          user_id: string
-          verification_completed_at: string | null
-          years_experience: number | null
-        }
-        Insert: {
-          application_status?: string
-          availability_set?: boolean | null
-          bio?: string | null
-          created_at?: string | null
-          id?: string
-          is_listed?: boolean
-          is_published?: boolean
-          legal_accepted_at?: string | null
-          onboarding_completed_at?: string | null
-          onboarding_status?: string
-          portfolio_images?: string[] | null
-          price?: number | null
-          specialties?: string[] | null
-          status?: string
-          updated_at?: string | null
-          user_id: string
-          verification_completed_at?: string | null
-          years_experience?: number | null
-        }
-        Update: {
-          application_status?: string
-          availability_set?: boolean | null
-          bio?: string | null
-          created_at?: string | null
-          id?: string
-          is_listed?: boolean
-          is_published?: boolean
-          legal_accepted_at?: string | null
-          onboarding_completed_at?: string | null
-          onboarding_status?: string
-          portfolio_images?: string[] | null
-          price?: number | null
-          specialties?: string[] | null
-          status?: string
-          updated_at?: string | null
-          user_id?: string
-          verification_completed_at?: string | null
-          years_experience?: number | null
-        }
-        Relationships: []
-      }
       advisor_verification_archive: {
         Row: {
           application_id: string
@@ -238,7 +175,6 @@ export type Database = {
         Row: {
           advisor_id: string
           client_id: string
-          completed_at: string | null
           created_at: string | null
           id: string
           notes: string | null
@@ -249,7 +185,6 @@ export type Database = {
         Insert: {
           advisor_id: string
           client_id: string
-          completed_at?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
@@ -260,7 +195,6 @@ export type Database = {
         Update: {
           advisor_id?: string
           client_id?: string
-          completed_at?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
@@ -551,18 +485,14 @@ export type Database = {
           portfolio_images: string[] | null
           portfolio_url: string | null
           price_per_session: number | null
-          profile_photos: string[] | null
           rating: number | null
           review_count: number | null
-          role: string
           session_duration: number | null
           specialty: string | null
           style_tags: string[] | null
           target_demographics: string[] | null
-          terms_accepted_at: string | null
           updated_at: string | null
           user_id: string | null
-          verification_status: string | null
           verified: boolean | null
           virtual_available: boolean | null
         }
@@ -589,18 +519,14 @@ export type Database = {
           portfolio_images?: string[] | null
           portfolio_url?: string | null
           price_per_session?: number | null
-          profile_photos?: string[] | null
           rating?: number | null
           review_count?: number | null
-          role?: string
           session_duration?: number | null
           specialty?: string | null
           style_tags?: string[] | null
           target_demographics?: string[] | null
-          terms_accepted_at?: string | null
           updated_at?: string | null
           user_id?: string | null
-          verification_status?: string | null
           verified?: boolean | null
           virtual_available?: boolean | null
         }
@@ -627,18 +553,14 @@ export type Database = {
           portfolio_images?: string[] | null
           portfolio_url?: string | null
           price_per_session?: number | null
-          profile_photos?: string[] | null
           rating?: number | null
           review_count?: number | null
-          role?: string
           session_duration?: number | null
           specialty?: string | null
           style_tags?: string[] | null
           target_demographics?: string[] | null
-          terms_accepted_at?: string | null
           updated_at?: string | null
           user_id?: string | null
-          verification_status?: string | null
           verified?: boolean | null
           virtual_available?: boolean | null
         }
@@ -800,26 +722,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_active_published_advisors: {
-        Args: never
-        Returns: {
-          avatar_url: string
-          bio: string
-          experience_years: number
-          full_name: string
-          id: string
-          in_person_available: boolean
-          location: string
-          portfolio_images: string[]
-          price: number
-          rating: number
-          review_count: number
-          specialty: string
-          user_id: string
-          verified: boolean
-          virtual_available: boolean
-        }[]
-      }
       get_advisor_public_profile: {
         Args: { advisor_profile_id: string }
         Returns: {
@@ -923,13 +825,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role:
-        | "admin"
-        | "moderator"
-        | "user"
-        | "client"
-        | "advisor_applicant"
-        | "advisor_active"
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1057,14 +953,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: [
-        "admin",
-        "moderator",
-        "user",
-        "client",
-        "advisor_applicant",
-        "advisor_active",
-      ],
+      app_role: ["admin", "moderator", "user"],
     },
   },
 } as const
