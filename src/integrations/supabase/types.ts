@@ -97,13 +97,16 @@ export type Database = {
       }
       advisor_profiles: {
         Row: {
+          application_status: string
           availability_set: boolean | null
           bio: string | null
           created_at: string | null
           id: string
+          is_listed: boolean
           is_published: boolean
           legal_accepted_at: string | null
           onboarding_completed_at: string | null
+          onboarding_status: string
           portfolio_images: string[] | null
           price: number | null
           specialties: string[] | null
@@ -114,13 +117,16 @@ export type Database = {
           years_experience: number | null
         }
         Insert: {
+          application_status?: string
           availability_set?: boolean | null
           bio?: string | null
           created_at?: string | null
           id?: string
+          is_listed?: boolean
           is_published?: boolean
           legal_accepted_at?: string | null
           onboarding_completed_at?: string | null
+          onboarding_status?: string
           portfolio_images?: string[] | null
           price?: number | null
           specialties?: string[] | null
@@ -131,13 +137,16 @@ export type Database = {
           years_experience?: number | null
         }
         Update: {
+          application_status?: string
           availability_set?: boolean | null
           bio?: string | null
           created_at?: string | null
           id?: string
+          is_listed?: boolean
           is_published?: boolean
           legal_accepted_at?: string | null
           onboarding_completed_at?: string | null
+          onboarding_status?: string
           portfolio_images?: string[] | null
           price?: number | null
           specialties?: string[] | null

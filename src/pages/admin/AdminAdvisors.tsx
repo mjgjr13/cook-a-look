@@ -95,9 +95,22 @@ interface AdvisorProfileRecord {
   user_id: string;
   status: string;
   is_published: boolean;
+  is_listed: boolean;
   price: number | null;
   bio: string | null;
+  application_status: string | null;
+  onboarding_status: string | null;
+  verification_completed_at: string | null;
   created_at: string;
+}
+
+interface PendingVerificationAdvisor {
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  specialty: string | null;
+  verification_status: string | null;
+  advisor_profile: AdvisorProfileRecord | null;
 }
 
 const AdminAdvisors = () => {
@@ -106,6 +119,7 @@ const AdminAdvisors = () => {
   const [applications, setApplications] = useState<AdvisorApplication[]>([]);
   const [advisors, setAdvisors] = useState<AdvisorProfile[]>([]);
   const [advisorProfiles, setAdvisorProfiles] = useState<AdvisorProfileRecord[]>([]);
+  const [pendingVerification, setPendingVerification] = useState<PendingVerificationAdvisor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("pending");
@@ -115,6 +129,8 @@ const AdminAdvisors = () => {
   const [adminNotes, setAdminNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"approve" | "deny" | null>(null);
+  const [selectedVerificationAdvisor, setSelectedVerificationAdvisor] = useState<PendingVerificationAdvisor | null>(null);
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -132,6 +148,36 @@ const AdminAdvisors = () => {
 
         if (error) throw error;
         setApplications((data as AdvisorApplication[]) || []);
+      } else if (activeTab === "verification") {
+        // Fetch advisors pending verification (onboarding complete, not yet verified)
+        const { data: advisorProfilesData, error: apError } = await supabase
+          .from("advisor_profiles")
+          .select("*")
+          .eq("onboarding_status", "complete")
+          .order("created_at", { ascending: false });
+
+        if (apError) throw apError;
+
+        // Get associated profiles
+        const userIds = (advisorProfilesData || []).map(ap => ap.user_id);
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, email, specialty, verification_status")
+          .in("user_id", userIds);
+
+        // Filter to only show those pending verification
+        const pendingAdvisors: PendingVerificationAdvisor[] = (profilesData || [])
+          .filter(p => p.verification_status !== "approved")
+          .map(p => ({
+            user_id: p.user_id,
+            full_name: p.full_name,
+            email: p.email,
+            specialty: p.specialty,
+            verification_status: p.verification_status,
+            advisor_profile: advisorProfilesData?.find(ap => ap.user_id === p.user_id) as AdvisorProfileRecord | null,
+          }));
+
+        setPendingVerification(pendingAdvisors);
       } else {
         // Fetch active advisors from advisor_profiles with status approved or active
         const [profilesResult, advisorProfilesResult] = await Promise.all([
@@ -165,34 +211,93 @@ const AdminAdvisors = () => {
     setIsReviewDialogOpen(true);
   };
 
+  // Handle admin verification of advisor (after onboarding complete)
+  const handleVerifyAdvisor = async (advisor: PendingVerificationAdvisor) => {
+    setIsProcessing(true);
+    try {
+      const userId = advisor.user_id;
+      const timestamp = new Date().toISOString();
+
+      // 1. Update profiles.verification_status to approved
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          verification_status: "approved",
+          verified: true,
+        })
+        .eq("user_id", userId);
+
+      if (profileError) throw profileError;
+
+      // 2. Update advisor_profiles to active and listed
+      const { error: advisorProfileError } = await supabase
+        .from("advisor_profiles")
+        .update({
+          status: "active",
+          is_published: true,
+          is_listed: true,
+        })
+        .eq("user_id", userId);
+
+      if (advisorProfileError) throw advisorProfileError;
+
+      // 3. Update user_roles to advisor_active
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .update({ role: "advisor_active" })
+        .eq("user_id", userId);
+
+      if (roleError) throw roleError;
+
+      toast.success("Advisor verified and now publicly visible!");
+      setShowVerificationDialog(false);
+      setSelectedVerificationAdvisor(null);
+      loadData();
+    } catch (err) {
+      console.error("Error verifying advisor:", err);
+      toast.error("Failed to verify advisor");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleApprove = async () => {
     if (!selectedApplication) return;
     setIsProcessing(true);
 
     try {
       const userId = selectedApplication.user_id;
+      const timestamp = new Date().toISOString();
 
-      // 1. Update advisor_profiles status to 'approved'
+      // ATOMIC BACKEND STATE TRANSITION FOR APPROVAL
+      // 1. Update advisor_profiles with all new lifecycle fields
       const { error: advisorProfileError } = await supabase
         .from("advisor_profiles")
         .update({
           status: "approved",
-          is_published: false, // Not published until onboarding complete
+          application_status: "approved",
+          onboarding_status: "required", // Forces onboarding gate
+          is_published: false,
+          is_listed: false, // Not listed until onboarding + verification complete
         })
         .eq("user_id", userId);
 
       if (advisorProfileError) {
         console.error("Advisor profile update error:", advisorProfileError);
-        // If no advisor_profile exists, create one
-        await supabase
+        // If no advisor_profile exists, create one with all required fields
+        const { error: insertError } = await supabase
           .from("advisor_profiles")
           .insert({
             user_id: userId,
             status: "approved",
+            application_status: "approved",
+            onboarding_status: "required",
             is_published: false,
+            is_listed: false,
             bio: selectedApplication.bio,
             specialties: [selectedApplication.specialty],
           });
+        if (insertError) throw insertError;
       }
 
       // 2. Update the profiles table
@@ -207,37 +312,51 @@ const AdminAdvisors = () => {
           instagram_url: selectedApplication.instagram,
           portfolio_url: selectedApplication.portfolio,
           full_name: `${selectedApplication.first_name} ${selectedApplication.last_name}`,
-          verified: true,
+          verified: false, // Not verified until admin verifies post-onboarding
+          verification_status: "pending",
         })
         .eq("user_id", userId);
 
       if (profileError) throw profileError;
 
-      // 3. Delete from advisor_applications (approved = no longer pending)
-      const { error: deleteError } = await supabase
-        .from("advisor_applications")
-        .delete()
-        .eq("id", selectedApplication.id);
+      // 3. Update user_roles: ensure advisor_applicant role (not yet active)
+      // First check if they already have a role
+      const { data: existingRole } = await supabase
+        .from("user_roles")
+        .select("id, role")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (deleteError) {
-        // If delete fails, just update status
+      if (existingRole) {
+        // Update to advisor_applicant (not advisor_active until verification)
         await supabase
-          .from("advisor_applications")
-          .update({
-            status: "approved",
-            admin_notes: adminNotes,
-            reviewed_at: new Date().toISOString(),
-          })
-          .eq("id", selectedApplication.id);
+          .from("user_roles")
+          .update({ role: "advisor_applicant" })
+          .eq("id", existingRole.id);
+      } else {
+        // Insert new role
+        await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role: "advisor_applicant" });
       }
 
-      toast.success("Advisor approved! They will be prompted to complete onboarding.");
+      // 4. Update application status (keep the record for reference)
+      await supabase
+        .from("advisor_applications")
+        .update({
+          status: "approved",
+          admin_notes: adminNotes,
+          reviewed_at: timestamp,
+        })
+        .eq("id", selectedApplication.id);
+
+      toast.success("Advisor approved! They must complete onboarding before becoming visible.");
       setIsReviewDialogOpen(false);
       setConfirmAction(null);
       loadData();
     } catch (err) {
       console.error("Error approving application:", err);
-      toast.error("Failed to approve application");
+      toast.error("Failed to approve application. Check console for details.");
     } finally {
       setIsProcessing(false);
     }
@@ -249,13 +368,16 @@ const AdminAdvisors = () => {
 
     try {
       const userId = selectedApplication.user_id;
+      const timestamp = new Date().toISOString();
 
-      // Update advisor_profiles status to rejected
+      // Update advisor_profiles status to denied
       await supabase
         .from("advisor_profiles")
         .update({
           status: "rejected",
+          application_status: "denied",
           is_published: false,
+          is_listed: false,
         })
         .eq("user_id", userId);
 
@@ -265,6 +387,7 @@ const AdminAdvisors = () => {
         .update({
           advisor_approved: false,
           advisor_status: "rejected",
+          verification_status: "rejected",
         })
         .eq("user_id", userId);
 
@@ -274,7 +397,7 @@ const AdminAdvisors = () => {
         .update({
           status: "denied",
           admin_notes: adminNotes,
-          reviewed_at: new Date().toISOString(),
+          reviewed_at: timestamp,
         })
         .eq("id", selectedApplication.id);
 
@@ -347,15 +470,27 @@ const AdminAdvisors = () => {
 
   const toggleAdvisorPublished = async (userId: string, published: boolean) => {
     try {
+      // When admin publishes, also set is_listed and potentially promote to advisor_active
+      const updateData: Record<string, unknown> = {
+        is_published: published,
+        is_listed: published,
+        status: published ? "active" : "approved",
+      };
+
       const { error } = await supabase
         .from("advisor_profiles")
-        .update({ 
-          is_published: published,
-          status: published ? "active" : "approved",
-        })
+        .update(updateData)
         .eq("user_id", userId);
 
       if (error) throw error;
+
+      // If publishing, ensure role is advisor_active
+      if (published) {
+        await supabase
+          .from("user_roles")
+          .update({ role: "advisor_active" })
+          .eq("user_id", userId);
+      }
 
       toast.success(published ? "Advisor is now publicly visible" : "Advisor hidden from public");
       loadData();
@@ -438,6 +573,15 @@ const AdminAdvisors = () => {
                 {applications.filter((a) => a.status === "pending").length > 0 && (
                   <Badge variant="destructive" className="ml-1">
                     {applications.filter((a) => a.status === "pending").length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="verification" className="gap-2">
+                <Shield className="w-4 h-4" />
+                Pending Verification
+                {pendingVerification.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {pendingVerification.length}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -540,6 +684,51 @@ const AdminAdvisors = () => {
                             Review
                           </Button>
                         </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="verification">
+              {pendingVerification.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-lg">
+                  <p className="text-muted-foreground">No advisors pending verification</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingVerification.map((advisor, index) => (
+                    <motion.div
+                      key={advisor.user_id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-card border border-border p-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-medium">{advisor.full_name || "Unnamed"}</h3>
+                            <Badge variant="outline" className="border-gold text-gold">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Awaiting Verification
+                            </Badge>
+                            {advisor.advisor_profile?.verification_completed_at && (
+                              <Badge variant="secondary">Camera Verified</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {advisor.email} • {advisor.specialty || "No specialty"}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => handleVerifyAdvisor(advisor)}
+                          disabled={isProcessing}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Verify & Activate
+                        </Button>
                       </div>
                     </motion.div>
                   ))}
