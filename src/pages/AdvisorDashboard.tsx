@@ -12,7 +12,6 @@ import {
   DollarSign, 
   Image as ImageIcon,
   TrendingUp,
-  ChevronRight,
   Users,
   ArrowRight,
   Percent,
@@ -23,8 +22,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
+import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
+import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
+import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
 interface Booking {
   id: string;
@@ -46,6 +48,13 @@ const AdvisorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile, roles, isLoading: profileLoading, refetch } = useProfile();
+  const { 
+    advisorProfile, 
+    completionStatus, 
+    pendingBookingsCount, 
+    toggleVisibility,
+    refetch: refetchAdvisorProfile 
+  } = useAdvisorProfile();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -239,6 +248,29 @@ const AdvisorDashboard = () => {
                 </div>
               </div>
             </motion.div>
+          )}
+
+          {/* Profile Completion Card - shows until profile is complete */}
+          {isApproved && (
+            <div className="mb-8">
+              <ProfileCompletionCard 
+                completionStatus={completionStatus} 
+                isApproved={isApproved} 
+              />
+            </div>
+          )}
+
+          {/* Visibility Toggle - for approved advisors */}
+          {isApproved && advisorProfile && (
+            <div className="mb-8">
+              <VisibilityToggle
+                isListed={advisorProfile.is_listed}
+                isApproved={isApproved}
+                completionStatus={completionStatus}
+                pendingBookingsCount={pendingBookingsCount}
+                onToggle={toggleVisibility}
+              />
+            </div>
           )}
 
           {/* Platform Fee Incentive */}
@@ -442,7 +474,7 @@ const AdvisorDashboard = () => {
                       )}
                       <Button variant="outline" size="sm">
                         View Details
-                        <ChevronRight className="w-4 h-4 ml-1" />
+                        <ArrowRight className="w-4 h-4 ml-1" />
                       </Button>
                     </div>
                   </motion.div>
