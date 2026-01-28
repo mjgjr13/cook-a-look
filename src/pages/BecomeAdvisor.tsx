@@ -79,6 +79,7 @@ interface FormErrors {
   bio?: string;
   instagram?: string;
   portfolio?: string;
+  profilePhotoFile?: string;
   selfieFile?: string;
   idFile?: string;
   agreeTerms?: string;
@@ -107,6 +108,10 @@ const BecomeAdvisor = () => {
     tiktok: "",
     linkedin: "",
     portfolio: "",
+    // Profile photo for step 2
+    profilePhotoFile: null as File | null,
+    profilePhotoPreview: "",
+    // Verification photos for step 3
     selfieFile: null as File | null,
     selfiePreview: "",
     livenessVerified: false,
@@ -286,9 +291,38 @@ const BecomeAdvisor = () => {
         sessionData = newSession;
       }
 
-      console.log("Session established, updating profile...");
+      console.log("Session established, uploading profile photo and updating profile...");
 
-      // Step 3: Wait for profile trigger to create base profile, then update it
+      // Step 3: Upload profile photo if provided
+      let avatarUrl: string | null = null;
+      if (formData.profilePhotoFile) {
+        try {
+          const fileExt = formData.profilePhotoFile.name.split(".").pop()?.toLowerCase() || "jpg";
+          const fileName = `${userId}/avatar_${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(fileName, formData.profilePhotoFile, {
+              upsert: true,
+              contentType: formData.profilePhotoFile.type,
+            });
+
+          if (uploadError) {
+            console.error("Avatar upload error:", uploadError);
+            // Don't fail the whole process, continue without avatar
+          } else {
+            const { data: urlData } = supabase.storage
+              .from("avatars")
+              .getPublicUrl(fileName);
+            avatarUrl = urlData.publicUrl;
+            console.log("Avatar uploaded:", avatarUrl);
+          }
+        } catch (err) {
+          console.error("Error uploading avatar:", err);
+        }
+      }
+
+      // Step 4: Wait for profile trigger to create base profile, then update it
       // The handle_new_user trigger creates a basic profile - we need to update it
       let retries = 0;
       const maxRetries = 5;
@@ -310,19 +344,25 @@ const BecomeAdvisor = () => {
             ? formData.instagram.slice(1) 
             : formData.instagram;
 
+          const updateData: Record<string, unknown> = {
+            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+            is_advisor: true,
+            advisor_approved: false,
+            advisor_status: "pending",
+            specialty: formData.specialty.trim(),
+            bio: formData.bio.trim(),
+            instagram_url: instagramHandle,
+            virtual_available: formData.virtual,
+            in_person_available: formData.inPerson,
+          };
+
+          if (avatarUrl) {
+            updateData.avatar_url = avatarUrl;
+          }
+
           const { error: updateError } = await supabase
             .from("profiles")
-            .update({
-              full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-              is_advisor: true,
-              advisor_approved: false,
-              advisor_status: "pending",
-              specialty: formData.specialty.trim(),
-              bio: formData.bio.trim(),
-              instagram_url: instagramHandle,
-              virtual_available: formData.virtual,
-              in_person_available: formData.inPerson,
-            })
+            .update(updateData)
             .eq("user_id", userId);
 
           if (updateError) {
@@ -345,21 +385,27 @@ const BecomeAdvisor = () => {
           ? formData.instagram.slice(1) 
           : formData.instagram;
 
+        const insertData: Record<string, unknown> = {
+          user_id: userId,
+          email: formData.email.trim().toLowerCase(),
+          full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+          is_advisor: true,
+          advisor_approved: false,
+          advisor_status: "pending",
+          specialty: formData.specialty.trim(),
+          bio: formData.bio.trim(),
+          instagram_url: instagramHandle,
+          virtual_available: formData.virtual,
+          in_person_available: formData.inPerson,
+        };
+
+        if (avatarUrl) {
+          insertData.avatar_url = avatarUrl;
+        }
+
         const { error: insertError } = await supabase
           .from("profiles")
-          .insert({
-            user_id: userId,
-            email: formData.email.trim().toLowerCase(),
-            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-            is_advisor: true,
-            advisor_approved: false,
-            advisor_status: "pending",
-            specialty: formData.specialty.trim(),
-            bio: formData.bio.trim(),
-            instagram_url: instagramHandle,
-            virtual_available: formData.virtual,
-            in_person_available: formData.inPerson,
-          });
+          .insert(insertData);
 
         if (insertError) {
           console.error("Profile insert error:", insertError);
@@ -368,7 +414,7 @@ const BecomeAdvisor = () => {
         console.log("Profile created directly");
       }
 
-      // Step 4: Create advisor application record
+      // Step 5: Create advisor application record
       const instagramHandle = formData.instagram.startsWith("@") 
         ? formData.instagram.slice(1) 
         : formData.instagram;
@@ -494,6 +540,10 @@ const BecomeAdvisor = () => {
       if (formData.portfolio) {
         stepErrors.portfolio = validateField('portfolio', formData.portfolio);
       }
+      // Require profile photo
+      if (!formData.profilePhotoPreview) {
+        stepErrors.profilePhotoFile = "Profile photo is required";
+      }
     }
     // MVP: Skip file validation for step 3 - verification is optional
     // else if (currentStep === 3) {
@@ -518,7 +568,8 @@ const BecomeAdvisor = () => {
         return formData.firstName && formData.lastName && formData.email && formData.password && formData.specialty && formData.bio &&
                !errors.firstName && !errors.lastName && !errors.email && !errors.password && !errors.specialty && !errors.bio;
       case 2:
-        return formData.instagram && !errors.instagram && !errors.portfolio;
+        // Require profile photo AND instagram
+        return formData.instagram && formData.profilePhotoPreview && !errors.instagram && !errors.portfolio;
       case 3:
         // MVP: Verification is optional - always allow proceeding
         return true;
@@ -860,6 +911,100 @@ const BecomeAdvisor = () => {
                     transition={{ duration: 0.3 }}
                     className="space-y-6"
                   >
+                    {/* Profile Photo Upload - Required */}
+                    <div className="space-y-4">
+                      <div className="bg-gold/10 border border-gold/30 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <Camera className="w-5 h-5 text-gold mt-0.5" />
+                          <div>
+                            <p className="font-medium text-sm">Profile Photo Required *</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Upload a high-quality photo that best represents you — this is your first impression for clients.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border border-dashed border-border rounded-lg p-6">
+                        {formData.profilePhotoPreview ? (
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              <img 
+                                src={formData.profilePhotoPreview} 
+                                alt="Profile preview" 
+                                className="w-24 h-24 object-cover rounded-full border-2 border-primary"
+                              />
+                              <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+                                <Check className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <p className="text-sm font-medium text-primary">Photo uploaded</p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setFormData({ ...formData, profilePhotoFile: null, profilePhotoPreview: "" })}
+                              >
+                                Change Photo
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center gap-3 cursor-pointer">
+                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                              <Upload className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium">Click to upload your profile photo</p>
+                              <p className="text-xs text-muted-foreground mt-1">JPG or PNG, minimum 200×200 pixels, max 5MB</p>
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  // Validate file type
+                                  if (!["image/jpeg", "image/png"].includes(file.type)) {
+                                    toast({
+                                      title: "Invalid file type",
+                                      description: "Please upload a JPG or PNG image",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  // Validate file size (5MB max)
+                                  if (file.size > 5 * 1024 * 1024) {
+                                    toast({
+                                      title: "File too large",
+                                      description: "Please upload an image smaller than 5MB",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setFormData({ 
+                                      ...formData, 
+                                      profilePhotoFile: file,
+                                      profilePhotoPreview: reader.result as string
+                                    });
+                                    setErrors((prev) => ({ ...prev, profilePhotoFile: undefined }));
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                      {errors.profilePhotoFile && (
+                        <p className="text-xs text-destructive">{errors.profilePhotoFile}</p>
+                      )}
+                    </div>
+
                     <div className="bg-card border border-border p-4 mb-6">
                       <p className="font-sans text-sm text-muted-foreground">
                         <Instagram className="w-4 h-4 inline mr-2" />

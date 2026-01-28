@@ -23,6 +23,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import RewardsCard from "@/components/dashboard/RewardsCard";
 import PortfolioUpload from "@/components/advisor/PortfolioUpload";
+import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
+import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
@@ -206,6 +208,7 @@ const AccountSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const { advisorProfile } = useAdvisorProfile();
 
   // Notification preferences (local state for now)
   const [notifications, setNotifications] = useState({
@@ -351,6 +354,26 @@ const AccountSettings = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-8"
             >
+<div className="bg-background border border-border p-6 space-y-6">
+                <h2 className="font-serif text-xl font-medium">Profile Photo</h2>
+                
+                {userId && profile && (
+                  <ProfilePhotoUpload
+                    currentPhotoUrl={profile.avatar_url}
+                    userId={userId}
+                    profileId={profile.id}
+                    userName={profile.full_name}
+                    isAdvisor={profile.is_advisor}
+                    isListed={advisorProfile?.is_listed ?? false}
+                    onPhotoUpdated={(newUrl) => {
+                      updateProfile("avatar_url", newUrl);
+                    }}
+                    size="lg"
+                    showGuidance={profile.is_advisor}
+                  />
+                )}
+              </div>
+
               <div className="bg-background border border-border p-6 space-y-6">
                 <h2 className="font-serif text-xl font-medium">Personal Information</h2>
 

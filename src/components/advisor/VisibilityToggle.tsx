@@ -116,7 +116,21 @@ const VisibilityToggle = ({
 
         {/* Warnings */}
         <AnimatePresence>
-          {!canList && !isListed && (
+          {!completionStatus.hasAvatar && !isListed && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex items-start gap-2 p-3 bg-destructive/10 rounded-lg text-sm"
+            >
+              <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-destructive">
+                A profile photo is required to list publicly. Add one in Settings.
+              </p>
+            </motion.div>
+          )}
+
+          {!canList && !isListed && completionStatus.hasAvatar && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}

@@ -130,8 +130,9 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
   }, [user, authLoading, fetchData]);
 
   // Calculate completion status
+  // hasAvatar is critical for advisor visibility
   const completionStatus: ProfileCompletionStatus = {
-    hasAvatar: Boolean(userProfile?.avatar_url),
+    hasAvatar: Boolean(userProfile?.avatar_url && userProfile.avatar_url.trim() !== ""),
     hasPrice: Boolean(userProfile?.price_per_session && userProfile.price_per_session > 0),
     hasBio: Boolean(userProfile?.bio && userProfile.bio.trim().length > 0),
     hasAvailability: Boolean(advisorProfile?.availability_set),
@@ -160,6 +161,14 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
       return {
         success: false,
         error: `You have ${pendingBookingsCount} upcoming booking(s). Please complete or cancel them before hiding your profile.`,
+      };
+    }
+
+    // Block showing if no profile photo
+    if (newValue && !completionStatus.hasAvatar) {
+      return {
+        success: false,
+        error: "A profile photo is required to list your profile publicly.",
       };
     }
 
