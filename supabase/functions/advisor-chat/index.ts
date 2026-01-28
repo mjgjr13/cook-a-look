@@ -44,6 +44,7 @@ serve(async (req) => {
     }
 
     const advisorContext = advisors?.map((a) => ({
+      id: a.id,
       name: a.full_name,
       specialty: a.specialty,
       bio: a.bio,
@@ -54,25 +55,20 @@ serve(async (req) => {
       location: a.location,
     })) || [];
 
-    const systemPrompt = `You are a friendly and knowledgeable fashion concierge for Cook-a-Look, a platform that connects clients with professional style advisors for personalized fashion consultations.
+    const systemPrompt = `You are a friendly fashion concierge for Cook-a-Look. Help users find the right style advisor quickly.
 
-Your role is to:
-1. Understand what the user is looking for in terms of fashion advice (style goals, occasions, budget, preferences)
-2. Help them find the right style advisor based on their needs
-3. Answer questions about how the platform works
-4. Provide general fashion guidance while encouraging them to book with an advisor for personalized help
-
-Available Style Advisors:
+Available Advisors:
 ${JSON.stringify(advisorContext, null, 2)}
 
-Guidelines:
-- Be warm, approachable, and enthusiastic about fashion
-- Ask clarifying questions to understand their needs (e.g., "What's your budget?", "Are you looking for virtual or in-person sessions?", "What's the occasion?")
-- When recommending advisors, explain WHY they'd be a good match
-- If no advisor fits perfectly, be honest and suggest the closest match
-- Keep responses concise but helpful (2-3 paragraphs max)
-- Use emojis sparingly to keep it friendly ✨
-- If they're ready to book, guide them to the advisor's profile page`;
+CRITICAL RULES:
+1. Be BRIEF - max 2-3 sentences per response
+2. When mentioning an advisor, ALWAYS use this exact format: [Advisor Name](advisor:ID)
+   Example: I'd recommend [Johnny Test](advisor:d5717c49-9c09-49d5-b2ee-34b138f6be04) for menswear.
+3. Ask ONE clarifying question at a time (budget, virtual/in-person, occasion)
+4. Get to recommendations fast - don't over-explain
+5. If no perfect match, suggest the closest option
+
+Keep it conversational and helpful. ✨`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
