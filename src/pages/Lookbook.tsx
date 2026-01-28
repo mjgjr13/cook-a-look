@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLookbookItems, LookbookItem } from "@/hooks/useLookbookItems";
+import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
 
 // Fallback static data for when database is empty
 import lookbookBusiness1 from "@/assets/lookbook-business-1.jpg";
@@ -244,6 +245,7 @@ const Lookbook = () => {
           )}
         </div>
       </section>
+      <AdvisorChatbot />
     </Layout>
   );
 };

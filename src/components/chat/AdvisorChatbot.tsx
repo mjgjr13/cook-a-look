@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageCircle, X, Send, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -13,12 +13,41 @@ interface Message {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/advisor-chat`;
 
+// Parse advisor links in format [Name](advisor:id) and render as clickable
+const MessageContent = ({ content }: { content: string }) => {
+  const navigate = useNavigate();
+  
+  // Match pattern: [Advisor Name](advisor:uuid)
+  const parts = content.split(/(\[[^\]]+\]\(advisor:[^)]+\))/g);
+  
+  return (
+    <span>
+      {parts.map((part, i) => {
+        const match = part.match(/\[([^\]]+)\]\(advisor:([^)]+)\)/);
+        if (match) {
+          const [, name, id] = match;
+          return (
+            <button
+              key={i}
+              onClick={() => navigate(`/advisors/${id}`)}
+              className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors"
+            >
+              {name}
+            </button>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+};
+
 export const AdvisorChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi there! ✨ I'm your personal style concierge. Tell me about your fashion goals and I'll help you find the perfect advisor. What are you looking for today?",
+      content: "Hi! ✨ What kind of style help are you looking for today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -117,7 +146,7 @@ export const AdvisorChatbot = () => {
         ...prev,
         {
           role: "assistant",
-          content: "I'm sorry, I encountered an issue. Please try again in a moment.",
+          content: "Sorry, I encountered an issue. Please try again.",
         },
       ]);
     } finally {
@@ -150,7 +179,7 @@ export const AdvisorChatbot = () => {
       {/* Chat Window */}
       <div
         className={cn(
-          "fixed bottom-6 right-6 z-50 flex h-[500px] w-[380px] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl transition-all duration-300",
+          "fixed bottom-6 right-6 z-50 flex h-[450px] w-[340px] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl transition-all duration-300",
           isOpen ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
         )}
       >
@@ -158,7 +187,7 @@ export const AdvisorChatbot = () => {
         <div className="flex items-center justify-between border-b bg-primary px-4 py-3 text-primary-foreground">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            <span className="font-semibold">Style Concierge</span>
+            <span className="font-semibold text-sm">Style Concierge</span>
           </div>
           <Button
             variant="ghost"
@@ -171,22 +200,20 @@ export const AdvisorChatbot = () => {
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="flex flex-col gap-3">
+        <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+          <div className="flex flex-col gap-2.5">
             {messages.map((msg, i) => (
               <div
                 key={i}
                 className={cn(
-                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                  "max-w-[90%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed",
                   msg.role === "user"
                     ? "ml-auto bg-primary text-primary-foreground"
                     : "bg-muted"
                 )}
               >
                 {msg.role === "assistant" ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
+                  <MessageContent content={msg.content} />
                 ) : (
                   msg.content
                 )}
@@ -202,16 +229,16 @@ export const AdvisorChatbot = () => {
         </ScrollArea>
 
         {/* Input */}
-        <div className="border-t p-3">
+        <div className="border-t p-2.5">
           <div className="flex gap-2">
             <Input
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about style advisors..."
+              placeholder="Ask about advisors..."
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 text-sm"
             />
             <Button
               onClick={handleSend}
