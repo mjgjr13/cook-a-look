@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.submit-advisor-application]
 verify_jwt = false
+
+[functions.advisor-chat]
+verify_jwt = false
