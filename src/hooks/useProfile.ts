@@ -94,8 +94,8 @@ export const useProfile = (): UseProfileResult => {
     try {
       setError(null);
 
-      // Fetch profile, advisor_profiles, and admin role in parallel
-      const [profileResult, advisorProfileResult, adminResult] = await Promise.all([
+      // Fetch profile, advisor_profiles, user_roles, and admin role in parallel
+      const [profileResult, advisorProfileResult, userRolesResult, adminResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("*")
@@ -106,6 +106,10 @@ export const useProfile = (): UseProfileResult => {
           .select("*")
           .eq("user_id", user.id)
           .maybeSingle(),
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id),
         supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
       ]);
 
@@ -115,12 +119,17 @@ export const useProfile = (): UseProfileResult => {
 
       const profileData = profileResult.data;
       const advisorData = advisorProfileResult.data;
+      const userRoles = userRolesResult.data || [];
       const isAdmin = adminResult.data === true;
 
       setProfile(profileData as UserProfile | null);
       setAdvisorProfile(advisorData as AdvisorProfile | null);
 
-      // Determine roles based on advisor_profiles (authoritative)
+      // Determine roles from user_roles table (authoritative source)
+      const roleSet = new Set(userRoles.map(r => r.role));
+      const hasAdvisorActiveRole = roleSet.has("advisor_active");
+      const hasAdvisorApplicantRole = roleSet.has("advisor_applicant");
+      
       let userRole: "client" | "advisor" | "admin" = "client";
       let isAdvisor = false;
       let isPendingAdvisor = false;
@@ -132,28 +141,26 @@ export const useProfile = (): UseProfileResult => {
         userRole = "admin";
       }
 
-      // Check advisor_profiles first (single source of truth for advisor state)
-      if (advisorData) {
+      // Check user_roles table first (single source of truth for role)
+      if (hasAdvisorActiveRole) {
+        isAdvisor = true;
+        userRole = isAdmin ? "admin" : "advisor";
+        isApprovedAdvisor = true;
+        isActiveAdvisor = advisorData?.is_published === true;
+      } else if (hasAdvisorApplicantRole) {
+        isAdvisor = true;
+        userRole = isAdmin ? "admin" : "advisor";
+        isSubmittedAdvisor = true;
+      } else if (advisorData) {
+        // Fallback: check advisor_profiles if user_roles not set yet
         isAdvisor = true;
         userRole = isAdmin ? "admin" : "advisor";
         
-        // Status mapping:
-        // - draft: still filling out onboarding
-        // - submitted/applied/pending: under admin review
-        // - approved: approved but not yet published
-        // - active: fully active and published
-        // - rejected: application rejected
         const status = advisorData.status;
         isPendingAdvisor = ["draft"].includes(status);
         isSubmittedAdvisor = ["submitted", "applied", "pending"].includes(status);
-        isApprovedAdvisor = status === "approved";
+        isApprovedAdvisor = status === "approved" || status === "active";
         isActiveAdvisor = status === "active" && advisorData.is_published;
-      } else if (profileData?.is_advisor || profileData?.role === "advisor") {
-        // Fallback to profile.is_advisor or profile.role
-        isAdvisor = true;
-        userRole = isAdmin ? "admin" : "advisor";
-        isSubmittedAdvisor = profileData.advisor_status === "pending" || !profileData.advisor_approved;
-        isApprovedAdvisor = profileData.advisor_approved === true && profileData.advisor_status === "approved";
       }
 
       setRoles({
