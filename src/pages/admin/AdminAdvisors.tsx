@@ -160,7 +160,7 @@ const AdminAdvisors = () => {
       if (appError) throw appError;
 
       // Update the user's profile to be an approved advisor
-      // This makes them visible on the public Style Advisors page
+      // NOTE: advisor_approved stays FALSE until the advisor toggles visibility ON
       if (selectedApplication.email) {
         const { data: userProfile } = await supabase
           .from("profiles")
@@ -169,26 +169,40 @@ const AdminAdvisors = () => {
           .single();
 
         if (userProfile) {
+          // Update profiles table - advisor_approved = false (controlled by visibility toggle)
           const { error: profileError } = await supabase
             .from("profiles")
             .update({
               is_advisor: true,
-              advisor_approved: true,
-              advisor_status: "approved", // Set status to approved
+              advisor_approved: false, // Will become true when advisor toggles visibility ON
+              advisor_status: "approved",
               specialty: selectedApplication.specialty,
               bio: selectedApplication.bio,
               instagram_url: selectedApplication.instagram,
               portfolio_url: selectedApplication.portfolio,
               full_name: `${selectedApplication.first_name} ${selectedApplication.last_name}`,
-              verified: true, // Mark as verified
+              verified: true,
             })
             .eq("id", userProfile.id);
 
           if (profileError) throw profileError;
+
+          // Also update advisor_profiles table
+          const { error: advisorProfileError } = await supabase
+            .from("advisor_profiles")
+            .update({
+              application_status: "approved",
+              is_listed: false, // Advisor must manually toggle this ON
+            })
+            .eq("user_id", userProfile.user_id);
+
+          if (advisorProfileError) {
+            console.error("Error updating advisor_profiles:", advisorProfileError);
+          }
         }
       }
 
-      toast.success("Application approved! Advisor is now publicly visible.");
+      toast.success("Application approved! Advisor can now toggle their profile visibility.");
       setIsReviewDialogOpen(false);
       setConfirmAction(null);
       loadData();
