@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Info } from "lucide-react";
+import { DollarSign, CheckCircle, Info } from "lucide-react";
 
 interface PricingInputProps {
   value: string;
@@ -43,7 +43,7 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
         <div className="bg-card border border-border rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Info className="w-4 h-4" />
-            <span>Pricing breakdown</span>
+            <span>Earnings breakdown</span>
           </div>
           
           <div className="space-y-2">
@@ -53,16 +53,19 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Platform fee (15%):</span>
-              <span className="text-destructive">-${platformFee.toFixed(2)}</span>
+              <span className="text-muted-foreground">-${platformFee.toFixed(2)}</span>
             </div>
-            <div className="border-t border-border pt-2 flex justify-between">
-              <span className="font-medium">Your payout:</span>
-              <span className="font-semibold text-gold">${yourPayout.toFixed(2)}</span>
+            <div className="border-t border-border pt-2 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-primary" />
+                <span className="font-medium">Your earnings:</span>
+              </div>
+              <span className="font-bold text-lg text-primary">${yourPayout.toFixed(2)}</span>
             </div>
           </div>
           
           <p className="text-xs text-muted-foreground italic">
-            Payouts are released 48 hours after successful sessions.
+            Payouts are released 48 hours after successful sessions. Complete 10+ bookings monthly to unlock reduced 10% fee!
           </p>
         </div>
       )}

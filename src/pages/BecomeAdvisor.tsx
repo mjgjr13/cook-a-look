@@ -43,6 +43,8 @@ import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
 import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { parsePhoneToE164 } from "@/lib/phone-utils";
 
 const benefits = [
   {
@@ -443,7 +445,7 @@ const BecomeAdvisor = () => {
           first_name: formData.firstName.trim(),
           last_name: formData.lastName.trim(),
           email: formData.email.trim().toLowerCase(),
-          phone: formData.phone?.trim() || null,
+          phone: formData.phone ? parsePhoneToE164(formData.phone) : null,
           specialty: formData.specialty.trim(),
           experience: formData.experience?.trim() || null,
           bio: formData.bio.trim(),
@@ -867,17 +869,12 @@ const BecomeAdvisor = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number (Optional)</Label>
-                      <Input
+                      <PhoneInput
                         id="phone"
-                        name="phone"
-                        type="tel"
                         value={formData.phone}
-                        onChange={handleInputChange}
-                        className={errors.phone ? "border-destructive" : ""}
+                        onChange={(value) => setFormData({ ...formData, phone: value })}
+                        error={errors.phone}
                       />
-                      {errors.phone && (
-                        <p className="text-xs text-destructive">{errors.phone}</p>
-                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
