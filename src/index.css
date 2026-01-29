@@ -130,4 +130,37 @@
   .editorial-spacing {
     @apply tracking-wide;
   }
+
+  /* International Phone Input Styles */
+  .international-phone-input {
+    @apply flex items-center gap-2;
+  }
+
+  .international-phone-input .PhoneInputCountry {
+    @apply flex items-center gap-1 px-3 py-2 rounded-md border border-input bg-background;
+  }
+
+  .international-phone-input .PhoneInputCountrySelect {
+    @apply absolute opacity-0 w-full h-full cursor-pointer;
+  }
+
+  .international-phone-input .PhoneInputCountryIcon {
+    @apply w-5 h-auto;
+  }
+
+  .international-phone-input .PhoneInputCountrySelectArrow {
+    @apply ml-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground rotate-45;
+  }
+
+  .international-phone-input .PhoneInputInput {
+    @apply flex-1 h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  .international-phone-input.has-error .PhoneInputInput {
+    @apply border-destructive;
+  }
+
+  .international-phone-input.has-error .PhoneInputCountry {
+    @apply border-destructive;
+  }
 }
