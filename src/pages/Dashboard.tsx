@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import RewardsCard from "@/components/dashboard/RewardsCard";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { useProfile } from "@/hooks/useProfile";
 
 interface Booking {
@@ -30,7 +29,7 @@ interface Booking {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, roles, isLoading: profileLoading, refetch } = useProfile();
+  const { profile, isLoading: profileLoading } = useProfile();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -151,10 +150,6 @@ const Dashboard = () => {
               </h1>
             </div>
             <div className="flex gap-3 flex-wrap">
-              {/* Only show role switcher if user is also an advisor */}
-              {roles.isAdvisor && (
-                <RoleSwitcher currentRole="client" />
-              )}
               <Button variant="outline" asChild>
                 <Link to="/settings">
                   <Settings className="w-4 h-4 mr-2" />

@@ -24,7 +24,6 @@ import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
 import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
@@ -218,7 +217,6 @@ const AdvisorDashboard = () => {
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <RoleSwitcher currentRole="advisor" />
               <Button variant="outline" asChild>
                 <Link to="/settings">
                   <Settings className="w-4 h-4 mr-2" />
