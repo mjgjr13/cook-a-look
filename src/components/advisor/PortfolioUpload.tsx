@@ -5,6 +5,7 @@ import { Upload, X, ImagePlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import ImageCropModal from "@/components/profile/ImageCropModal";
 
 interface PortfolioUploadProps {
   userId: string;
@@ -23,90 +24,98 @@ const PortfolioUpload = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const remainingSlots = maxImages - currentImages.length;
-    const filesToUpload = Array.from(files).slice(0, remainingSlots);
-
-    if (files.length > remainingSlots) {
+    
+    if (remainingSlots <= 0) {
       toast({
-        title: "Too many files",
-        description: `You can only upload ${remainingSlots} more image(s).`,
+        title: "Album full",
+        description: `You can only have ${maxImages} portfolio images.`,
         variant: "destructive",
       });
+      return;
     }
 
-    setUploading(true);
-    const newImages: string[] = [];
-
-    for (let i = 0; i < filesToUpload.length; i++) {
-      const file = filesToUpload[i];
-      
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast({
-          title: "Invalid file type",
-          description: `${file.name} is not an image file.`,
-          variant: "destructive",
-        });
-        continue;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: `${file.name} exceeds the 5MB limit.`,
-          variant: "destructive",
-        });
-        continue;
-      }
-
-      setUploadingIndex(currentImages.length + i);
-
-      try {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `${userId}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("portfolios")
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("portfolios")
-          .getPublicUrl(filePath);
-
-        newImages.push(publicUrl);
-      } catch (error) {
-        console.error("Upload error:", error);
-        toast({
-          title: "Upload failed",
-          description: `Failed to upload ${file.name}. Please try again.`,
-          variant: "destructive",
-        });
-      }
-    }
-
-    if (newImages.length > 0) {
-      onImagesChange([...currentImages, ...newImages]);
+    const file = files[0];
+    
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
       toast({
-        title: "Upload complete",
-        description: `Successfully uploaded ${newImages.length} image(s).`,
+        title: "Invalid file type",
+        description: `${file.name} is not an image file.`,
+        variant: "destructive",
       });
+      return;
     }
 
-    setUploading(false);
-    setUploadingIndex(null);
+    // Validate file size (max 10MB before crop)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: `${file.name} exceeds the 10MB limit.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Convert file to data URL for crop modal
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPendingImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
     
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setIsProcessing(true);
+
+    try {
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+      const filePath = `${userId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("portfolios")
+        .upload(filePath, croppedBlob, {
+          contentType: "image/png",
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("portfolios")
+        .getPublicUrl(filePath);
+
+      onImagesChange([...currentImages, publicUrl]);
+      toast({
+        title: "Upload complete",
+        description: "Portfolio image uploaded successfully.",
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCropModalOpen(false);
+      setPendingImageSrc(null);
+      setIsProcessing(false);
+      setUploading(false);
+      setUploadingIndex(null);
     }
   };
 
@@ -216,11 +225,24 @@ const PortfolioUpload = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
-        multiple
+        accept="image/jpeg,image/png,image/webp"
         onChange={handleFileSelect}
         className="hidden"
       />
+
+      {/* Image Crop Modal */}
+      {pendingImageSrc && (
+        <ImageCropModal
+          open={cropModalOpen}
+          onClose={() => {
+            setCropModalOpen(false);
+            setPendingImageSrc(null);
+          }}
+          imageSrc={pendingImageSrc}
+          onCropComplete={handleCropComplete}
+          isProcessing={isProcessing}
+        />
+      )}
     </div>
   );
 };

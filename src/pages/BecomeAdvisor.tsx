@@ -19,10 +19,11 @@ import {
   Link as LinkIcon,
   Camera,
   Shield,
-  Upload,
   Check,
   Eye,
-  EyeOff
+  EyeOff,
+  AlertCircle,
+  Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -38,6 +39,10 @@ import {
 import { z } from "zod";
 import LivenessCamera from "@/components/LivenessCamera";
 import { supabase } from "@/integrations/supabase/client";
+import LocationAutocomplete from "@/components/ui/location-autocomplete";
+import ExperienceSelect from "@/components/advisor/ExperienceSelect";
+import PricingInput from "@/components/advisor/PricingInput";
+import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 
 const benefits = [
   {
@@ -66,7 +71,7 @@ const steps = [
   { number: 1, title: "Personal Info" },
   { number: 2, title: "Social & Portfolio" },
   { number: 3, title: "Verification" },
-  { number: 4, title: "Review" },
+  { number: 4, title: "Review & Pricing" },
 ];
 
 interface FormErrors {
@@ -83,6 +88,10 @@ interface FormErrors {
   selfieFile?: string;
   idFile?: string;
   agreeTerms?: string;
+  consultationType?: string;
+  experience?: string;
+  location?: string;
+  price?: string;
 }
 
 const BecomeAdvisor = () => {
@@ -101,6 +110,7 @@ const BecomeAdvisor = () => {
     phone: "",
     specialty: "",
     experience: "",
+    location: "",
     bio: "",
     virtual: false,
     inPerson: false,
@@ -108,6 +118,7 @@ const BecomeAdvisor = () => {
     tiktok: "",
     linkedin: "",
     portfolio: "",
+    price: "",
     // Profile photo for step 2
     profilePhotoFile: null as File | null,
     profilePhotoPreview: "",
@@ -354,6 +365,9 @@ const BecomeAdvisor = () => {
             instagram_url: instagramHandle,
             virtual_available: formData.virtual,
             in_person_available: formData.inPerson,
+            location: formData.location.trim(),
+            experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
+            price_per_session: parseFloat(formData.price) || null,
           };
 
           if (avatarUrl) {
@@ -397,6 +411,9 @@ const BecomeAdvisor = () => {
           instagram_url: instagramHandle,
           virtual_available: formData.virtual,
           in_person_available: formData.inPerson,
+          location: formData.location.trim(),
+          experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
+          price_per_session: parseFloat(formData.price) || null,
         };
 
         if (avatarUrl) {
@@ -461,12 +478,27 @@ const BecomeAdvisor = () => {
           ignoreDuplicates: true,
         });
 
-      console.log("Advisor signup complete, navigating to dashboard...");
+      console.log("Advisor signup complete, sending confirmation email...");
+
+      // Send confirmation email
+      try {
+        await supabase.functions.invoke("send-advisor-confirmation", {
+          body: {
+            email: formData.email.trim().toLowerCase(),
+            firstName: formData.firstName.trim(),
+            specialty: formData.specialty.trim(),
+          },
+        });
+        console.log("Confirmation email sent");
+      } catch (emailErr) {
+        console.error("Failed to send confirmation email:", emailErr);
+        // Don't block the signup process if email fails
+      }
 
       // Success! Navigate immediately to advisor dashboard
       toast({
         title: "Welcome, Advisor!",
-        description: "Your account has been created. Setting up your dashboard...",
+        description: "Your account has been created. Check your email for confirmation.",
       });
 
       // Navigate to advisor dashboard immediately
@@ -535,6 +567,21 @@ const BecomeAdvisor = () => {
       stepErrors.password = validateField('password', formData.password);
       stepErrors.specialty = validateField('specialty', formData.specialty);
       stepErrors.bio = validateField('bio', formData.bio);
+      
+      // Validate consultation type - at least one must be selected
+      if (!formData.virtual && !formData.inPerson) {
+        stepErrors.consultationType = "Please select at least one consultation type";
+      }
+      
+      // Validate experience
+      if (!formData.experience) {
+        stepErrors.experience = "Please select your experience level";
+      }
+      
+      // Validate location
+      if (!formData.location || formData.location.trim().length < 2) {
+        stepErrors.location = "Location is required";
+      }
     } else if (currentStep === 2) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
@@ -544,16 +591,22 @@ const BecomeAdvisor = () => {
       if (!formData.profilePhotoPreview) {
         stepErrors.profilePhotoFile = "Profile photo is required";
       }
+    } else if (currentStep === 4) {
+      // Validate price in review step
+      const priceNum = parseFloat(formData.price);
+      if (!formData.price || isNaN(priceNum) || priceNum < 25) {
+        stepErrors.price = "Please set a session rate (minimum $25)";
+      }
     }
-    // MVP: Skip file validation for step 3 - verification is optional
-    // else if (currentStep === 3) {
-    //   stepErrors.selfieFile = validateFile(formData.selfieFile) || undefined;
-    //   stepErrors.idFile = validateFile(formData.idFile) || undefined;
-    // }
 
     const hasErrors = Object.values(stepErrors).some(error => error !== undefined);
     if (hasErrors) {
       setErrors(stepErrors);
+      toast({
+        title: "Please complete all required fields",
+        description: Object.values(stepErrors).filter(Boolean)[0],
+        variant: "destructive",
+      });
       return;
     }
 
@@ -565,8 +618,11 @@ const BecomeAdvisor = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return formData.firstName && formData.lastName && formData.email && formData.password && formData.specialty && formData.bio &&
-               !errors.firstName && !errors.lastName && !errors.email && !errors.password && !errors.specialty && !errors.bio;
+        return formData.firstName && formData.lastName && formData.email && formData.password && 
+               formData.specialty && formData.bio && formData.experience && formData.location &&
+               (formData.virtual || formData.inPerson) &&
+               !errors.firstName && !errors.lastName && !errors.email && !errors.password && 
+               !errors.specialty && !errors.bio && !errors.experience && !errors.location;
       case 2:
         // Require profile photo AND instagram
         return formData.instagram && formData.profilePhotoPreview && !errors.instagram && !errors.portfolio;
@@ -574,7 +630,8 @@ const BecomeAdvisor = () => {
         // MVP: Verification is optional - always allow proceeding
         return true;
       case 4:
-        return formData.agreeTerms;
+        const priceNum = parseFloat(formData.price);
+        return formData.agreeTerms && formData.price && !isNaN(priceNum) && priceNum >= 25;
       default:
         return false;
     }
@@ -839,16 +896,30 @@ const BecomeAdvisor = () => {
                           <p className="text-xs text-destructive">{errors.specialty}</p>
                         )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Years of Experience</Label>
-                        <Input
-                          id="experience"
-                          name="experience"
-                          placeholder="e.g., 5 years"
-                          value={formData.experience}
-                          onChange={handleInputChange}
-                        />
-                      </div>
+                      <ExperienceSelect
+                        value={formData.experience}
+                        onChange={(value) => {
+                          setFormData({ ...formData, experience: value });
+                          setErrors((prev) => ({ ...prev, experience: undefined }));
+                        }}
+                        error={errors.experience}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location *</Label>
+                      <LocationAutocomplete
+                        value={formData.location}
+                        onChange={(value) => {
+                          setFormData({ ...formData, location: value });
+                          setErrors((prev) => ({ ...prev, location: undefined }));
+                        }}
+                        placeholder="Enter your city"
+                        error={!!errors.location}
+                      />
+                      {errors.location && (
+                        <p className="text-xs text-destructive">{errors.location}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -870,15 +941,24 @@ const BecomeAdvisor = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <Label>Consultation Types</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Consultation Types *</Label>
+                        {errors.consultationType && (
+                          <span className="text-xs text-destructive flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.consultationType}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id="virtual"
                             checked={formData.virtual}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, virtual: checked as boolean })
-                            }
+                            onCheckedChange={(checked) => {
+                              setFormData({ ...formData, virtual: checked as boolean });
+                              setErrors((prev) => ({ ...prev, consultationType: undefined }));
+                            }}
                           />
                           <Label htmlFor="virtual" className="font-normal cursor-pointer">
                             Virtual Consultations
@@ -888,15 +968,19 @@ const BecomeAdvisor = () => {
                           <Checkbox
                             id="inPerson"
                             checked={formData.inPerson}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, inPerson: checked as boolean })
-                            }
+                            onCheckedChange={(checked) => {
+                              setFormData({ ...formData, inPerson: checked as boolean });
+                              setErrors((prev) => ({ ...prev, consultationType: undefined }));
+                            }}
                           />
                           <Label htmlFor="inPerson" className="font-normal cursor-pointer">
                             In-Person Consultations
                           </Label>
                         </div>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        Select at least one. You can adjust your consultation types later from your dashboard.
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -1191,52 +1275,20 @@ const BecomeAdvisor = () => {
                     </div>
 
 
-                    {/* ID Upload */}
-                    <div className="space-y-4">
-                      <Label>Government-Issued ID *</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Upload a photo of your ID (passport, driver's license, or national ID). 
-                        We only verify your name and photo match — sensitive details remain private.
-                      </p>
-                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors">
-                        {formData.idPreview ? (
-                          <div className="relative inline-block">
-                            <img 
-                              src={formData.idPreview} 
-                              alt="ID preview" 
-                              className="max-h-48 mx-auto rounded-lg"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFormData({ ...formData, idFile: null, idPreview: "" })}
-                              className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full text-xs"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="cursor-pointer block">
-                            <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-                            <span className="font-sans text-sm text-muted-foreground">
-                              Click to upload your ID
-                            </span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleFileChange(e, 'idFile')}
-                              className="hidden"
-                            />
-                          </label>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground italic">
-                        Your ID is stored securely and encrypted. We never share this information with third parties.
-                      </p>
-                    </div>
+                    {/* ID Upload with Camera Option */}
+                    <IDUploadWithCamera
+                      idPreview={formData.idPreview}
+                      onCapture={(file, preview) => {
+                        setFormData({ ...formData, idFile: file, idPreview: preview });
+                      }}
+                      onRemove={() => {
+                        setFormData({ ...formData, idFile: null, idPreview: "" });
+                      }}
+                    />
                   </motion.div>
                 )}
 
-                {/* Step 4: Review */}
+                {/* Step 4: Review & Pricing */}
                 {currentStep === 4 && (
                   <motion.div
                     key="step4"
@@ -1246,6 +1298,22 @@ const BecomeAdvisor = () => {
                     transition={{ duration: 0.3 }}
                     className="space-y-6"
                   >
+                    {/* Pricing Section */}
+                    <div className="bg-gold/5 border border-gold/20 rounded-lg p-6">
+                      <h3 className="font-serif text-lg font-medium mb-4">Set Your Pricing</h3>
+                      <PricingInput
+                        value={formData.price}
+                        onChange={(value) => {
+                          setFormData({ ...formData, price: value });
+                          setErrors((prev) => ({ ...prev, price: undefined }));
+                        }}
+                        error={errors.price}
+                      />
+                      <p className="text-xs text-muted-foreground mt-4">
+                        You can adjust your pricing anytime from your dashboard settings.
+                      </p>
+                    </div>
+
                     <div className="bg-card border border-border p-6 space-y-4">
                       <h3 className="font-serif text-lg font-medium">Application Summary</h3>
                       
@@ -1263,8 +1331,25 @@ const BecomeAdvisor = () => {
                           <p className="font-medium">{formData.specialty}</p>
                         </div>
                         <div>
+                          <span className="text-muted-foreground">Experience:</span>
+                          <p className="font-medium">{formData.experience} years</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Location:</span>
+                          <p className="font-medium">{formData.location}</p>
+                        </div>
+                        <div>
                           <span className="text-muted-foreground">Instagram:</span>
                           <p className="font-medium">{formData.instagram}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Session Types:</span>
+                          <p className="font-medium">
+                            {[
+                              formData.virtual && "Virtual",
+                              formData.inPerson && "In-Person"
+                            ].filter(Boolean).join(", ")}
+                          </p>
                         </div>
                       </div>
 
