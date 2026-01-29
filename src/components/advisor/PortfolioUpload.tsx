@@ -230,7 +230,7 @@ const PortfolioUpload = ({
         className="hidden"
       />
 
-      {/* Image Crop Modal */}
+      {/* Image Crop Modal - Portfolio uses rectangular 5:7 aspect ratio */}
       {pendingImageSrc && (
         <ImageCropModal
           open={cropModalOpen}
@@ -241,6 +241,9 @@ const PortfolioUpload = ({
           imageSrc={pendingImageSrc}
           onCropComplete={handleCropComplete}
           isProcessing={isProcessing}
+          aspect={5 / 7}
+          cropShape="rect"
+          title="Crop Portfolio Photo"
         />
       )}
     </div>

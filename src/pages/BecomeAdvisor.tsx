@@ -43,8 +43,7 @@ import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
 import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { parsePhoneToE164 } from "@/lib/phone-utils";
+import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 
 const benefits = [
   {
@@ -445,7 +444,7 @@ const BecomeAdvisor = () => {
           first_name: formData.firstName.trim(),
           last_name: formData.lastName.trim(),
           email: formData.email.trim().toLowerCase(),
-          phone: formData.phone ? parsePhoneToE164(formData.phone) : null,
+          phone: formData.phone || null,
           specialty: formData.specialty.trim(),
           experience: formData.experience?.trim() || null,
           bio: formData.bio.trim(),
@@ -869,11 +868,11 @@ const BecomeAdvisor = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number (Optional)</Label>
-                      <PhoneInput
-                        id="phone"
+                      <InternationalPhoneInput
                         value={formData.phone}
                         onChange={(value) => setFormData({ ...formData, phone: value })}
                         error={errors.phone}
+                        placeholder="Enter phone number"
                       />
                     </div>
 

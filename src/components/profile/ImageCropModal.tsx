@@ -17,6 +17,12 @@ interface ImageCropModalProps {
   imageSrc: string;
   onCropComplete: (croppedBlob: Blob) => void;
   isProcessing?: boolean;
+  /** Aspect ratio for the crop area. Default is 1 (square) */
+  aspect?: number;
+  /** Shape of the crop area. Default is "round" for profile photos */
+  cropShape?: "rect" | "round";
+  /** Title shown in the modal header */
+  title?: string;
 }
 
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -111,6 +117,9 @@ const ImageCropModal = ({
   imageSrc,
   onCropComplete,
   isProcessing = false,
+  aspect = 1,
+  cropShape = "round",
+  title = "Crop Your Photo",
 }: ImageCropModalProps) => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -164,7 +173,7 @@ const ImageCropModal = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Crop Your Photo</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -175,9 +184,9 @@ const ImageCropModal = ({
               crop={crop}
               zoom={zoom}
               rotation={rotation}
-              aspect={1}
-              cropShape="round"
-              showGrid={false}
+              aspect={aspect}
+              cropShape={cropShape}
+              showGrid={cropShape === "rect"}
               onCropChange={onCropChange}
               onCropComplete={onCropCompleteCallback}
               onZoomChange={onZoomChange}
