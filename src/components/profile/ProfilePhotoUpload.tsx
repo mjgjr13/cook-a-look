@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ImageCropModal from "./ImageCropModal";
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl: string | null;
@@ -49,6 +50,8 @@ const ProfilePhotoUpload = ({
   const [isUploading, setIsUploading] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
@@ -66,10 +69,10 @@ const ProfilePhotoUpload = ({
       return { valid: false, error: "Only JPG and PNG images are allowed" };
     }
 
-    // Check file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
+    // Check file size (max 10MB - increased since we'll crop)
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      return { valid: false, error: "Image must be smaller than 5MB" };
+      return { valid: false, error: "Image must be smaller than 10MB" };
     }
 
     // Check minimum resolution
@@ -104,26 +107,37 @@ const ProfilePhotoUpload = ({
         description: validation.error,
         variant: "destructive",
       });
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       return;
     }
 
-    // Show preview
+    // Create preview and open crop modal
     const preview = URL.createObjectURL(file);
-    setPreviewUrl(preview);
+    setImageToCrop(preview);
+    setShowCropModal(true);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, [toast]);
 
+  const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
     setIsUploading(true);
 
     try {
-      // Generate unique filename
-      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const fileName = `${userId}/avatar_${Date.now()}.${fileExt}`;
+      // Generate unique filename - always save as PNG to preserve quality
+      const fileName = `${userId}/avatar_${Date.now()}.png`;
 
-      // Upload to storage
+      // Upload to storage without any compression
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file, {
+        .upload(fileName, croppedBlob, {
           upsert: true,
-          contentType: file.type,
+          contentType: "image/png",
         });
 
       if (uploadError) {
@@ -156,6 +170,9 @@ const ProfilePhotoUpload = ({
       }
 
       onPhotoUpdated(newAvatarUrl);
+      setShowCropModal(false);
+      setImageToCrop(null);
+      
       toast({
         title: "Photo Updated",
         description: "Your profile photo has been updated successfully.",
@@ -169,13 +186,16 @@ const ProfilePhotoUpload = ({
       });
     } finally {
       setIsUploading(false);
-      setPreviewUrl(null);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   }, [userId, profileId, currentPhotoUrl, onPhotoUpdated, toast]);
+
+  const handleCropModalClose = useCallback(() => {
+    setShowCropModal(false);
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop);
+    }
+    setImageToCrop(null);
+  }, [imageToCrop]);
 
   const handleRemovePhoto = async () => {
     if (!currentPhotoUrl) return;
@@ -218,7 +238,7 @@ const ProfilePhotoUpload = ({
   };
 
   const displayUrl = previewUrl || currentPhotoUrl;
-  const canRemove = !isAdvisor || !isListed; // Advisors with public listings cannot remove
+  const canRemove = !isAdvisor || !isListed;
 
   return (
     <div className="space-y-4">
@@ -295,7 +315,7 @@ const ProfilePhotoUpload = ({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        JPG or PNG, minimum 200×200 pixels, max 5MB
+        JPG or PNG, minimum 200×200 pixels, max 10MB
       </p>
 
       {/* Remove Confirmation Dialog */}
@@ -322,6 +342,17 @@ const ProfilePhotoUpload = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Crop Modal */}
+      {imageToCrop && (
+        <ImageCropModal
+          open={showCropModal}
+          onClose={handleCropModalClose}
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          isProcessing={isUploading}
+        />
+      )}
     </div>
   );
 };
