@@ -127,6 +127,7 @@ serve(async (req) => {
             product_data: {
               name: `Style Consultation with ${advisorName}`,
               description: `${sessionDate} at ${sessionTime} - Virtual styling session`,
+              tax_code: "txcd_10000000", // General - Services
             },
             unit_amount: Math.round(amount * 100),
             tax_behavior: "exclusive",
