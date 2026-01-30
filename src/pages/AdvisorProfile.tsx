@@ -44,7 +44,6 @@ const AdvisorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [calendarMode, setCalendarMode] = useState<"availability" | "booking">("availability");
 
   useEffect(() => {
     const fetchAdvisor = async () => {
@@ -81,13 +80,7 @@ const AdvisorProfile = () => {
     fetchAdvisor();
   }, [id]);
 
-  const handleCheckAvailability = () => {
-    setCalendarMode("availability");
-    setCalendarOpen(true);
-  };
-
   const handleBookConsultation = () => {
-    setCalendarMode("booking");
     setCalendarOpen(true);
   };
 
@@ -286,15 +279,10 @@ const AdvisorProfile = () => {
                   <span className="font-sans text-2xl font-medium">${displayPrice}</span>
                   <span className="font-sans text-muted-foreground">/session</span>
                 </div>
-                <div className="flex gap-4">
-                  <Button variant="outline" size="lg" onClick={handleCheckAvailability}>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Check Availability
-                  </Button>
-                  <Button variant="hero" size="lg" onClick={handleBookConsultation}>
-                    Book Consultation
-                  </Button>
-                </div>
+                <Button variant="hero" size="lg" onClick={handleBookConsultation}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Book Consultation
+                </Button>
               </div>
             </motion.div>
           </div>
@@ -348,7 +336,6 @@ const AdvisorProfile = () => {
         price={displayPrice}
         isOpen={calendarOpen}
         onClose={() => setCalendarOpen(false)}
-        mode={calendarMode}
       />
     </Layout>
   );
