@@ -128,7 +128,8 @@ serve(async (req) => {
               name: `Style Consultation with ${advisorName}`,
               description: `${sessionDate} at ${sessionTime} - Virtual styling session`,
             },
-            unit_amount: Math.round(amount * 100), // Convert to cents
+            unit_amount: Math.round(amount * 100),
+            tax_behavior: "exclusive",
           },
           quantity: 1,
         },
