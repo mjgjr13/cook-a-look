@@ -167,8 +167,11 @@ const AdminAdvisors = () => {
           const ap = advisorProfileMap.get(p.user_id);
           return {
             ...p,
-            is_listed: ap?.is_listed ?? false,
-            application_status: ap?.application_status ?? "pending",
+            // If advisor_approved in profiles and no advisor_profiles record,
+            // treat as listed (legacy data compatibility)
+            is_listed: ap?.is_listed ?? (p.advisor_approved === true),
+            application_status: ap?.application_status ?? 
+              (p.advisor_approved ? "approved" : "pending"),
             is_suspended: p.advisor_status === "suspended",
           };
         });
