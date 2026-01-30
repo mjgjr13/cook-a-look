@@ -198,7 +198,7 @@ const ClientRewardsCard = ({ userId }: ClientRewardsCardProps) => {
               <p className="text-muted-foreground">Per booking</p>
             </div>
             <div className="bg-background/60 rounded px-3 py-2 text-center">
-              <p className="font-medium">50 pts</p>
+              <p className="font-medium">5 pts</p>
               <p className="text-muted-foreground">Per review</p>
             </div>
             <div className="bg-background/60 rounded px-3 py-2 text-center">
