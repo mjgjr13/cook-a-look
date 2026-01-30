@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
-import RewardsCard from "@/components/dashboard/RewardsCard";
+import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
 import { useProfile } from "@/hooks/useProfile";
 
 interface Booking {
@@ -189,8 +189,8 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats Grid - Client rewards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {/* Stats Grid - Client stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -210,12 +210,14 @@ const Dashboard = () => {
               <p className="text-3xl font-serif font-medium">{pastBookings.length}</p>
               <p className="text-muted-foreground">Completed Sessions</p>
             </motion.div>
-            
-            {/* Rewards card for clients */}
-            {profile.user_id && (
-              <RewardsCard userId={profile.user_id} />
-            )}
           </div>
+
+          {/* Rewards card for clients - full width */}
+          {profile.user_id && (
+            <div className="mb-12">
+              <ClientRewardsCard userId={profile.user_id} />
+            </div>
+          )}
 
           {/* Upcoming Sessions */}
           <div className="mb-12">
