@@ -35,26 +35,26 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
-  const [hasRedirected, setHasRedirected] = useState(false);
 
+  // All hooks must be called before any conditional returns
   useEffect(() => {
-    // Only run once profile loading is complete
-    if (profileLoading || hasRedirected) return;
+    // Only proceed when profile loading is complete
+    if (profileLoading) return;
 
+    // Not logged in - redirect to sign in
     if (!profile) {
       navigate("/signin?redirect=/dashboard");
       return;
     }
 
-    // Redirect advisors to their dashboard - they should not access client dashboard
+    // Advisors should not access client dashboard - but don't navigate in useEffect
+    // to avoid infinite loops. We'll handle this with a conditional render below.
     if (roles.isAdvisor) {
-      setHasRedirected(true);
-      navigate("/advisor", { replace: true });
-      return;
+      return; // Don't load bookings for advisors
     }
 
     loadBookings();
-  }, [profileLoading, profile, roles.isAdvisor, hasRedirected]);
+  }, [profileLoading, profile, roles.isAdvisor]);
 
   const loadBookings = async () => {
     if (!profile) return;
@@ -92,6 +92,23 @@ const Dashboard = () => {
   const handleJoinCall = (bookingId: string) => {
     setActiveVideoBooking(bookingId);
   };
+
+  // Show advisor redirect message - no navigation to avoid loops
+  if (!profileLoading && profile && roles.isAdvisor) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+          <h2 className="font-serif text-xl">Advisor Dashboard</h2>
+          <p className="text-muted-foreground text-center max-w-md">
+            As a style advisor, please use the Advisor Dashboard to manage your bookings and availability.
+          </p>
+          <Button asChild>
+            <Link to="/advisor">Go to Advisor Dashboard</Link>
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   if (profileLoading || isLoading) {
     return (
