@@ -35,19 +35,26 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    if (!profileLoading && profile) {
-      // Redirect advisors to their dashboard - they should not access client dashboard
-      if (roles.isAdvisor) {
-        navigate("/advisor", { replace: true });
-        return;
-      }
-      loadBookings();
-    } else if (!profileLoading && !profile) {
+    // Only run once profile loading is complete
+    if (profileLoading || hasRedirected) return;
+
+    if (!profile) {
       navigate("/signin?redirect=/dashboard");
+      return;
     }
-  }, [profileLoading, profile, roles.isAdvisor]);
+
+    // Redirect advisors to their dashboard - they should not access client dashboard
+    if (roles.isAdvisor) {
+      setHasRedirected(true);
+      navigate("/advisor", { replace: true });
+      return;
+    }
+
+    loadBookings();
+  }, [profileLoading, profile, roles.isAdvisor, hasRedirected]);
 
   const loadBookings = async () => {
     if (!profile) return;
