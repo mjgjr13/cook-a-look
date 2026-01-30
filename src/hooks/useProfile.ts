@@ -66,14 +66,19 @@ export const useProfile = (): UseProfileResult => {
     try {
       setError(null);
 
-      // Fetch profile and admin role in parallel
-      const [profileResult, adminResult] = await Promise.all([
+      // Fetch profile, admin role, and advisor_profiles in parallel
+      const [profileResult, adminResult, advisorProfileResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("*")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
+        supabase
+          .from("advisor_profiles")
+          .select("application_status")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
 
       if (profileResult.error && profileResult.error.code !== "PGRST116") {
@@ -81,15 +86,20 @@ export const useProfile = (): UseProfileResult => {
       }
 
       const profileData = profileResult.data;
+      const advisorProfileData = advisorProfileResult.data;
       const isAdmin = adminResult.data === true;
+
+      // Determine approval status from advisor_profiles.application_status (source of truth)
+      // This ensures isApprovedAdvisor remains true even when visibility (is_listed) is OFF
+      const isAdminApproved = advisorProfileData?.application_status === "approved";
 
       if (profileData) {
         setProfile(profileData as UserProfile);
         setRoles({
           isAdmin,
           isAdvisor: profileData.is_advisor === true,
-          isApprovedAdvisor: profileData.is_advisor === true && profileData.advisor_approved === true,
-          isPendingAdvisor: profileData.is_advisor === true && profileData.advisor_status === "pending",
+          isApprovedAdvisor: profileData.is_advisor === true && isAdminApproved,
+          isPendingAdvisor: profileData.is_advisor === true && advisorProfileData?.application_status === "submitted",
         });
       } else {
         // No profile yet - this can happen during signup

@@ -189,23 +189,6 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
 
       if (updateError) throw updateError;
 
-      // Also update profiles.advisor_approved based on visibility
-      // advisor_approved = true only when admin-approved AND visibility is ON
-      if (userProfile) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("user_id", user?.id)
-          .single();
-
-        if (!profileError) {
-          await supabase
-            .from("profiles")
-            .update({ advisor_approved: newValue })
-            .eq("user_id", user?.id);
-        }
-      }
-
       // Update local state
       setAdvisorProfile((prev) =>
         prev ? { ...prev, is_listed: newValue } : null
