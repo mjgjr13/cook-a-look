@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 
 interface AdvisorRouteProps {
@@ -11,10 +12,11 @@ interface AdvisorRouteProps {
  * Non-advisors are redirected to become-advisor page.
  */
 const AdvisorRoute = ({ children }: AdvisorRouteProps) => {
-  const { profile, roles, isLoading } = useProfile();
+  const { user, isLoading: authLoading } = useAuth();
+  const { profile, roles, isLoading: profileLoading, error } = useProfile();
   const location = useLocation();
 
-  if (isLoading) {
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse flex flex-col items-center gap-4">
@@ -26,8 +28,22 @@ const AdvisorRoute = ({ children }: AdvisorRouteProps) => {
   }
 
   // Not authenticated
-  if (!profile) {
+  if (!user) {
     return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  // Authenticated but profile not ready (prevents /signin <-> protected route loops)
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3 text-center px-6">
+          <div className="w-12 h-12 rounded-full bg-gold/20" />
+          <p className="text-muted-foreground text-sm">
+            {error || "Setting up your account..."}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // Not an advisor - redirect to become advisor page

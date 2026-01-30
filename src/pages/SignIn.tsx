@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,14 +7,23 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 import { signInSchema, type SignInFormData } from "@/lib/validations";
 import { Loader2 } from "lucide-react";
 
 const SignIn = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { signIn, user, isLoading: authLoading } = useAuth();
+  const {
+    profile: userProfile,
+    roles,
+    isLoading: profileLoading,
+    error: profileError,
+    refetch,
+  } = useProfile();
   
   const [formData, setFormData] = useState<SignInFormData>({
     email: "",
@@ -23,14 +32,28 @@ const SignIn = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof SignInFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const redirectParam = searchParams.get("redirect");
+  const fromState = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+  const redirectTo = redirectParam || fromState || "/dashboard";
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated.
+  // IMPORTANT: only redirect once the profile/roles are loaded to avoid redirect loops.
   useEffect(() => {
-    if (user && !authLoading) {
-      navigate(redirectTo);
-    }
-  }, [user, authLoading, navigate, redirectTo]);
+    if (!user || authLoading) return;
+    if (profileLoading) return;
+
+    // If the user is authenticated but the profile hasn't been created/loaded yet,
+    // stay on this screen (prevents /signin <-> /dashboard loops).
+    if (!userProfile) return;
+
+    const target = roles.isAdmin
+      ? "/admin"
+      : roles.isAdvisor
+        ? "/advisor"
+        : redirectTo;
+
+    navigate(target, { replace: true });
+  }, [user, authLoading, profileLoading, userProfile, roles.isAdmin, roles.isAdvisor, navigate, redirectTo]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -90,8 +113,7 @@ const SignIn = () => {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
-
-      navigate(redirectTo);
+      // Navigation is handled by the useEffect above once profile/roles are loaded.
     } catch {
       toast({
         title: "Error",
@@ -103,11 +125,30 @@ const SignIn = () => {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || (user && profileLoading)) {
     return (
       <Layout>
         <div className="min-h-[80vh] flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (user && !profileLoading && !userProfile) {
+    return (
+      <Layout>
+        <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4 text-center px-6">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div>
+            <p className="font-serif text-xl">Finishing account setup…</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {profileError || "We're loading your profile. This usually takes a moment."}
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => refetch()}>
+            Retry
+          </Button>
         </div>
       </Layout>
     );
