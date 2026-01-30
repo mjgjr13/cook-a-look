@@ -209,45 +209,63 @@ const AdminAdvisors = () => {
 
       if (appError) throw appError;
 
-      // Update the user's profile to be an approved advisor
-      if (selectedApplication.email) {
-        const { data: userProfile } = await supabase
+      // Get the user profile by email
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("id, user_id")
+        .eq("email", selectedApplication.email)
+        .single();
+
+      if (userProfile) {
+        // Update profiles table - advisor_approved = false (controlled by visibility toggle)
+        const { error: profileError } = await supabase
           .from("profiles")
-          .select("id, user_id")
-          .eq("email", selectedApplication.email)
-          .single();
+          .update({
+            is_advisor: true,
+            advisor_approved: false, // Will become true when advisor toggles visibility ON
+            advisor_status: "approved",
+            specialty: selectedApplication.specialty,
+            bio: selectedApplication.bio,
+            instagram_url: selectedApplication.instagram,
+            portfolio_url: selectedApplication.portfolio,
+            full_name: `${selectedApplication.first_name} ${selectedApplication.last_name}`,
+            verified: true,
+            verification_status: "approved",
+          })
+          .eq("id", userProfile.id);
 
-        if (userProfile) {
-          // Update profiles table - advisor_approved = false (controlled by visibility toggle)
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .update({
-              is_advisor: true,
-              advisor_approved: false, // Will become true when advisor toggles visibility ON
-              advisor_status: "approved",
-              specialty: selectedApplication.specialty,
-              bio: selectedApplication.bio,
-              instagram_url: selectedApplication.instagram,
-              portfolio_url: selectedApplication.portfolio,
-              full_name: `${selectedApplication.first_name} ${selectedApplication.last_name}`,
-              verified: true,
-            })
-            .eq("id", userProfile.id);
+        if (profileError) throw profileError;
 
-          if (profileError) throw profileError;
+        // Upsert advisor_profiles table (creates if doesn't exist)
+        const { error: advisorProfileError } = await supabase
+          .from("advisor_profiles")
+          .upsert({
+            user_id: userProfile.user_id,
+            application_status: "approved",
+            onboarding_status: "complete",
+            is_listed: false, // Advisor must manually toggle this ON
+            is_published: false,
+            bio: selectedApplication.bio,
+          }, {
+            onConflict: "user_id",
+          });
 
-          // Also update advisor_profiles table
-          const { error: advisorProfileError } = await supabase
-            .from("advisor_profiles")
-            .update({
-              application_status: "approved",
-              is_listed: false, // Advisor must manually toggle this ON
-            })
-            .eq("user_id", userProfile.user_id);
+        if (advisorProfileError) {
+          console.error("Error updating advisor_profiles:", advisorProfileError);
+        }
 
-          if (advisorProfileError) {
-            console.error("Error updating advisor_profiles:", advisorProfileError);
-          }
+        // Update user role to advisor_active
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .upsert({
+            user_id: userProfile.user_id,
+            role: "advisor_active",
+          }, {
+            onConflict: "user_id,role",
+          });
+
+        if (roleError) {
+          console.error("Error updating user role:", roleError);
         }
       }
 
