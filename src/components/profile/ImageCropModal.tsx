@@ -30,17 +30,7 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
     const image = new Image();
     image.addEventListener("load", () => resolve(image));
     image.addEventListener("error", (error) => reject(error));
-    
-    // Enable CORS for external URLs (like Supabase storage)
-    // This prevents "tainted canvas" security errors when exporting
-    if (url.startsWith("http")) {
-      image.crossOrigin = "anonymous";
-      // Add cache-buster to force browser to re-fetch with CORS headers
-      const separator = url.includes("?") ? "&" : "?";
-      image.src = `${url}${separator}t=${Date.now()}`;
-    } else {
-      image.src = url;
-    }
+    image.src = url;
   });
 
 const getCroppedImg = async (

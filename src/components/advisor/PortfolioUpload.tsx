@@ -87,8 +87,35 @@ const PortfolioUpload = ({
   const handleEditImage = async (index: number) => {
     const imageUrl = currentImages[index];
     setEditingIndex(index);
-    setPendingImageSrc(imageUrl);
-    setCropModalOpen(true);
+
+    try {
+      // Convert the public URL into a bucket path so we can download it as a Blob
+      // and crop it without cross-origin canvas restrictions.
+      const url = new URL(imageUrl);
+      const pathParts = url.pathname.split("/portfolios/");
+      if (pathParts.length <= 1) {
+        throw new Error("Unable to parse portfolio file path");
+      }
+
+      const filePath = decodeURIComponent(pathParts[1]);
+      const { data, error } = await supabase.storage
+        .from("portfolios")
+        .download(filePath);
+
+      if (error) throw error;
+
+      const objectUrl = URL.createObjectURL(data);
+      setPendingImageSrc(objectUrl);
+      setCropModalOpen(true);
+    } catch (error) {
+      console.error("Error loading image for cropping:", error);
+      toast({
+        title: "Couldn't open cropper",
+        description: "We couldn't load this image for editing. Please try again.",
+        variant: "destructive",
+      });
+      setEditingIndex(null);
+    }
   };
 
   const handleCropComplete = async (croppedBlob: Blob) => {
@@ -148,6 +175,9 @@ const PortfolioUpload = ({
         variant: "destructive",
       });
     } finally {
+      if (pendingImageSrc?.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingImageSrc);
+      }
       setCropModalOpen(false);
       setPendingImageSrc(null);
       setIsProcessing(false);
@@ -285,6 +315,9 @@ const PortfolioUpload = ({
         <ImageCropModal
           open={cropModalOpen}
           onClose={() => {
+            if (pendingImageSrc?.startsWith("blob:")) {
+              URL.revokeObjectURL(pendingImageSrc);
+            }
             setCropModalOpen(false);
             setPendingImageSrc(null);
             setEditingIndex(null);
