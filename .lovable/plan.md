@@ -1,71 +1,63 @@
 
-# Fix: Admin Advisor Management Zero Count Issue
+# Fix: Ensure Visibility Toggle Always Remains Accessible for Approved Advisors
 
 ## Problem Summary
 
-The Admin Advisor Management page shows "0 Active Advisors" because of a data synchronization gap between two tables:
+When an advisor turns their visibility OFF, the toggle completely disappears from both the Dashboard and Settings pages, making it impossible to turn visibility back ON.
 
-| Table | Records | Problem |
-|-------|---------|---------|
-| `profiles` | 5 advisors with `is_advisor = true` | All 5 have `advisor_approved = true` or `is_advisor = true` |
-| `advisor_profiles` | Only 1 record | 4 advisors missing their `advisor_profiles` records |
+**Root Cause**: The system incorrectly conflates two separate concepts:
 
-The admin page logic requires `advisor_profiles.is_listed = true` to count as "Active", but 4 advisors have no `advisor_profiles` record at all (resulting in `is_listed = undefined/false`).
+| Concept | Current Behavior | Correct Behavior |
+|---------|-----------------|------------------|
+| **Admin Approval** (`advisor_approved`) | Set to `false` when visibility is OFF | Should remain `true` once admin approves |
+| **Public Visibility** (`is_listed`) | Correctly toggled | No change needed |
 
-**Note:** The public Style Advisors page (`/advisors`) works correctly because it uses `get_public_advisor_profiles()` which only checks `profiles.advisor_approved = true`.
+When `toggleVisibility` turns off listing, it also sets `advisor_approved = false`, which causes `isApprovedAdvisor` to become false, hiding the toggle.
 
 ---
 
-## Solution: Two-Part Fix
+## Solution: Separate Admin Approval from Visibility
 
-### Part 1: Backfill Missing Data
+### Part 1: Fix the Toggle Visibility Logic
 
-Create `advisor_profiles` records for the 4 existing advisors who are missing them:
+In `src/hooks/useAdvisorProfile.ts`, the `toggleVisibility` function should **NOT** update `advisor_approved`. This field should only be set by admin actions.
 
-```sql
-INSERT INTO advisor_profiles (user_id, application_status, is_listed, onboarding_status)
-SELECT 
-  p.user_id,
-  'approved',
-  true,  -- List them publicly
-  'complete'
-FROM profiles p
-LEFT JOIN advisor_profiles ap ON p.user_id = ap.user_id
-WHERE p.is_advisor = true 
-  AND p.advisor_approved = true
-  AND ap.user_id IS NULL;
-```
-
-### Part 2: Fix Frontend Logic
-
-Update AdminAdvisors.tsx to handle missing `advisor_profiles` records gracefully by treating advisors with `advisor_approved = true` in `profiles` as "active" even if they lack an `advisor_profiles` record.
-
-**Current logic (lines 169-179):**
+**Current code (lines 192-206)**:
 ```typescript
-const enrichedAdvisors = (profiles || []).map(p => {
-  const ap = advisorProfileMap.get(p.user_id);
-  return {
-    ...p,
-    is_listed: ap?.is_listed ?? false,  // ❌ Defaults to false if no record
-    application_status: ap?.application_status ?? "pending",
-  };
-});
+// Also update profiles.advisor_approved based on visibility
+// advisor_approved = true only when admin-approved AND visibility is ON
+if (userProfile) {
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", user?.id)
+    .single();
+
+  if (!profileError) {
+    await supabase
+      .from("profiles")
+      .update({ advisor_approved: newValue })
+      .eq("user_id", user?.id);
+  }
+}
 ```
 
-**Fixed logic:**
+**Fix**: Remove this entire block. The `advisor_approved` flag should represent "admin has approved this advisor" and should NOT change based on visibility toggle.
+
+### Part 2: Update Role Detection Logic
+
+In `src/hooks/useProfile.ts`, the `isApprovedAdvisor` check should look at the `advisor_profiles.application_status` instead of (or in addition to) `profiles.advisor_approved`.
+
+**Current logic (line 91)**:
 ```typescript
-const enrichedAdvisors = (profiles || []).map(p => {
-  const ap = advisorProfileMap.get(p.user_id);
-  return {
-    ...p,
-    // If advisor_approved in profiles and no advisor_profiles record,
-    // treat as listed (legacy data compatibility)
-    is_listed: ap?.is_listed ?? (p.advisor_approved === true),
-    application_status: ap?.application_status ?? 
-      (p.advisor_approved ? "approved" : "pending"),
-  };
-});
+isApprovedAdvisor: profileData.is_advisor === true && profileData.advisor_approved === true,
 ```
+
+**Updated approach**: Query `advisor_profiles.application_status === 'approved'` to determine if the advisor was admin-approved, independent of their visibility choice.
+
+### Part 3: Update Conditional Rendering
+
+In both `AdvisorDashboard.tsx` and `AccountSettings.tsx`, ensure the visibility toggle appears for **any advisor who has been admin-approved**, regardless of whether `is_listed` is true or false.
 
 ---
 
@@ -73,26 +65,50 @@ const enrichedAdvisors = (profiles || []).map(p => {
 
 | File | Change |
 |------|--------|
-| **Database migration** | Backfill missing `advisor_profiles` records |
-| `src/pages/admin/AdminAdvisors.tsx` | Update fallback logic for missing `advisor_profiles` |
+| `src/hooks/useAdvisorProfile.ts` | Remove the code that sets `advisor_approved = false` when visibility is toggled off |
+| `src/hooks/useProfile.ts` | Update role detection to check `advisor_profiles.application_status` for admin approval status |
+| `src/pages/AdvisorDashboard.tsx` | Ensure toggle is shown based on admin approval, not visibility state |
+| `src/pages/AccountSettings.tsx` | Same as above |
 
 ---
 
 ## Expected Outcome
 
 After these changes:
-- Admin Advisors page will show 4 "Active Advisors" (those with `advisor_approved = true`)
-- The count badge will correctly reflect visible advisors
-- Future advisors will have proper `advisor_profiles` records created during onboarding
+- Admin approval status (`advisor_approved` or `application_status`) remains unchanged when advisor toggles visibility
+- Visibility toggle remains accessible on both Dashboard and Settings when an advisor turns it OFF
+- Advisors can freely toggle their public listing on and off
+- The public `/advisors` page correctly shows only advisors with `is_listed = true`
 
 ---
 
 ## Technical Details
 
-### Why This Happened
+### Data Flow After Fix
 
-The `advisor_profiles` table was added after the initial advisor system was built. The existing 4 approved advisors in `profiles` were created before this table existed, so they lack corresponding `advisor_profiles` records.
+```text
+Admin approves advisor
+       │
+       ▼
+advisor_profiles.application_status = 'approved'
+       │
+       ▼
+Advisor can access visibility toggle (always visible in Dashboard/Settings)
+       │
+       ├──► Toggle ON  → is_listed = true  → Appears on /advisors
+       │
+       └──► Toggle OFF → is_listed = false → Hidden from /advisors
+                                            → Toggle STILL VISIBLE
+```
 
-### Prevention
+### Why This Matters
 
-The advisor approval flow (lines 239-251 in AdminAdvisors.tsx) already creates/upserts `advisor_profiles` records for newly approved advisors. This fix addresses legacy data only.
+The current architecture breaks the advisor workflow:
+1. Admin approves advisor → advisor can toggle ON
+2. Advisor toggles OFF → `advisor_approved` becomes false
+3. Toggle disappears → advisor is permanently hidden (stuck)
+
+The fix ensures:
+- Admin approval is a one-time permanent status (until admin revokes)
+- Visibility is a self-service toggle the advisor controls
+- These two concepts never interfere with each other
