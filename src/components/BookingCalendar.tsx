@@ -21,7 +21,6 @@ interface BookingCalendarProps {
   price: number;
   isOpen: boolean;
   onClose: () => void;
-  mode: "availability" | "booking";
 }
 
 interface TimeSlot {
@@ -40,7 +39,6 @@ const BookingCalendar = ({
   price,
   isOpen,
   onClose,
-  mode,
 }: BookingCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
@@ -215,13 +213,10 @@ const BookingCalendar = ({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">
-            {mode === "availability" ? "Check Availability" : "Book Consultation"}
+            Book Consultation
           </DialogTitle>
           <DialogDescription>
-            {mode === "availability" 
-              ? `View available time slots with ${advisorName}`
-              : `Select a date and time for your consultation with ${advisorName}`
-            }
+            Select a date and time for your consultation with {advisorName}
           </DialogDescription>
         </DialogHeader>
 
@@ -275,7 +270,7 @@ const BookingCalendar = ({
             </div>
           )}
 
-          {mode === "booking" && selectedDate && selectedSlot && (
+          {selectedDate && selectedSlot && (
             <div className="mt-6 p-4 bg-secondary border border-border">
               <div className="flex justify-between items-center mb-4">
                 <span className="font-sans text-sm">Consultation Fee</span>
@@ -303,21 +298,6 @@ const BookingCalendar = ({
                   You'll need to sign in to complete your booking
                 </p>
               )}
-            </div>
-          )}
-
-          {mode === "availability" && selectedDate && selectedSlot && (
-            <div className="mt-6">
-              <Button 
-                variant="hero" 
-                className="w-full"
-                onClick={() => {
-                  onClose();
-                  // Trigger booking mode
-                }}
-              >
-                Book This Time
-              </Button>
             </div>
           )}
         </div>
