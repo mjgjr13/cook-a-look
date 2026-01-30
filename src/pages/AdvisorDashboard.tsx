@@ -24,6 +24,7 @@ import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
 import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
+import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
@@ -271,33 +272,11 @@ const AdvisorDashboard = () => {
             </div>
           )}
 
-          {/* Platform Fee Incentive */}
-          {isApproved && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-gold/10 to-transparent border border-gold/30 rounded-lg p-4 mb-8"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Percent className="w-5 h-5 text-gold" />
-                  <div>
-                    <p className="font-medium">
-                      Platform Fee: <span className="text-gold">{platformFee.feePercent}%</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {platformFee.bookingsThisMonth}/10 bookings this month
-                      {platformFee.bookingsThisMonth < 10 && (
-                        <span> • Complete {10 - platformFee.bookingsThisMonth} more to unlock 10% fee!</span>
-                      )}
-                      {platformFee.feePercent === 10 && (
-                        <span className="text-primary"> • 🎉 Reduced fee unlocked!</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+          {/* Platform Fee Progress Card */}
+          {isApproved && profile && (
+            <div className="mb-8">
+              <AdvisorFeeProgressCard advisorProfileId={profile.id} />
+            </div>
           )}
 
           {/* Quick Stats */}

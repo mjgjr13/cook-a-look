@@ -21,7 +21,7 @@ import { ArrowLeft, Save, User, Bell, Shield, CreditCard, DollarSign, Loader2 } 
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import RewardsCard from "@/components/dashboard/RewardsCard";
+import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
 import PortfolioUpload from "@/components/advisor/PortfolioUpload";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
@@ -672,7 +672,7 @@ const AccountSettings = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              <RewardsCard userId={userId} />
+              <ClientRewardsCard userId={userId} />
 
               <div className="bg-background border border-border p-6 space-y-6">
                 <h2 className="font-serif text-xl font-medium">How Rewards Work</h2>

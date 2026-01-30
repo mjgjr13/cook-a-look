@@ -95,6 +95,39 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_monthly_stats: {
+        Row: {
+          advisor_id: string
+          completed_bookings: number
+          created_at: string
+          id: string
+          month_year: string
+          reduced_fee_unlocked: boolean
+          unlocked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          completed_bookings?: number
+          created_at?: string
+          id?: string
+          month_year: string
+          reduced_fee_unlocked?: boolean
+          unlocked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          completed_bookings?: number
+          created_at?: string
+          id?: string
+          month_year?: string
+          reduced_fee_unlocked?: boolean
+          unlocked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       advisor_profiles: {
         Row: {
           application_status: string
@@ -527,6 +560,39 @@ export type Database = {
           },
         ]
       }
+      point_transactions: {
+        Row: {
+          action_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          points: number
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          points: number
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          points?: number
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: string | null
@@ -553,6 +619,8 @@ export type Database = {
           price_per_session: number | null
           profile_photos: string[] | null
           rating: number | null
+          referral_code: string | null
+          referred_by: string | null
           review_count: number | null
           role: string
           session_duration: number | null
@@ -591,6 +659,8 @@ export type Database = {
           price_per_session?: number | null
           profile_photos?: string[] | null
           rating?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
           review_count?: number | null
           role?: string
           session_duration?: number | null
@@ -629,6 +699,8 @@ export type Database = {
           price_per_session?: number | null
           profile_photos?: string[] | null
           rating?: number | null
+          referral_code?: string | null
+          referred_by?: string | null
           review_count?: number | null
           role?: string
           session_duration?: number | null
@@ -644,33 +716,138 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          booking_completed_at: string | null
+          created_at: string
+          id: string
+          points_awarded: boolean
+          referral_code: string
+          referred_user_id: string
+          referrer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          booking_completed_at?: string | null
+          created_at?: string
+          id?: string
+          points_awarded?: boolean
+          referral_code: string
+          referred_user_id: string
+          referrer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_completed_at?: string | null
+          created_at?: string
+          id?: string
+          points_awarded?: boolean
+          referral_code?: string
+          referred_user_id?: string
+          referrer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reward_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      site_credits_log: {
+        Row: {
+          action_type: string
+          amount_cents: number
+          balance_after_cents: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          amount_cents: number
+          balance_after_cents: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          amount_cents?: number
+          balance_after_cents?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_rewards: {
         Row: {
           created_at: string
+          credit_expires_at: string | null
           current_tier: string
           id: string
           lifetime_points: number
           points_to_next_tier: number
+          site_credit_cents: number
+          tier_upgraded_at: string | null
           total_points: number
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          credit_expires_at?: string | null
           current_tier?: string
           id?: string
           lifetime_points?: number
           points_to_next_tier?: number
+          site_credit_cents?: number
+          tier_upgraded_at?: string | null
           total_points?: number
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          credit_expires_at?: string | null
           current_tier?: string
           id?: string
           lifetime_points?: number
           points_to_next_tier?: number
+          site_credit_cents?: number
+          tier_upgraded_at?: string | null
           total_points?: number
           updated_at?: string
           user_id?: string
@@ -800,6 +977,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_client_points: {
+        Args: {
+          _action_type: string
+          _created_by?: string
+          _description?: string
+          _points: number
+          _reference_id?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      generate_referral_code: { Args: never; Returns: string }
       get_active_published_advisors: {
         Args: never
         Returns: {
@@ -818,6 +1007,14 @@ export type Database = {
           user_id: string
           verified: boolean
           virtual_available: boolean
+        }[]
+      }
+      get_advisor_monthly_stats: {
+        Args: { advisor_profile_id: string }
+        Returns: {
+          bookings_until_reduced: number
+          completed_bookings: number
+          reduced_fee_unlocked: boolean
         }[]
       }
       get_advisor_public_profile: {
@@ -875,6 +1072,19 @@ export type Database = {
           virtual_available: boolean
         }[]
       }
+      get_client_rewards_summary: {
+        Args: { _user_id: string }
+        Returns: {
+          credit_expires_at: string
+          current_tier: string
+          lifetime_points: number
+          next_tier: string
+          next_tier_credit_cents: number
+          points_to_next_tier: number
+          site_credit_cents: number
+          total_points: number
+        }[]
+      }
       get_public_advisor_profiles: {
         Args: never
         Returns: {
@@ -920,6 +1130,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      redeem_site_credits: {
+        Args: { _amount_cents: number; _description?: string; _user_id: string }
+        Returns: number
       }
     }
     Enums: {

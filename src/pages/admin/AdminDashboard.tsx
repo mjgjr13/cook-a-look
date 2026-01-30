@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin } from "lucide-react";
+import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin, Gift } from "lucide-react";
 
 interface DemoAdvisor {
   id: string;
@@ -228,6 +228,23 @@ const AdminDashboard = () => {
             <CardContent>
               <Button asChild className="w-full">
                 <Link to="/admin/payments">Manage Payments</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Rewards & Credits
+              </CardTitle>
+              <CardDescription>
+                Manage point values, tiers, credits, and view audit logs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link to="/admin/rewards">Manage Rewards</Link>
               </Button>
             </CardContent>
           </Card>
