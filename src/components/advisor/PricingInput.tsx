@@ -28,7 +28,7 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
             id="price"
             type="number"
             min="25"
-            max="1000"
+            max="100000"
             step="5"
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -49,23 +49,23 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Client pays:</span>
-              <span className="font-medium">${numericValue.toFixed(2)}</span>
+              <span className="font-medium">${numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Platform fee (15%):</span>
-              <span className="text-muted-foreground">-${platformFee.toFixed(2)}</span>
+              <span className="text-muted-foreground">-${platformFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-primary" />
                 <span className="font-medium">Your earnings:</span>
               </div>
-              <span className="font-bold text-lg text-primary">${yourPayout.toFixed(2)}</span>
+              <span className="font-bold text-lg text-primary">${yourPayout.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
           
           <p className="text-xs text-muted-foreground italic">
-            Payouts are released 48 hours after successful sessions. Complete 10+ bookings monthly to unlock reduced 10% fee!
+            Payouts are released 48 hours after successful sessions. Complete 10+ bookings monthly to unlock reduced 5% fee!
           </p>
         </div>
       )}

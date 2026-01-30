@@ -21,7 +21,7 @@ import { ArrowLeft, Save, User, Bell, Shield, CreditCard, DollarSign, Loader2 } 
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
+
 import PortfolioUpload from "@/components/advisor/PortfolioUpload";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
@@ -317,17 +317,12 @@ const AccountSettings = () => {
     );
   }
 
-  // Filter tabs based on role - advisors don't see rewards
-  const allTabs = [
+  // Tabs - rewards tab is removed entirely (clients use dashboard rewards card)
+  const tabs = [
     { id: "profile", label: "Profile", icon: User },
     { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "rewards", label: "Rewards", icon: CreditCard },
     { id: "security", label: "Security", icon: Shield },
   ];
-
-  const tabs = isAdvisor 
-    ? allTabs.filter(tab => tab.id !== "rewards")
-    : allTabs;
 
   // Navigate back to the appropriate dashboard
   const handleBack = () => {
@@ -660,63 +655,6 @@ const AccountSettings = () => {
                     checked={notifications.smsReminders}
                     onCheckedChange={(checked) => setNotifications({ ...notifications, smsReminders: checked })}
                   />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Rewards Tab */}
-          {activeTab === "rewards" && userId && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              <ClientRewardsCard userId={userId} />
-
-              <div className="bg-background border border-border p-6 space-y-6">
-                <h2 className="font-serif text-xl font-medium">How Rewards Work</h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <h3 className="font-medium">Earning Points</h3>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-                        $1 spent = 1 reward point
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-                        Points accumulate with every booking
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-                        Points never expire
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="font-medium">Tier Benefits</h3>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2">
-                        <span className="text-amber-600">●</span>
-                        Bronze: Earn points on all bookings
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-slate-400">●</span>
-                        Silver (1,000 pts): 10% off sessions
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-yellow-500">●</span>
-                        Gold (2,500 pts): 15% off sessions
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="text-purple-500">●</span>
-                        Platinum (5,000 pts): 20% off sessions
-                      </li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             </motion.div>
