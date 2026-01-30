@@ -1,78 +1,77 @@
 
-# Fix: Enable Cropping of Existing Portfolio Photos (CORS Issue)
+# Fix: Client Booking Visibility and Remove "Check Availability" Button
 
 ## Problem Summary
 
-When you try to crop an **existing portfolio photo**, clicking "Save Photo" fails silently. The console shows:
+Two issues need to be addressed:
+1. **Clients cannot see advisor availability slots** - Even when advisors mark time as available, clients viewing the booking calendar see "No available slots for this date"
+2. **Remove the "Check Availability" button** - User wants only the "Book Consultation" button
 
+## Root Cause Analysis
+
+The database RLS policy for `availability_slots` restricts SELECT access to **authenticated users only**:
+
+```sql
+Policy: "Authenticated users can view future availability"
+Roles: {authenticated}  -- <-- Only applies to logged-in users!
+Expression: ((start_time > now()) AND (is_booked = false))
 ```
-SecurityError: The operation is insecure.
-```
 
-This is a **Cross-Origin Resource Sharing (CORS)** security error.
-
-## Root Cause
-
-When editing an existing portfolio image, the crop modal loads the image from Supabase storage (a different domain). The browser's security model prevents JavaScript from exporting canvas content when a cross-origin image has been drawn onto it - this is called a "tainted canvas".
-
-The current `createImage` function doesn't tell the browser to load the image in a CORS-friendly way.
+When a client visits an advisor profile page:
+- If NOT logged in: Uses `anon` role, which has NO policy allowing SELECT on availability_slots
+- Result: Query returns empty array, showing "No available slots"
 
 ## Solution
 
-Update the `ImageCropModal.tsx` file to:
+### 1. Update RLS Policy to Allow Public Access
+Modify the availability_slots SELECT policy to include anonymous users (public visitors) so anyone can view available booking slots.
 
-1. **Set `crossOrigin = "anonymous"`** on the Image element before loading external URLs
-2. **Add a cache-busting query parameter** to force the browser to re-fetch the image with CORS headers (browsers may cache a non-CORS version)
+| Before | After |
+|--------|-------|
+| Only `authenticated` role can SELECT | Both `anon` and `authenticated` roles can SELECT |
+
+### 2. Remove "Check Availability" Button  
+Remove the separate "Check Availability" button from the advisor profile page. Keep only "Book Consultation".
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/profile/ImageCropModal.tsx` | Update `createImage` function to handle CORS for external URLs |
+| Database migration | Update RLS policy to allow public access to future availability |
+| `src/pages/AdvisorProfile.tsx` | Remove "Check Availability" button and related handler |
+| `src/components/BookingCalendar.tsx` | Remove "availability" mode UI since it's no longer needed |
 
-## Technical Details
+## Implementation Details
 
-### Current Code (broken for external URLs)
-```typescript
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image();
-    image.addEventListener("load", () => resolve(image));
-    image.addEventListener("error", (error) => reject(error));
-    image.src = url;
-  });
+### Database Migration
+```sql
+-- Drop the existing authenticated-only policy
+DROP POLICY IF EXISTS "Authenticated users can view future availability" ON availability_slots;
+
+-- Create new policy allowing all users (including anonymous) to view future, unbooked slots
+CREATE POLICY "Anyone can view future availability"
+  ON availability_slots
+  FOR SELECT
+  USING ((start_time > now()) AND (is_booked = false));
 ```
 
-### Updated Code (CORS-safe)
-```typescript
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image();
-    image.addEventListener("load", () => resolve(image));
-    image.addEventListener("error", (error) => reject(error));
-    
-    // Enable CORS for external URLs (like Supabase storage)
-    // This prevents "tainted canvas" security errors when exporting
-    if (url.startsWith("http")) {
-      image.crossOrigin = "anonymous";
-      // Add cache-buster to force browser to re-fetch with CORS headers
-      const separator = url.includes("?") ? "&" : "?";
-      image.src = `${url}${separator}t=${Date.now()}`;
-    } else {
-      image.src = url;
-    }
-  });
-```
+This allows anyone to view which time slots are available, which is necessary for the booking flow to work. Sensitive information (like who booked a slot) is NOT exposed by this policy.
 
-## Why This Works
+### AdvisorProfile.tsx Changes
+- Remove `handleCheckAvailability` function
+- Remove the "Check Availability" button from the UI
+- Remove `calendarMode` state since there's only one mode now
+- Update `BookingCalendar` to always use "booking" mode
 
-- `crossOrigin = "anonymous"` tells the browser to request the image with CORS headers
-- The Supabase storage bucket is already configured for public access, so the CORS request will succeed
-- Adding a timestamp query parameter prevents the browser from using a cached non-CORS version of the image
+### BookingCalendar.tsx Changes  
+- Remove the `mode` prop since it's always "booking"
+- Remove conditional UI for "availability" mode
+- Simplify the component
 
-## Expected Outcome
+## Security Considerations
 
-After this fix:
-- Uploading new portfolio photos and cropping them will continue to work (data URLs)
-- Editing/re-cropping existing portfolio photos will now work correctly
-- The "Save Photo" button will successfully save the cropped image
+Allowing public read access to availability_slots is safe because:
+- Only exposes time slot availability (start/end time, virtual flag)
+- Does NOT expose who booked a slot
+- Advisor ID is already public (visible on profile page)
+- This is standard for booking systems (think Calendly, Google Calendar booking pages)
