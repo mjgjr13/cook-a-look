@@ -41,11 +41,8 @@ const Dashboard = () => {
     // Only proceed when profile loading is complete
     if (profileLoading) return;
 
-    // Not logged in - redirect to sign in
-    if (!profile) {
-      navigate("/signin?redirect=/dashboard");
-      return;
-    }
+    // Not logged in: ProtectedRoute will handle redirecting to /signin.
+    if (!profile) return;
 
     // Advisors should not access client dashboard - but don't navigate in useEffect
     // to avoid infinite loops. We'll handle this with a conditional render below.
