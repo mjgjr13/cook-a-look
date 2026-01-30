@@ -29,7 +29,7 @@ interface Booking {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, isLoading: profileLoading } = useProfile();
+  const { profile, roles, isLoading: profileLoading } = useProfile();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,11 +38,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!profileLoading && profile) {
+      // Redirect advisors to their dashboard - they should not access client dashboard
+      if (roles.isAdvisor) {
+        navigate("/advisor", { replace: true });
+        return;
+      }
       loadBookings();
     } else if (!profileLoading && !profile) {
       navigate("/signin?redirect=/dashboard");
     }
-  }, [profileLoading, profile]);
+  }, [profileLoading, profile, roles.isAdvisor]);
 
   const loadBookings = async () => {
     if (!profile) return;

@@ -25,7 +25,8 @@ import RewardsCard from "@/components/dashboard/RewardsCard";
 import PortfolioUpload from "@/components/advisor/PortfolioUpload";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
-
+import VisibilityToggle from "@/components/advisor/VisibilityToggle";
+import { useProfile } from "@/hooks/useProfile";
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
   userId: string | null;
@@ -208,7 +209,17 @@ const AccountSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
-  const { advisorProfile } = useAdvisorProfile();
+  const { 
+    advisorProfile, 
+    completionStatus, 
+    pendingBookingsCount, 
+    toggleVisibility 
+  } = useAdvisorProfile();
+  const { roles } = useProfile();
+
+  // Check if user is an advisor - advisors don't see rewards tab
+  const isAdvisor = roles.isAdvisor;
+  const isApprovedAdvisor = roles.isApprovedAdvisor;
 
   // Notification preferences (local state for now)
   const [notifications, setNotifications] = useState({
@@ -306,12 +317,26 @@ const AccountSettings = () => {
     );
   }
 
-  const tabs = [
+  // Filter tabs based on role - advisors don't see rewards
+  const allTabs = [
     { id: "profile", label: "Profile", icon: User },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "rewards", label: "Rewards", icon: CreditCard },
     { id: "security", label: "Security", icon: Shield },
   ];
+
+  const tabs = isAdvisor 
+    ? allTabs.filter(tab => tab.id !== "rewards")
+    : allTabs;
+
+  // Navigate back to the appropriate dashboard
+  const handleBack = () => {
+    if (isAdvisor) {
+      navigate("/advisor");
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <Layout>
@@ -319,7 +344,7 @@ const AccountSettings = () => {
         <div className="container mx-auto px-6 lg:px-8 max-w-4xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <Button variant="ghost" size="icon" onClick={handleBack}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
@@ -420,8 +445,20 @@ const AccountSettings = () => {
 
               {/* Advisor-specific settings */}
               {profile?.is_advisor && (
-                <div className="bg-background border border-border p-6 space-y-6">
-                  <h2 className="font-serif text-xl font-medium">Advisor Settings</h2>
+                <div className="space-y-6">
+                  {/* Visibility Toggle for approved advisors */}
+                  {isApprovedAdvisor && advisorProfile && (
+                    <VisibilityToggle
+                      isListed={advisorProfile.is_listed}
+                      isApproved={isApprovedAdvisor}
+                      completionStatus={completionStatus}
+                      pendingBookingsCount={pendingBookingsCount}
+                      onToggle={toggleVisibility}
+                    />
+                  )}
+
+                  <div className="bg-background border border-border p-6 space-y-6">
+                    <h2 className="font-serif text-xl font-medium">Advisor Settings</h2>
 
                   {/* Payout Info Box - Hide percentage from advisors */}
                   <div className="bg-muted/50 border border-border rounded-lg p-4">
@@ -558,6 +595,7 @@ const AccountSettings = () => {
                       <Button variant="outline" onClick={() => navigate("/advisor/earnings")}>
                         View Earnings
                       </Button>
+                    </div>
                     </div>
                   </div>
                 </div>
