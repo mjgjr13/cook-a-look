@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Settings, Gift, History, Plus, Save, Search, CreditCard, Users } from "lucide-react";
+import { Loader2, Settings, Gift, History, Plus, Save, Search, CreditCard, Users, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -59,6 +60,7 @@ interface UserReward {
 }
 
 const AdminRewards = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<RewardSetting[]>([]);
@@ -273,11 +275,16 @@ const AdminRewards = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Rewards Management</h1>
-            <p className="text-muted-foreground">
-              Configure point values, tier thresholds, and manage user rewards
-            </p>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Rewards Management</h1>
+              <p className="text-muted-foreground">
+                Configure point values, tier thresholds, and manage user rewards
+              </p>
+            </div>
           </div>
           <Dialog open={manualCreditOpen} onOpenChange={setManualCreditOpen}>
             <DialogTrigger asChild>
