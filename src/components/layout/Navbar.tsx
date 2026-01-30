@@ -110,15 +110,6 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   )}
                   
-                  {/* Show client dashboard option for advisors currently in advisor view */}
-                  {roles.isAdvisor && location.pathname.startsWith("/advisor") && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/dashboard" className="cursor-pointer flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        Client Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
                   
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer flex items-center gap-2">
@@ -170,16 +161,6 @@ const Navbar = () => {
                   <DropdownMenuItem asChild>
                     <Link to={defaultDashboard}>Dashboard</Link>
                   </DropdownMenuItem>
-                  {roles.isAdvisor && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/advisor">Advisor Dashboard</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/dashboard">Client Dashboard</Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>
