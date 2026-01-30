@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, X, ImagePlus, Loader2 } from "lucide-react";
+import { Upload, X, ImagePlus, Loader2, Crop } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,8 @@ const PortfolioUpload = ({
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Track which image index we're editing (null = adding new)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -77,6 +79,16 @@ const PortfolioUpload = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    // Set editingIndex to null for new uploads
+    setEditingIndex(null);
+  };
+
+  // Handle clicking on existing image to edit/crop it
+  const handleEditImage = async (index: number) => {
+    const imageUrl = currentImages[index];
+    setEditingIndex(index);
+    setPendingImageSrc(imageUrl);
+    setCropModalOpen(true);
   };
 
   const handleCropComplete = async (croppedBlob: Blob) => {
@@ -98,11 +110,36 @@ const PortfolioUpload = ({
         .from("portfolios")
         .getPublicUrl(filePath);
 
-      onImagesChange([...currentImages, publicUrl]);
-      toast({
-        title: "Upload complete",
-        description: "Portfolio image uploaded successfully.",
-      });
+      if (editingIndex !== null) {
+        // Replacing an existing image - delete old file first
+        const oldImageUrl = currentImages[editingIndex];
+        try {
+          const url = new URL(oldImageUrl);
+          const pathParts = url.pathname.split("/portfolios/");
+          if (pathParts.length > 1) {
+            const oldFilePath = decodeURIComponent(pathParts[1]);
+            await supabase.storage.from("portfolios").remove([oldFilePath]);
+          }
+        } catch (error) {
+          console.error("Error removing old file from storage:", error);
+        }
+
+        // Replace the image at the editing index
+        const newImages = [...currentImages];
+        newImages[editingIndex] = publicUrl;
+        onImagesChange(newImages);
+        toast({
+          title: "Photo updated",
+          description: "Portfolio image updated successfully.",
+        });
+      } else {
+        // Adding a new image
+        onImagesChange([...currentImages, publicUrl]);
+        toast({
+          title: "Upload complete",
+          description: "Portfolio image uploaded successfully.",
+        });
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast({
@@ -116,6 +153,7 @@ const PortfolioUpload = ({
       setIsProcessing(false);
       setUploading(false);
       setUploadingIndex(null);
+      setEditingIndex(null);
     }
   };
 
@@ -156,20 +194,32 @@ const PortfolioUpload = ({
         {currentImages.map((image, index) => (
           <div 
             key={index} 
-            className="relative aspect-square rounded-lg overflow-hidden border border-border group"
+            className="relative aspect-[5/7] rounded-lg overflow-hidden border border-border group"
           >
             <img
               src={image}
               alt={`Portfolio ${index + 1}`}
               className="w-full h-full object-cover"
             />
-            <button
-              type="button"
-              onClick={() => handleRemoveImage(index)}
-              className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* Overlay with edit/delete buttons */}
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleEditImage(index)}
+                className="p-2 bg-white/90 text-foreground rounded-full hover:bg-white transition-colors"
+                title="Crop photo"
+              >
+                <Crop className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRemoveImage(index)}
+                className="p-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors"
+                title="Delete photo"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         ))}
 
@@ -237,13 +287,14 @@ const PortfolioUpload = ({
           onClose={() => {
             setCropModalOpen(false);
             setPendingImageSrc(null);
+            setEditingIndex(null);
           }}
           imageSrc={pendingImageSrc}
           onCropComplete={handleCropComplete}
           isProcessing={isProcessing}
           aspect={5 / 7}
           cropShape="rect"
-          title="Crop Portfolio Photo"
+          title={editingIndex !== null ? "Crop Portfolio Photo" : "Crop New Photo"}
         />
       )}
     </div>
