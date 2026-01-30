@@ -1,77 +1,55 @@
 
-# Fix: Client Booking Visibility and Remove "Check Availability" Button
+
+# Fix: Create-Checkout Edge Function CORS Headers
 
 ## Problem Summary
 
-Two issues need to be addressed:
-1. **Clients cannot see advisor availability slots** - Even when advisors mark time as available, clients viewing the booking calendar see "No available slots for this date"
-2. **Remove the "Check Availability" button** - User wants only the "Book Consultation" button
+When clicking "Proceed to Payment" after selecting an advisor time slot, you're getting:
+> **Booking Failed: Edge function returned a non-2xx status code**
 
-## Root Cause Analysis
+## Root Cause
 
-The database RLS policy for `availability_slots` restricts SELECT access to **authenticated users only**:
+The `create-checkout` edge function has **incomplete CORS headers**. The Supabase JavaScript client sends additional headers that are NOT listed in the `Access-Control-Allow-Headers` configuration.
 
-```sql
-Policy: "Authenticated users can view future availability"
-Roles: {authenticated}  -- <-- Only applies to logged-in users!
-Expression: ((start_time > now()) AND (is_booked = false))
+### Current (broken):
+```javascript
+"Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 ```
 
-When a client visits an advisor profile page:
-- If NOT logged in: Uses `anon` role, which has NO policy allowing SELECT on availability_slots
-- Result: Query returns empty array, showing "No available slots"
+### Missing headers sent by Supabase client:
+- `x-supabase-client-platform`
+- `x-supabase-client-platform-version`
+- `x-supabase-client-runtime`
+- `x-supabase-client-runtime-version`
+
+When the browser's preflight (OPTIONS) request checks if these headers are allowed and they're not listed, the CORS check fails silently and returns an error before the actual request is even made.
 
 ## Solution
 
-### 1. Update RLS Policy to Allow Public Access
-Modify the availability_slots SELECT policy to include anonymous users (public visitors) so anyone can view available booking slots.
+Update the CORS headers in `supabase/functions/create-checkout/index.ts` to include all required headers.
 
-| Before | After |
-|--------|-------|
-| Only `authenticated` role can SELECT | Both `anon` and `authenticated` roles can SELECT |
-
-### 2. Remove "Check Availability" Button  
-Remove the separate "Check Availability" button from the advisor profile page. Keep only "Book Consultation".
-
-## Files to Modify
+## File to Modify
 
 | File | Change |
 |------|--------|
-| Database migration | Update RLS policy to allow public access to future availability |
-| `src/pages/AdvisorProfile.tsx` | Remove "Check Availability" button and related handler |
-| `src/components/BookingCalendar.tsx` | Remove "availability" mode UI since it's no longer needed |
+| `supabase/functions/create-checkout/index.ts` | Update `corsHeaders` to include all Supabase client headers |
 
-## Implementation Details
+## Technical Implementation
 
-### Database Migration
-```sql
--- Drop the existing authenticated-only policy
-DROP POLICY IF EXISTS "Authenticated users can view future availability" ON availability_slots;
-
--- Create new policy allowing all users (including anonymous) to view future, unbooked slots
-CREATE POLICY "Anyone can view future availability"
-  ON availability_slots
-  FOR SELECT
-  USING ((start_time > now()) AND (is_booked = false));
+### Updated CORS Headers
+```typescript
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 ```
 
-This allows anyone to view which time slots are available, which is necessary for the booking flow to work. Sensitive information (like who booked a slot) is NOT exposed by this policy.
+This single-line change will allow the browser to successfully complete the preflight CORS check, enabling the actual POST request to proceed.
 
-### AdvisorProfile.tsx Changes
-- Remove `handleCheckAvailability` function
-- Remove the "Check Availability" button from the UI
-- Remove `calendarMode` state since there's only one mode now
-- Update `BookingCalendar` to always use "booking" mode
+## Expected Outcome
 
-### BookingCalendar.tsx Changes  
-- Remove the `mode` prop since it's always "booking"
-- Remove conditional UI for "availability" mode
-- Simplify the component
+After this fix:
+- Clicking "Proceed to Payment" will successfully call the edge function
+- Users will be redirected to Stripe Checkout to complete their booking payment
+- The booking flow will work end-to-end
 
-## Security Considerations
-
-Allowing public read access to availability_slots is safe because:
-- Only exposes time slot availability (start/end time, virtual flag)
-- Does NOT expose who booked a slot
-- Advisor ID is already public (visible on profile page)
-- This is standard for booking systems (think Calendly, Google Calendar booking pages)
