@@ -395,12 +395,32 @@ const handler = async (req: Request): Promise<Response> => {
       // Don't fail the whole request, application is already created
     }
 
-    // Add advisor role to user_roles table (for dual-role support)
+    // Create advisor_profiles record with pending status
+    // This is critical for the organic approval flow
+    const { error: advisorProfileError } = await supabaseAdmin
+      .from("advisor_profiles")
+      .upsert({
+        user_id: userId,
+        application_status: "pending",
+        onboarding_status: "pending",
+        is_listed: false,
+        is_published: false,
+        bio: body.bio.trim(),
+      }, {
+        onConflict: "user_id",
+      });
+
+    if (advisorProfileError) {
+      console.error("Advisor profile creation error:", advisorProfileError);
+      // Don't fail the whole request
+    }
+
+    // Add advisor_applicant role to user_roles table
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .upsert({
         user_id: userId,
-        role: "user", // Start with user role, admin will upgrade when approved
+        role: "advisor_applicant",
       }, {
         onConflict: "user_id,role",
         ignoreDuplicates: true,
