@@ -1,11 +1,27 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, X, ImagePlus, Loader2, Crop } from "lucide-react";
+import { Upload, ImagePlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import ImageCropModal from "@/components/profile/ImageCropModal";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import SortablePortfolioItem from "./SortablePortfolioItem";
 
 interface PortfolioUploadProps {
   userId: string;
@@ -14,11 +30,11 @@ interface PortfolioUploadProps {
   maxImages?: number;
 }
 
-const PortfolioUpload = ({ 
-  userId, 
-  currentImages, 
-  onImagesChange, 
-  maxImages = 8 
+const PortfolioUpload = ({
+  userId,
+  currentImages,
+  onImagesChange,
+  maxImages = 8,
 }: PortfolioUploadProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,15 +43,47 @@ const PortfolioUpload = ({
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  // Track which image index we're editing (null = adding new)
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = currentImages.findIndex((img) => img === active.id);
+        const newIndex = currentImages.findIndex((img) => img === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newImages = arrayMove(currentImages, oldIndex, newIndex);
+          onImagesChange(newImages);
+          toast({
+            title: "Order updated",
+            description: "Portfolio order has been updated.",
+          });
+        }
+      }
+    },
+    [currentImages, onImagesChange, toast]
+  );
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const remainingSlots = maxImages - currentImages.length;
-    
+
     if (remainingSlots <= 0) {
       toast({
         title: "Album full",
@@ -46,8 +94,7 @@ const PortfolioUpload = ({
     }
 
     const file = files[0];
-    
-    // Validate file type
+
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Invalid file type",
@@ -57,7 +104,6 @@ const PortfolioUpload = ({
       return;
     }
 
-    // Validate file size (max 10MB before crop)
     if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -67,30 +113,24 @@ const PortfolioUpload = ({
       return;
     }
 
-    // Convert file to data URL for crop modal
     const reader = new FileReader();
     reader.onloadend = () => {
       setPendingImageSrc(reader.result as string);
       setCropModalOpen(true);
     };
     reader.readAsDataURL(file);
-    
-    // Reset file input
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    // Set editingIndex to null for new uploads
     setEditingIndex(null);
   };
 
-  // Handle clicking on existing image to edit/crop it
   const handleEditImage = async (index: number) => {
     const imageUrl = currentImages[index];
     setEditingIndex(index);
 
     try {
-      // Convert the public URL into a bucket path so we can download it as a Blob
-      // and crop it without cross-origin canvas restrictions.
       const url = new URL(imageUrl);
       const pathParts = url.pathname.split("/portfolios/");
       if (pathParts.length <= 1) {
@@ -111,7 +151,8 @@ const PortfolioUpload = ({
       console.error("Error loading image for cropping:", error);
       toast({
         title: "Couldn't open cropper",
-        description: "We couldn't load this image for editing. Please try again.",
+        description:
+          "We couldn't load this image for editing. Please try again.",
         variant: "destructive",
       });
       setEditingIndex(null);
@@ -133,12 +174,11 @@ const PortfolioUpload = ({
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("portfolios")
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("portfolios").getPublicUrl(filePath);
 
       if (editingIndex !== null) {
-        // Replacing an existing image - delete old file first
         const oldImageUrl = currentImages[editingIndex];
         try {
           const url = new URL(oldImageUrl);
@@ -151,7 +191,6 @@ const PortfolioUpload = ({
           console.error("Error removing old file from storage:", error);
         }
 
-        // Replace the image at the editing index
         const newImages = [...currentImages];
         newImages[editingIndex] = publicUrl;
         onImagesChange(newImages);
@@ -160,7 +199,6 @@ const PortfolioUpload = ({
           description: "Portfolio image updated successfully.",
         });
       } else {
-        // Adding a new image
         onImagesChange([...currentImages, publicUrl]);
         toast({
           title: "Upload complete",
@@ -189,8 +227,7 @@ const PortfolioUpload = ({
 
   const handleRemoveImage = async (index: number) => {
     const imageUrl = currentImages[index];
-    
-    // Extract file path from URL
+
     try {
       const url = new URL(imageUrl);
       const pathParts = url.pathname.split("/portfolios/");
@@ -206,13 +243,23 @@ const PortfolioUpload = ({
     onImagesChange(newImages);
   };
 
+  const handleCloseModal = useCallback(() => {
+    if (pendingImageSrc?.startsWith("blob:")) {
+      URL.revokeObjectURL(pendingImageSrc);
+    }
+    setCropModalOpen(false);
+    setPendingImageSrc(null);
+    setEditingIndex(null);
+  }, [pendingImageSrc]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <Label>Portfolio Photos</Label>
           <p className="text-sm text-muted-foreground">
-            Upload up to {maxImages} photos showcasing your styling work
+            Upload up to {maxImages} photos showcasing your styling work. Drag
+            to reorder.
           </p>
         </div>
         <span className="text-sm text-muted-foreground">
@@ -220,65 +267,54 @@ const PortfolioUpload = ({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {currentImages.map((image, index) => (
-          <div 
-            key={index} 
-            className="relative aspect-[5/7] rounded-lg overflow-hidden border border-border group"
-          >
-            <img
-              src={image}
-              alt={`Portfolio ${index + 1}`}
-              className="w-full h-full object-cover"
-            />
-            {/* Overlay with edit/delete buttons */}
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleEditImage(index)}
-                className="p-2 bg-white/90 text-foreground rounded-full hover:bg-white transition-colors"
-                title="Crop photo"
-              >
-                <Crop className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRemoveImage(index)}
-                className="p-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors"
-                title="Delete photo"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={currentImages}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {currentImages.map((image, index) => (
+              <SortablePortfolioItem
+                key={image}
+                id={image}
+                image={image}
+                index={index}
+                onEdit={handleEditImage}
+                onRemove={handleRemoveImage}
+              />
+            ))}
 
-        {/* Upload placeholder slots */}
-        {Array.from({ length: Math.min(maxImages - currentImages.length, 1) }).map((_, index) => (
-          <button
-            key={`placeholder-${index}`}
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className={cn(
-              "aspect-square rounded-lg border-2 border-dashed border-border",
-              "flex flex-col items-center justify-center gap-2",
-              "hover:border-gold hover:bg-muted/50 transition-colors",
-              "text-muted-foreground hover:text-foreground",
-              uploading && "opacity-50 cursor-not-allowed"
+            {/* Upload placeholder */}
+            {currentImages.length < maxImages && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className={cn(
+                  "aspect-[5/7] rounded-lg border-2 border-dashed border-border",
+                  "flex flex-col items-center justify-center gap-2",
+                  "hover:border-gold hover:bg-muted/50 transition-colors",
+                  "text-muted-foreground hover:text-foreground",
+                  uploading && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {uploading && uploadingIndex === currentImages.length ? (
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                ) : (
+                  <>
+                    <ImagePlus className="w-8 h-8" />
+                    <span className="text-xs">Add Photo</span>
+                  </>
+                )}
+              </button>
             )}
-          >
-            {uploading && uploadingIndex === currentImages.length + index ? (
-              <Loader2 className="w-8 h-8 animate-spin" />
-            ) : (
-              <>
-                <ImagePlus className="w-8 h-8" />
-                <span className="text-xs">Add Photo</span>
-              </>
-            )}
-          </button>
-        ))}
-      </div>
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {currentImages.length < maxImages && (
         <div className="flex items-center gap-2">
@@ -297,7 +333,7 @@ const PortfolioUpload = ({
             Upload Photos
           </Button>
           <span className="text-xs text-muted-foreground">
-            JPG, PNG up to 5MB each
+            JPG, PNG up to 10MB each
           </span>
         </div>
       )}
@@ -310,24 +346,18 @@ const PortfolioUpload = ({
         className="hidden"
       />
 
-      {/* Image Crop Modal - Portfolio uses rectangular 5:7 aspect ratio */}
       {pendingImageSrc && (
         <ImageCropModal
           open={cropModalOpen}
-          onClose={() => {
-            if (pendingImageSrc?.startsWith("blob:")) {
-              URL.revokeObjectURL(pendingImageSrc);
-            }
-            setCropModalOpen(false);
-            setPendingImageSrc(null);
-            setEditingIndex(null);
-          }}
+          onClose={handleCloseModal}
           imageSrc={pendingImageSrc}
           onCropComplete={handleCropComplete}
           isProcessing={isProcessing}
           aspect={5 / 7}
           cropShape="rect"
-          title={editingIndex !== null ? "Crop Portfolio Photo" : "Crop New Photo"}
+          title={
+            editingIndex !== null ? "Crop Portfolio Photo" : "Crop New Photo"
+          }
         />
       )}
     </div>
