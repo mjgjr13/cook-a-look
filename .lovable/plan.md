@@ -1,156 +1,98 @@
 
+# Fix: Admin Advisor Management Zero Count Issue
 
-# Backend Integration Diagnosis & Fix Plan
+## Problem Summary
 
-## Current Status: Supabase IS Connected and Working
+The Admin Advisor Management page shows "0 Active Advisors" because of a data synchronization gap between two tables:
 
-Your backend is fully connected to Lovable Cloud (Supabase). Here's the proof:
+| Table | Records | Problem |
+|-------|---------|---------|
+| `profiles` | 5 advisors with `is_advisor = true` | All 5 have `advisor_approved = true` or `is_advisor = true` |
+| `advisor_profiles` | Only 1 record | 4 advisors missing their `advisor_profiles` records |
 
-**Working Components:**
-- Database connection: Active (4 users, 15 tables)
-- Authentication: Working (users can sign up, sign in)
-- RLS policies: Configured and enforcing security
-- Database functions: 12 functions exist
-- Storage buckets: 4 buckets configured (avatars, portfolios, etc.)
+The admin page logic requires `advisor_profiles.is_listed = true` to count as "Active", but 4 advisors have no `advisor_profiles` record at all (resulting in `is_listed = undefined/false`).
 
-**The Real Problem: Missing Automation**
+**Note:** The public Style Advisors page (`/advisors`) works correctly because it uses `get_public_advisor_profiles()` which only checks `profiles.advisor_approved = true`.
 
-The database functions exist but **no triggers are attached** to run them automatically. This means:
-- When a user signs up, `handle_new_user()` may not create a profile automatically
-- When an advisor is approved, data doesn't sync between tables
-- Booking slots aren't auto-marked as booked/unbooked
+---
 
-## Root Cause: Data Synchronization Issues
+## Solution: Two-Part Fix
 
-| Issue | Current State | Impact |
-|-------|---------------|--------|
-| Profile trigger not attached | `handle_new_user()` function exists but no trigger | Profiles may not auto-create on signup |
-| No advisor sync trigger | Advisor data stored in 2 places | `is_listed: false` even for approved advisors |
-| No booking automation | Slots don't auto-update | Manual intervention needed |
+### Part 1: Backfill Missing Data
 
-**Current Data State:**
-- 1 approved advisor (marceljg8@gmail.com)
-- But `advisor_profiles.is_listed = false` ← Prevents public display
-- The `get_public_advisor_profiles()` RPC returns data correctly
-- 3 other users are clients only
-
-## Solution: Add Missing Database Triggers
-
-### Phase 1: Fix Profile Auto-Creation Trigger
-
-Attach the existing `handle_new_user()` function to auth.users:
+Create `advisor_profiles` records for the 4 existing advisors who are missing them:
 
 ```sql
--- This trigger should already exist but may be missing
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+INSERT INTO advisor_profiles (user_id, application_status, is_listed, onboarding_status)
+SELECT 
+  p.user_id,
+  'approved',
+  true,  -- List them publicly
+  'complete'
+FROM profiles p
+LEFT JOIN advisor_profiles ap ON p.user_id = ap.user_id
+WHERE p.is_advisor = true 
+  AND p.advisor_approved = true
+  AND ap.user_id IS NULL;
 ```
 
-### Phase 2: Add Advisor Data Sync Trigger
+### Part 2: Fix Frontend Logic
 
-Create a trigger to keep `profiles` and `advisor_profiles` in sync:
+Update AdminAdvisors.tsx to handle missing `advisor_profiles` records gracefully by treating advisors with `advisor_approved = true` in `profiles` as "active" even if they lack an `advisor_profiles` record.
 
-```sql
-CREATE OR REPLACE FUNCTION sync_advisor_status()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- When advisor_profiles status changes, update profiles table
-  UPDATE profiles SET
-    is_advisor = (NEW.application_status = 'approved'),
-    advisor_approved = (NEW.application_status = 'approved'),
-    advisor_status = NEW.application_status
-  WHERE user_id = NEW.user_id;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public';
-
-CREATE TRIGGER on_advisor_profile_change
-  AFTER INSERT OR UPDATE OF application_status ON advisor_profiles
-  FOR EACH ROW EXECUTE FUNCTION sync_advisor_status();
+**Current logic (lines 169-179):**
+```typescript
+const enrichedAdvisors = (profiles || []).map(p => {
+  const ap = advisorProfileMap.get(p.user_id);
+  return {
+    ...p,
+    is_listed: ap?.is_listed ?? false,  // ❌ Defaults to false if no record
+    application_status: ap?.application_status ?? "pending",
+  };
+});
 ```
 
-### Phase 3: Auto-List Approved Advisors
-
-Fix the current data and ensure approved advisors are listed:
-
-```sql
--- Fix current data: approved advisors should be listed
-UPDATE advisor_profiles 
-SET is_listed = true 
-WHERE application_status = 'approved' 
-  AND onboarding_status = 'complete';
+**Fixed logic:**
+```typescript
+const enrichedAdvisors = (profiles || []).map(p => {
+  const ap = advisorProfileMap.get(p.user_id);
+  return {
+    ...p,
+    // If advisor_approved in profiles and no advisor_profiles record,
+    // treat as listed (legacy data compatibility)
+    is_listed: ap?.is_listed ?? (p.advisor_approved === true),
+    application_status: ap?.application_status ?? 
+      (p.advisor_approved ? "approved" : "pending"),
+  };
+});
 ```
 
-### Phase 4: Booking Automation Triggers
-
-```sql
--- Auto-mark slot as booked when booking created
-CREATE OR REPLACE FUNCTION mark_slot_booked()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE availability_slots SET is_booked = true WHERE id = NEW.slot_id;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public';
-
-CREATE TRIGGER on_booking_created
-  AFTER INSERT ON bookings
-  FOR EACH ROW EXECUTE FUNCTION mark_slot_booked();
-
--- Auto-unbook slot on cancellation
-CREATE OR REPLACE FUNCTION unbook_slot_on_cancel()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.status = 'cancelled' AND OLD.status != 'cancelled' THEN
-    UPDATE availability_slots SET is_booked = false WHERE id = NEW.slot_id;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public';
-
-CREATE TRIGGER on_booking_cancelled
-  AFTER UPDATE OF status ON bookings
-  FOR EACH ROW EXECUTE FUNCTION unbook_slot_on_cancel();
-```
-
-### Phase 5: Enable Real-Time Updates
-
-Add real-time subscriptions so the UI updates instantly:
-
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE bookings;
-ALTER PUBLICATION supabase_realtime ADD TABLE availability_slots;
-ALTER PUBLICATION supabase_realtime ADD TABLE advisor_profiles;
-```
-
-## How to Access Your Backend
-
-You can view and manage your backend data directly through Lovable:
-
-1. Click the **"View Backend"** button below
-2. This opens Cloud View where you can:
-   - View all database tables and their data
-   - Run SQL queries
-   - Check authentication users
-   - Monitor edge functions
-
-## Summary of Changes
-
-| Component | Action |
-|-----------|--------|
-| **Trigger: Profile creation** | Attach `handle_new_user()` to auth.users |
-| **Trigger: Advisor sync** | Create new trigger for `advisor_profiles` → `profiles` sync |
-| **Trigger: Booking automation** | Create triggers to auto-update slot booking status |
-| **Data fix** | Set `is_listed = true` for approved advisors |
-| **Realtime** | Enable for bookings, slots, and advisor profiles |
-| **Admin flow** | Ensure approval also sets `is_listed = true` |
+---
 
 ## Files to Modify
 
-1. **Database migrations** - Add all triggers and functions
-2. `src/pages/admin/AdminAdvisors.tsx` - Update approval to set `is_listed = true`
-3. `src/pages/AdvisorDashboard.tsx` - Add real-time subscription for bookings
-4. `src/pages/Dashboard.tsx` - Add real-time subscription for client bookings
+| File | Change |
+|------|--------|
+| **Database migration** | Backfill missing `advisor_profiles` records |
+| `src/pages/admin/AdminAdvisors.tsx` | Update fallback logic for missing `advisor_profiles` |
 
+---
+
+## Expected Outcome
+
+After these changes:
+- Admin Advisors page will show 4 "Active Advisors" (those with `advisor_approved = true`)
+- The count badge will correctly reflect visible advisors
+- Future advisors will have proper `advisor_profiles` records created during onboarding
+
+---
+
+## Technical Details
+
+### Why This Happened
+
+The `advisor_profiles` table was added after the initial advisor system was built. The existing 4 approved advisors in `profiles` were created before this table existed, so they lack corresponding `advisor_profiles` records.
+
+### Prevention
+
+The advisor approval flow (lines 239-251 in AdminAdvisors.tsx) already creates/upserts `advisor_profiles` records for newly approved advisors. This fix addresses legacy data only.
