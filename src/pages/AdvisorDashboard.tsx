@@ -14,7 +14,7 @@ import {
   TrendingUp,
   Users,
   ArrowRight,
-  Percent,
+  ChevronRight,
   CheckCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -25,6 +25,7 @@ import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal"
 import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
+import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
@@ -59,6 +60,7 @@ const AdvisorDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [earnings, setEarnings] = useState({ available: 0, pending: 0, total: 0 });
   const [platformFee, setPlatformFee] = useState({ feePercent: 15, bookingsThisMonth: 0 });
@@ -204,6 +206,14 @@ const AdvisorDashboard = () => {
           onClose={() => setActiveVideoBooking(null)}
         />
       )}
+
+      <BookingDetailsModal
+        isOpen={!!selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+        booking={selectedBooking}
+        userRole="advisor"
+        onJoinCall={(id) => setActiveVideoBooking(id)}
+      />
 
       {showOnboardingModal && (
         <AdvisorOnboardingModal
@@ -464,15 +474,13 @@ const AdvisorDashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      {booking.slot.is_virtual && (
-                        <Button variant="hero" size="sm" onClick={() => setActiveVideoBooking(booking.id)}>
-                          <Video className="w-4 h-4 mr-2" />
-                          Start Call
-                        </Button>
-                      )}
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedBooking(booking)}
+                      >
                         View Details
-                        <ArrowRight className="w-4 h-4 ml-1" />
+                        <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
                     </div>
                   </motion.div>

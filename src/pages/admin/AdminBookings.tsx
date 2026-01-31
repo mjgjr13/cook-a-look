@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Loader2, Search, Video, MapPin, ArrowRight } from "lucide-react";
+import { Calendar, Loader2, Search, Video, MapPin, ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
+import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 
 interface BookingWithDetails {
   id: string;
@@ -37,6 +40,7 @@ const AdminBookings = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
 
   useEffect(() => {
     fetchBookings();
@@ -138,8 +142,21 @@ const AdminBookings = () => {
 
   return (
     <Layout>
+      <BookingDetailsModal
+        isOpen={!!selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+        booking={selectedBooking}
+        userRole="admin"
+      />
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
+          <Button variant="ghost" asChild className="mb-4 -ml-2">
+            <Link to="/admin">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Admin
+            </Link>
+          </Button>
           <h1 className="text-3xl font-bold">Booking Management</h1>
           <p className="text-muted-foreground">
             View and monitor all platform bookings
@@ -298,6 +315,14 @@ const AdminBookings = () => {
                               )}
                               {getStatusBadge(booking.status, booking.slot.start_time)}
                             </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setSelectedBooking(booking)}
+                            >
+                              Details
+                              <ChevronRight className="w-4 h-4 ml-1" />
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
