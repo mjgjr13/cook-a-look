@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,11 +18,8 @@ import {
   Mail, 
   MessageSquare, 
   Send, 
-  Check, 
   ChevronRight, 
-  User, 
-  CheckCircle,
-  Archive
+  CheckCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -36,6 +34,13 @@ interface Message {
   created_at: string;
 }
 
+interface ProfileInfo {
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+}
+
 interface ConversationGroup {
   advisorId: string;
   advisorName: string;
@@ -47,111 +52,119 @@ interface ConversationGroup {
 }
 
 export const AdminInbox = () => {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedConversation, setSelectedConversation] = useState<ConversationGroup | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [advisorProfiles, setAdvisorProfiles] = useState<Map<string, { name: string; email: string; avatar: string | null }>>(new Map());
+  const [profilesMap, setProfilesMap] = useState<Map<string, ProfileInfo>>(new Map());
+
+  const currentUserId = user?.id;
 
   useEffect(() => {
-    loadConversations();
+    if (currentUserId) {
+      loadConversations();
 
-    // Subscribe to new messages
-    const channel = supabase
-      .channel("admin-messages-inbox")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "admin_messages",
-        },
-        () => {
-          loadConversations();
-        }
-      )
-      .subscribe();
+      // Subscribe to new messages
+      const channel = supabase
+        .channel("admin-messages-inbox")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "admin_messages",
+          },
+          () => {
+            loadConversations();
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [currentUserId]);
 
   const loadConversations = async () => {
+    if (!currentUserId) return;
+
     try {
-      // Fetch all messages
+      // Fetch all messages where the current admin is either sender or recipient
       const { data: messagesData, error: messagesError } = await supabase
         .from("admin_messages")
         .select("*")
+        .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`)
         .order("created_at", { ascending: false });
 
       if (messagesError) throw messagesError;
 
-      // Get unique user IDs (advisors) from messages
-      const userIds = new Set<string>();
+      // Get unique user IDs (the OTHER party in conversations, not the admin)
+      const otherPartyIds = new Set<string>();
       (messagesData || []).forEach(msg => {
-        // Get the advisor ID (the one who is not the admin sender in initial messages)
-        // For simplicity, we track both sender and recipient
-        userIds.add(msg.sender_id);
-        userIds.add(msg.recipient_id);
+        // The other party is whoever is NOT the current admin
+        const otherParty = msg.sender_id === currentUserId ? msg.recipient_id : msg.sender_id;
+        // Only add if it's not the admin themselves (prevent self-conversations)
+        if (otherParty !== currentUserId) {
+          otherPartyIds.add(otherParty);
+        }
       });
 
-      // Fetch profile info for all users
-      if (userIds.size > 0) {
+      // Fetch profile info for all other parties
+      if (otherPartyIds.size > 0) {
         const { data: profilesData } = await supabase
           .from("profiles")
           .select("user_id, full_name, email, avatar_url")
-          .in("user_id", Array.from(userIds));
+          .in("user_id", Array.from(otherPartyIds));
 
-        const profileMap = new Map();
+        const profileMap = new Map<string, ProfileInfo>();
         (profilesData || []).forEach(p => {
-          profileMap.set(p.user_id, {
-            name: p.full_name || "Unknown",
-            email: p.email || "",
-            avatar: p.avatar_url,
+          profileMap.set(p.user_id!, {
+            user_id: p.user_id!,
+            full_name: p.full_name,
+            email: p.email,
+            avatar_url: p.avatar_url,
           });
         });
-        setAdvisorProfiles(profileMap);
+        setProfilesMap(profileMap);
 
-        // Group messages by conversation (by advisor)
-        // We need to identify who the "advisor" is in each conversation
-        // The admin sends to advisors, advisors reply back
+        // Group messages by conversation partner (advisor)
         const conversationMap = new Map<string, Message[]>();
 
         (messagesData || []).forEach(msg => {
-          // Determine the advisor ID (the non-admin party)
-          // We'll use the recipient when admin sends, or sender when advisor replies
-          // For now, group by the "other party" that appears in conversations
-          const otherPartyId = msg.sender_id !== msg.recipient_id ? 
-            (profileMap.has(msg.sender_id) && profileMap.get(msg.sender_id)?.name !== "Admin" ? msg.sender_id : msg.recipient_id) :
-            msg.recipient_id;
+          // Determine the advisor ID (the party that is NOT the admin)
+          const advisorId = msg.sender_id === currentUserId ? msg.recipient_id : msg.sender_id;
+          
+          // Skip self-messages (admin messaging themselves - should never happen)
+          if (advisorId === currentUserId) return;
 
-          if (!conversationMap.has(otherPartyId)) {
-            conversationMap.set(otherPartyId, []);
+          if (!conversationMap.has(advisorId)) {
+            conversationMap.set(advisorId, []);
           }
-          conversationMap.get(otherPartyId)!.push(msg);
+          conversationMap.get(advisorId)!.push(msg);
         });
 
         // Convert to conversation groups
         const groups: ConversationGroup[] = [];
         conversationMap.forEach((messages, advisorId) => {
           const profile = profileMap.get(advisorId);
-          if (profile && messages.length > 0) {
+          if (messages.length > 0) {
             const sortedMessages = messages.sort(
               (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
             
-            // Count unread messages that were sent TO admin (by advisor)
+            // Count unread messages FROM the advisor TO the admin
             const unreadCount = messages.filter(m => 
-              m.recipient_id !== advisorId && !m.read_at
+              m.sender_id === advisorId && m.recipient_id === currentUserId && !m.read_at
             ).length;
 
             groups.push({
               advisorId,
-              advisorName: profile.name,
-              advisorEmail: profile.email,
-              avatarUrl: profile.avatar,
+              advisorName: profile?.full_name || "Unknown Advisor",
+              advisorEmail: profile?.email || "",
+              avatarUrl: profile?.avatar_url || null,
               messages: sortedMessages,
               unreadCount,
               lastMessage: sortedMessages[0],
@@ -165,6 +178,8 @@ export const AdminInbox = () => {
         );
 
         setConversations(groups);
+      } else {
+        setConversations([]);
       }
     } catch (err) {
       console.error("Error loading conversations:", err);
@@ -177,9 +192,9 @@ export const AdminInbox = () => {
     setSelectedConversation(conversation);
     setReplyContent("");
 
-    // Mark all unread messages from this advisor as read
+    // Mark all unread messages FROM this advisor as read
     const unreadMessages = conversation.messages.filter(
-      m => m.sender_id === conversation.advisorId && !m.read_at
+      m => m.sender_id === conversation.advisorId && m.recipient_id === currentUserId && !m.read_at
     );
 
     if (unreadMessages.length > 0) {
@@ -200,15 +215,12 @@ export const AdminInbox = () => {
   };
 
   const handleSendReply = async () => {
-    if (!replyContent.trim() || !selectedConversation) return;
+    if (!replyContent.trim() || !selectedConversation || !currentUserId) return;
     setIsSending(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
       const { error } = await supabase.from("admin_messages").insert({
-        sender_id: user.id,
+        sender_id: currentUserId,
         recipient_id: selectedConversation.advisorId,
         subject: `Re: Conversation with ${selectedConversation.advisorName}`,
         message: replyContent.trim(),
@@ -311,6 +323,7 @@ export const AdminInbox = () => {
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-1">
+                        {conversation.lastMessage.sender_id === currentUserId ? "You: " : ""}
                         {conversation.lastMessage.message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -347,18 +360,33 @@ export const AdminInbox = () => {
           </DialogHeader>
 
           <ScrollArea className="flex-1 max-h-[400px] pr-4">
-            <div className="space-y-4">
+            <div className="space-y-4 py-2">
               {selectedConversation?.messages
                 .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
                 .map(msg => {
+                  // Message is from advisor if sender is the advisor (not the admin)
                   const isFromAdvisor = msg.sender_id === selectedConversation.advisorId;
+                  const senderProfile = isFromAdvisor 
+                    ? profilesMap.get(selectedConversation.advisorId) 
+                    : null;
+                  
                   return (
                     <div
                       key={msg.id}
-                      className={`flex ${isFromAdvisor ? "justify-start" : "justify-end"}`}
+                      className={`flex gap-2 ${isFromAdvisor ? "justify-start" : "justify-end"}`}
                     >
+                      {/* Avatar for advisor messages (left side) */}
+                      {isFromAdvisor && (
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarImage src={senderProfile?.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {(senderProfile?.full_name || "A").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
+                        className={`max-w-[75%] rounded-lg p-3 ${
                           isFromAdvisor
                             ? "bg-muted"
                             : "bg-primary text-primary-foreground"
@@ -376,6 +404,15 @@ export const AdminInbox = () => {
                           )}
                         </div>
                       </div>
+                      
+                      {/* Avatar placeholder for admin messages (right side) - optional */}
+                      {!isFromAdvisor && (
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                            You
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
                   );
                 })}
