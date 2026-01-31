@@ -79,6 +79,7 @@ const Dashboard = () => {
 
     try {
       setLoadError(null);
+      console.log("[Dashboard] Loading bookings for profile:", profile.id);
       
       // Fetch client bookings
       const { data: bookingsData, error } = await supabase
@@ -90,6 +91,8 @@ const Dashboard = () => {
         `)
         .eq("client_id", profile.id)
         .order("created_at", { ascending: false });
+
+      console.log("[Dashboard] Bookings query result:", { data: bookingsData, error });
 
       if (error) throw error;
       
