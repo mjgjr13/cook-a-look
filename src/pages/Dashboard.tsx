@@ -173,10 +173,10 @@ const Dashboard = () => {
   }
 
   const upcomingBookings = bookings.filter(
-    (b) => b.status === "confirmed" && new Date(b.slot.start_time) > new Date()
+    (b) => b.status === "confirmed" && b.slot && new Date(b.slot.start_time) > new Date()
   );
   const pastBookings = bookings.filter(
-    (b) => new Date(b.slot.start_time) <= new Date()
+    (b) => b.slot && new Date(b.slot.start_time) <= new Date()
   );
 
   return (
