@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin } from "lucide-react";
+import { Star, Video, MapPin, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,7 @@ interface AdvisorData {
   style_tags: string[] | null;
   target_demographics: string[] | null;
   verified: boolean | null;
+  advisor_approved: boolean | null;
   is_demo?: boolean | null;
 }
 
@@ -233,8 +234,9 @@ const Advisors = () => {
                         <span className="text-4xl font-serif">{displayName.charAt(0)}</span>
                       </div>
                     )}
-                    {advisor.verified && (
-                      <div className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider ${badgeColors.verified}`}>
+                    {(advisor.verified || advisor.advisor_approved) && (
+                      <div className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 ${badgeColors.verified}`}>
+                        <CheckCircle className="w-3 h-3" />
                         Verified
                       </div>
                     )}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin, Gift } from "lucide-react";
+import AdminInbox from "@/components/admin/AdminInbox";
 
 interface DemoAdvisor {
   id: string;
@@ -200,6 +201,11 @@ const AdminDashboard = () => {
             </Card>
           </div>
         )}
+
+        {/* Admin Inbox for Advisor Conversations */}
+        <div className="mb-8">
+          <AdminInbox />
+        </div>
 
         {/* Admin Modules */}
         <h2 className="text-xl font-semibold mb-4">Management</h2>

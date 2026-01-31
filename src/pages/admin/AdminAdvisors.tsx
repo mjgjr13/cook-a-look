@@ -242,12 +242,12 @@ const AdminAdvisors = () => {
         .single();
 
       if (userProfile) {
-        // Update profiles table
+        // Update profiles table - set advisor_approved to true for verified badge
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
             is_advisor: true,
-            advisor_approved: false,
+            advisor_approved: true,
             advisor_status: "approved",
             specialty: selectedApplication.specialty,
             bio: selectedApplication.bio,
@@ -261,7 +261,7 @@ const AdminAdvisors = () => {
 
         if (profileError) throw profileError;
 
-        // Upsert advisor_profiles table
+        // Upsert advisor_profiles table - initially hidden until advisor toggles on
         const { error: advisorProfileError } = await supabase
           .from("advisor_profiles")
           .upsert({

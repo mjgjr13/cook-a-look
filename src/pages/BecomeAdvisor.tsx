@@ -583,6 +583,11 @@ const BecomeAdvisor = () => {
       if (!formData.location || formData.location.trim().length < 2) {
         stepErrors.location = "Location is required";
       }
+      
+      // Validate phone number - required for advisors
+      if (!formData.phone || formData.phone.trim().length < 5) {
+        stepErrors.phone = "Phone number is required";
+      }
     } else if (currentStep === 2) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
@@ -621,9 +626,10 @@ const BecomeAdvisor = () => {
       case 1:
         return formData.firstName && formData.lastName && formData.email && formData.password && 
                formData.specialty && formData.bio && formData.experience && formData.location &&
+               formData.phone && formData.phone.trim().length >= 5 &&
                (formData.virtual || formData.inPerson) &&
                !errors.firstName && !errors.lastName && !errors.email && !errors.password && 
-               !errors.specialty && !errors.bio && !errors.experience && !errors.location;
+               !errors.specialty && !errors.bio && !errors.experience && !errors.location && !errors.phone;
       case 2:
         // Require profile photo AND instagram
         return formData.instagram && formData.profilePhotoPreview && !errors.instagram && !errors.portfolio;
@@ -867,13 +873,16 @@ const BecomeAdvisor = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number (Optional)</Label>
+                      <Label htmlFor="phone">Phone Number *</Label>
                       <InternationalPhoneInput
                         value={formData.phone}
                         onChange={(value) => setFormData({ ...formData, phone: value })}
                         error={errors.phone}
                         placeholder="Enter phone number"
                       />
+                      {errors.phone && (
+                        <p className="text-xs text-destructive">{errors.phone}</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

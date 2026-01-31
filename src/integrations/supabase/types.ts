@@ -1394,17 +1394,14 @@ export type Database = {
           id: string
           in_person_available: boolean
           instagram_url: string
-          is_advisor: boolean
           is_demo: boolean
           languages: string[]
           location: string
           personal_philosophy: string
-          portfolio_images: string[]
           portfolio_url: string
           price_per_session: number
           rating: number
           review_count: number
-          session_duration: number
           specialty: string
           style_tags: string[]
           target_demographics: string[]
