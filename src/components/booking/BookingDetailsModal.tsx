@@ -120,7 +120,7 @@ const BookingDetailsModal = ({
                     <User className="w-5 h-5" />
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex-1">
                   <p className="font-medium">
                     {otherParticipant.full_name || "Unknown"}
                   </p>
@@ -130,12 +130,31 @@ const BookingDetailsModal = ({
                     </p>
                   )}
                   {otherParticipant.email && userRole === "advisor" && (
-                    <p className="text-sm text-muted-foreground">
+                    <a 
+                      href={`mailto:${otherParticipant.email}`}
+                      className="text-sm text-primary hover:underline"
+                    >
                       {otherParticipant.email}
-                    </p>
+                    </a>
                   )}
                 </div>
               </div>
+              
+              {/* Quick actions for advisors */}
+              {userRole === "advisor" && otherParticipant.email && (
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="flex-1"
+                  >
+                    <a href={`mailto:${otherParticipant.email}?subject=Upcoming Style Session`}>
+                      Contact Client
+                    </a>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

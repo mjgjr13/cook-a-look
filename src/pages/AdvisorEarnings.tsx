@@ -125,7 +125,7 @@ const AdvisorEarnings = () => {
       // Load payments where this advisor received money
       const { data: paymentsData, error: paymentsError } = await supabase
         .from("payments")
-        .select("*")
+        .select("*, booking:bookings(slot:availability_slots(start_time))")
         .eq("advisor_id", profile.id)
         .eq("status", "completed")
         .order("created_at", { ascending: false });
@@ -143,11 +143,41 @@ const AdvisorEarnings = () => {
       if (withdrawalsError) throw withdrawalsError;
       setWithdrawals(withdrawalsData || []);
 
-      // Calculate summary
-      const totalEarnings = (paymentsData || []).reduce(
-        (sum, p) => sum + Number(p.advisor_payout || p.amount * 0.85), 
-        0
-      );
+      // Calculate earnings with escrow logic
+      // Funds are only available 48 hours after the meeting start time
+      const now = new Date();
+      const escrowReleaseHours = 48;
+      
+      let availableEarnings = 0;
+      let pendingEscrowEarnings = 0;
+      
+      (paymentsData || []).forEach(p => {
+        const payout = Number(p.advisor_payout || p.amount * 0.85);
+        const meetingStartTime = p.booking?.slot?.start_time 
+          ? new Date(p.booking.slot.start_time)
+          : null;
+        
+        // Check if escrow should be released (48 hours after meeting)
+        // If no meeting time, fall back to escrow_release_at or escrow_status
+        let isReleased = false;
+        
+        if (p.escrow_status === 'released') {
+          isReleased = true;
+        } else if (meetingStartTime) {
+          const releaseTime = new Date(meetingStartTime.getTime() + escrowReleaseHours * 60 * 60 * 1000);
+          isReleased = now >= releaseTime;
+        } else if (p.escrow_release_at) {
+          isReleased = now >= new Date(p.escrow_release_at);
+        }
+        
+        if (isReleased) {
+          availableEarnings += payout;
+        } else {
+          pendingEscrowEarnings += payout;
+        }
+      });
+
+      const totalEarnings = availableEarnings + pendingEscrowEarnings;
 
       const pendingWithdrawals = (withdrawalsData || [])
         .filter(w => w.status === "pending" || w.status === "approved")
@@ -157,7 +187,6 @@ const AdvisorEarnings = () => {
         .filter(w => w.status === "completed")
         .reduce((sum, w) => sum + Number(w.amount), 0);
 
-      const now = new Date();
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const thisMonthEarnings = (paymentsData || [])
         .filter(p => new Date(p.created_at) >= thisMonthStart)
@@ -165,8 +194,8 @@ const AdvisorEarnings = () => {
 
       setSummary({
         totalEarnings,
-        availableBalance: totalEarnings - totalWithdrawn - pendingWithdrawals,
-        pendingWithdrawals,
+        availableBalance: Math.max(0, availableEarnings - totalWithdrawn - pendingWithdrawals),
+        pendingWithdrawals: pendingWithdrawals + pendingEscrowEarnings,
         totalWithdrawn,
         totalSessions: (paymentsData || []).length,
         thisMonthEarnings,
@@ -310,7 +339,7 @@ const AdvisorEarnings = () => {
                     ${summary.availableBalance.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Ready to withdraw
+                    Cleared for withdrawal
                   </p>
                 </CardContent>
               </Card>
@@ -370,7 +399,7 @@ const AdvisorEarnings = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Pending Withdrawals
+                    Pending / In Escrow
                   </CardTitle>
                   <Clock className="w-4 h-4 text-gold" />
                 </CardHeader>
