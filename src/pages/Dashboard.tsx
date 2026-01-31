@@ -9,18 +9,23 @@ import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
+import ReviewModal from "@/components/reviews/ReviewModal";
 import { useProfile } from "@/hooks/useProfile";
+import { useReviewPrompt } from "@/hooks/useReviewPrompt";
 
 interface Booking {
   id: string;
   status: string;
   created_at: string;
+  advisor_id: string;
+  client_id: string;
   slot: {
     start_time: string;
     end_time: string;
     is_virtual: boolean;
   };
   advisor?: {
+    id: string;
     full_name: string;
     specialty: string;
     avatar_url: string;
@@ -36,8 +41,11 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
+  const [activeVideoBooking, setActiveVideoBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  // Check for pending reviews
+  const { pendingReview, dismissReview } = useReviewPrompt(profile?.user_id || undefined);
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -90,7 +98,7 @@ const Dashboard = () => {
         .select(`
           *,
           slot:availability_slots(*),
-          advisor:profiles!bookings_advisor_id_fkey(full_name, specialty, avatar_url, user_id)
+          advisor:profiles!bookings_advisor_id_fkey(id, full_name, specialty, avatar_url, user_id)
         `)
         .eq("client_id", profile.id)
         .order("created_at", { ascending: false });
@@ -114,7 +122,10 @@ const Dashboard = () => {
   };
 
   const handleJoinCall = (bookingId: string) => {
-    setActiveVideoBooking(bookingId);
+    const booking = bookings.find(b => b.id === bookingId);
+    if (booking) {
+      setActiveVideoBooking(booking);
+    }
   };
 
   // Show advisor redirect message - no navigation to avoid loops
@@ -186,8 +197,24 @@ const Dashboard = () => {
     <Layout>
       {activeVideoBooking && (
         <VideoCall
-          bookingId={activeVideoBooking}
+          bookingId={activeVideoBooking.id}
+          advisorId={activeVideoBooking.advisor_id}
+          clientId={activeVideoBooking.client_id}
+          advisorName={activeVideoBooking.advisor?.full_name}
+          isClient={true}
           onClose={() => setActiveVideoBooking(null)}
+        />
+      )}
+
+      {/* Review prompt for completed sessions */}
+      {pendingReview && (
+        <ReviewModal
+          isOpen={!!pendingReview}
+          onClose={dismissReview}
+          bookingId={pendingReview.bookingId}
+          advisorId={pendingReview.advisorId}
+          clientId={pendingReview.clientId}
+          advisorName={pendingReview.advisorName}
         />
       )}
 
