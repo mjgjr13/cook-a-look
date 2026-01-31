@@ -2,14 +2,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Clock, Video, MapPin, User } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Clock, Video, MapPin, User, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
+import BookingChat from "./BookingChat";
 
 interface BookingParticipant {
   full_name?: string | null;
   email?: string | null;
   avatar_url?: string | null;
   specialty?: string | null;
+  user_id?: string | null;
 }
 
 interface BookingSlot {
@@ -30,6 +33,7 @@ interface BookingDetailsModalProps {
     advisor?: BookingParticipant;
   } | null;
   userRole: "client" | "advisor" | "admin";
+  currentUserId?: string;
   onJoinCall?: (bookingId: string) => void;
 }
 
@@ -38,6 +42,7 @@ const BookingDetailsModal = ({
   onClose,
   booking,
   userRole,
+  currentUserId,
   onJoinCall,
 }: BookingDetailsModalProps) => {
   if (!booking) return null;
@@ -46,186 +51,210 @@ const BookingDetailsModal = ({
   const isPast = startTime <= new Date();
   const isUpcoming = booking.status === "confirmed" && !isPast;
   const canJoinCall = isUpcoming && booking.slot.is_virtual && onJoinCall;
+  const isCancelled = booking.status === "cancelled";
 
   const otherParticipant = userRole === "client" ? booking.advisor : booking.client;
   const participantLabel = userRole === "client" ? "Advisor" : "Client";
 
+  // Chat is available for non-cancelled bookings
+  const canChat = !isCancelled && currentUserId && userRole !== "admin";
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Session Details</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Status Badge */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <Badge
-              variant={
-                booking.status === "cancelled"
-                  ? "destructive"
-                  : isPast
-                  ? "secondary"
-                  : "default"
-              }
-              className={booking.status === "confirmed" && !isPast ? "bg-primary" : ""}
-            >
-              {booking.status === "cancelled"
-                ? "Cancelled"
-                : isPast
-                ? "Completed"
-                : "Confirmed"}
-            </Badge>
-          </div>
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="chat" disabled={!canChat}>
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Chat
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Date & Time */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-muted-foreground" />
-              <span>
-                {format(startTime, "EEEE, MMMM d, yyyy")}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Clock className="w-5 h-5 text-muted-foreground" />
-              <span>
-                {format(startTime, "h:mm a")} -{" "}
-                {format(new Date(booking.slot.end_time), "h:mm a")}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              {booking.slot.is_virtual ? (
-                <>
-                  <Video className="w-5 h-5 text-muted-foreground" />
-                  <span>Virtual Session</span>
-                </>
-              ) : (
-                <>
-                  <MapPin className="w-5 h-5 text-muted-foreground" />
-                  <span>In-Person Session</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Participant Info */}
-          {otherParticipant && (
-            <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-3">{participantLabel}</p>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={otherParticipant.avatar_url || undefined} />
-                  <AvatarFallback>
-                    <User className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-medium">
-                    {otherParticipant.full_name || "Unknown"}
-                  </p>
-                  {otherParticipant.specialty && (
-                    <p className="text-sm text-muted-foreground">
-                      {otherParticipant.specialty}
-                    </p>
-                  )}
-                  {otherParticipant.email && userRole === "advisor" && (
-                    <a 
-                      href={`mailto:${otherParticipant.email}`}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      {otherParticipant.email}
-                    </a>
-                  )}
-                </div>
-              </div>
-              
-              {/* Quick actions for advisors */}
-              {userRole === "advisor" && otherParticipant.email && (
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                    className="flex-1"
-                  >
-                    <a href={`mailto:${otherParticipant.email}?subject=Upcoming Style Session`}>
-                      Contact Client
-                    </a>
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Admin view: show both parties */}
-          {userRole === "admin" && booking.client && booking.advisor && (
-            <div className="border-t pt-4 space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Client</p>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={booking.client.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {(booking.client.full_name || "C").charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">
-                      {booking.client.full_name || "Unknown Client"}
-                    </p>
-                    {booking.client.email && (
-                      <p className="text-xs text-muted-foreground">
-                        {booking.client.email}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Advisor</p>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={booking.advisor.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {(booking.advisor.full_name || "A").charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">
-                      {booking.advisor.full_name || "Unknown Advisor"}
-                    </p>
-                    {booking.advisor.specialty && (
-                      <p className="text-xs text-muted-foreground">
-                        {booking.advisor.specialty}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="border-t pt-4 flex gap-3">
-            {canJoinCall && (
-              <Button
-                variant="hero"
-                className="flex-1"
-                onClick={() => {
-                  onJoinCall(booking.id);
-                  onClose();
-                }}
+          <TabsContent value="details" className="space-y-6 py-4">
+            {/* Status Badge */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Status</span>
+              <Badge
+                variant={
+                  booking.status === "cancelled"
+                    ? "destructive"
+                    : isPast
+                    ? "secondary"
+                    : "default"
+                }
+                className={booking.status === "confirmed" && !isPast ? "bg-primary" : ""}
               >
-                <Video className="w-4 h-4 mr-2" />
-                {userRole === "advisor" ? "Start Call" : "Join Call"}
-              </Button>
+                {booking.status === "cancelled"
+                  ? "Cancelled"
+                  : isPast
+                  ? "Completed"
+                  : "Confirmed"}
+              </Badge>
+            </div>
+
+            {/* Date & Time */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
+                <span>
+                  {format(startTime, "EEEE, MMMM d, yyyy")}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-muted-foreground" />
+                <span>
+                  {format(startTime, "h:mm a")} -{" "}
+                  {format(new Date(booking.slot.end_time), "h:mm a")}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                {booking.slot.is_virtual ? (
+                  <>
+                    <Video className="w-5 h-5 text-muted-foreground" />
+                    <span>Virtual Session</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="w-5 h-5 text-muted-foreground" />
+                    <span>In-Person Session</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Participant Info */}
+            {otherParticipant && (
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-3">{participantLabel}</p>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={otherParticipant.avatar_url || undefined} />
+                    <AvatarFallback>
+                      <User className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {otherParticipant.full_name || "Unknown"}
+                    </p>
+                    {otherParticipant.specialty && (
+                      <p className="text-sm text-muted-foreground">
+                        {otherParticipant.specialty}
+                      </p>
+                    )}
+                    {otherParticipant.email && userRole === "advisor" && (
+                      <a 
+                        href={`mailto:${otherParticipant.email}`}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {otherParticipant.email}
+                      </a>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Quick actions for advisors */}
+                {userRole === "advisor" && otherParticipant.email && (
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="flex-1"
+                    >
+                      <a href={`mailto:${otherParticipant.email}?subject=Upcoming Style Session`}>
+                        Contact Client
+                      </a>
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
-            <Button variant="outline" onClick={onClose} className={canJoinCall ? "" : "flex-1"}>
-              Close
-            </Button>
-          </div>
-        </div>
+
+            {/* Admin view: show both parties */}
+            {userRole === "admin" && booking.client && booking.advisor && (
+              <div className="border-t pt-4 space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Client</p>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={booking.client.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {(booking.client.full_name || "C").charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">
+                        {booking.client.full_name || "Unknown Client"}
+                      </p>
+                      {booking.client.email && (
+                        <p className="text-xs text-muted-foreground">
+                          {booking.client.email}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Advisor</p>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={booking.advisor.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {(booking.advisor.full_name || "A").charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">
+                        {booking.advisor.full_name || "Unknown Advisor"}
+                      </p>
+                      {booking.advisor.specialty && (
+                        <p className="text-xs text-muted-foreground">
+                          {booking.advisor.specialty}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="border-t pt-4 flex gap-3">
+              {canJoinCall && (
+                <Button
+                  variant="hero"
+                  className="flex-1"
+                  onClick={() => {
+                    onJoinCall(booking.id);
+                    onClose();
+                  }}
+                >
+                  <Video className="w-4 h-4 mr-2" />
+                  {userRole === "advisor" ? "Start Call" : "Join Call"}
+                </Button>
+              )}
+              <Button variant="outline" onClick={onClose} className={canJoinCall ? "" : "flex-1"}>
+                Close
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="chat" className="py-4">
+            {canChat && currentUserId && (
+              <BookingChat
+                bookingId={booking.id}
+                currentUserId={currentUserId}
+                otherParticipant={otherParticipant || null}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
