@@ -28,6 +28,7 @@ interface TimeSlot {
   time: string;
   isVirtual: boolean;
   startTime: string;
+  endTime: string;
 }
 
 // UUID validation regex
@@ -63,7 +64,7 @@ const BookingCalendar = ({
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch real availability slots when date changes
+  // Fetch dynamically calculated slots when date changes
   useEffect(() => {
     const fetchSlots = async () => {
       if (!selectedDate || !advisorId || !UUID_REGEX.test(advisorId)) {
@@ -75,45 +76,75 @@ const BookingCalendar = ({
       setSelectedSlot(null);
 
       try {
-        // Get start and end of selected day in ISO format
-        const startOfDay = new Date(selectedDate);
-        startOfDay.setHours(0, 0, 0, 0);
+        const dateStr = selectedDate.toISOString().split("T")[0];
         
-        const endOfDay = new Date(selectedDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        // First try the new dynamic slot calculation
+        const { data: dynamicSlots, error: dynamicError } = await supabase.rpc(
+          "get_available_booking_slots",
+          {
+            p_advisor_id: advisorId,
+            p_date: dateStr,
+            p_duration_minutes: 60,
+            p_buffer_minutes: 15,
+          }
+        );
 
-        const { data, error } = await supabase
-          .from('availability_slots')
-          .select('id, start_time, end_time, is_virtual')
-          .eq('advisor_id', advisorId)
-          .eq('is_booked', false)
-          .gte('start_time', startOfDay.toISOString())
-          .lte('start_time', endOfDay.toISOString())
-          .order('start_time');
-
-        if (error) {
-          console.error('Error fetching slots:', error);
-          setTimeSlots([]);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const formattedSlots: TimeSlot[] = data.map((slot) => ({
-            id: slot.id,
-            time: new Date(slot.start_time).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
+        if (!dynamicError && dynamicSlots && dynamicSlots.length > 0) {
+          // Use dynamic slots from the new system
+          const formattedSlots: TimeSlot[] = dynamicSlots.map((slot: { slot_start: string; slot_end: string; is_virtual: boolean }, index: number) => ({
+            id: `dynamic-${index}-${slot.slot_start}`,
+            time: new Date(slot.slot_start).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
               hour12: true,
             }),
             isVirtual: slot.is_virtual ?? true,
-            startTime: slot.start_time,
+            startTime: slot.slot_start,
+            endTime: slot.slot_end,
           }));
           setTimeSlots(formattedSlots);
         } else {
-          setTimeSlots([]);
+          // Fallback to legacy slot system
+          const startOfDay = new Date(selectedDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          const endOfDay = new Date(selectedDate);
+          endOfDay.setHours(23, 59, 59, 999);
+
+          const { data, error } = await supabase
+            .from("availability_slots")
+            .select("id, start_time, end_time, is_virtual")
+            .eq("advisor_id", advisorId)
+            .eq("is_booked", false)
+            .gte("start_time", startOfDay.toISOString())
+            .lte("start_time", endOfDay.toISOString())
+            .order("start_time");
+
+          if (error) {
+            console.error("Error fetching slots:", error);
+            setTimeSlots([]);
+            return;
+          }
+
+          if (data && data.length > 0) {
+            const formattedSlots: TimeSlot[] = data.map((slot) => ({
+              id: slot.id,
+              time: new Date(slot.start_time).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              }),
+              isVirtual: slot.is_virtual ?? true,
+              startTime: slot.start_time,
+              endTime: slot.end_time,
+            }));
+            setTimeSlots(formattedSlots);
+          } else {
+            setTimeSlots([]);
+          }
         }
       } catch (err) {
-        console.error('Error fetching availability:', err);
+        console.error("Error fetching availability:", err);
         setTimeSlots([]);
       } finally {
         setIsLoadingSlots(false);
@@ -172,13 +203,19 @@ const BookingCalendar = ({
         day: "numeric",
       });
 
+      // Determine if this is a dynamic slot (from the new system) or legacy slot
+      const isDynamicSlot = selectedSlot.id.startsWith("dynamic-");
+
       // Note: Amount is fetched server-side for security - not sent from client
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           advisorId,
-          slotId: selectedSlot.id,
+          slotId: isDynamicSlot ? null : selectedSlot.id, // Only send slotId for legacy slots
+          slotStartTime: selectedSlot.startTime, // Always send start time
+          slotEndTime: selectedSlot.endTime, // Always send end time
           sessionDate,
           sessionTime: selectedSlot.time,
+          isDynamicSlot,
         },
       });
 

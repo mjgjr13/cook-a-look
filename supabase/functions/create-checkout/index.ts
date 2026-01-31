@@ -13,11 +13,19 @@ const isValidUUID = (str: string): boolean => {
   return uuidRegex.test(str);
 };
 
+const isValidISO8601 = (str: string): boolean => {
+  const date = new Date(str);
+  return !isNaN(date.getTime());
+};
+
 interface CheckoutRequest {
   advisorId: string;
-  slotId: string;
+  slotId?: string; // Optional for dynamic slots
+  slotStartTime?: string; // For dynamic slot creation
+  slotEndTime?: string; // For dynamic slot creation
   sessionDate: string;
   sessionTime: string;
+  isDynamicSlot?: boolean;
 }
 
 serve(async (req) => {
@@ -38,11 +46,23 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { advisorId, slotId, sessionDate, sessionTime } = body as CheckoutRequest;
+    const { advisorId, slotId, slotStartTime, slotEndTime, sessionDate, sessionTime, isDynamicSlot } = body as CheckoutRequest;
 
-    // Validate UUIDs to prevent injection
-    if (!isValidUUID(advisorId) || !isValidUUID(slotId)) {
-      throw new Error("Invalid advisor or slot ID format");
+    // Validate advisor ID
+    if (!isValidUUID(advisorId)) {
+      throw new Error("Invalid advisor ID format");
+    }
+
+    // For legacy slots, validate slotId
+    if (!isDynamicSlot && slotId && !isValidUUID(slotId)) {
+      throw new Error("Invalid slot ID format");
+    }
+
+    // For dynamic slots, validate time strings
+    if (isDynamicSlot) {
+      if (!slotStartTime || !slotEndTime || !isValidISO8601(slotStartTime) || !isValidISO8601(slotEndTime)) {
+        throw new Error("Invalid slot time format");
+      }
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -75,28 +95,115 @@ serve(async (req) => {
       throw new Error("Advisor has not set a valid price");
     }
 
-    // SECURITY: Verify the slot belongs to this advisor and is not already booked
-    const { data: slot, error: slotError } = await supabaseAdmin
-      .from("availability_slots")
-      .select("id, advisor_id, is_booked, start_time")
-      .eq("id", slotId)
-      .single();
+    let finalSlotId: string;
+    let finalStartTime: string;
+    let finalEndTime: string;
 
-    if (slotError || !slot) {
-      throw new Error("Time slot not found");
-    }
+    if (isDynamicSlot && slotStartTime && slotEndTime) {
+      // Dynamic slot: verify availability and create the slot
+      finalStartTime = slotStartTime;
+      finalEndTime = slotEndTime;
 
-    if (slot.advisor_id !== advisorId) {
-      throw new Error("Slot does not belong to this advisor");
-    }
+      // Verify slot is in the future
+      if (new Date(finalStartTime) <= new Date()) {
+        throw new Error("Cannot book a past time slot");
+      }
 
-    if (slot.is_booked) {
-      throw new Error("This time slot is no longer available");
-    }
+      // Verify no overlapping booked slots exist (including buffer)
+      const { data: conflicts, error: conflictError } = await supabaseAdmin
+        .from("availability_slots")
+        .select("id")
+        .eq("advisor_id", advisorId)
+        .eq("is_booked", true)
+        .lt("start_time", new Date(new Date(finalEndTime).getTime() + 15 * 60 * 1000).toISOString())
+        .gt("end_time", new Date(new Date(finalStartTime).getTime() - 15 * 60 * 1000).toISOString());
 
-    // Verify slot is in the future
-    if (new Date(slot.start_time) <= new Date()) {
-      throw new Error("Cannot book a past time slot");
+      if (conflictError) {
+        console.error("Conflict check error:", conflictError);
+        throw new Error("Failed to verify slot availability");
+      }
+
+      if (conflicts && conflicts.length > 0) {
+        throw new Error("This time slot is no longer available");
+      }
+
+      // Verify the slot is within advisor's availability window
+      const slotDate = new Date(finalStartTime);
+      const dayOfWeek = slotDate.getUTCDay();
+
+      const { data: availWindow, error: windowError } = await supabaseAdmin
+        .from("advisor_availability_windows")
+        .select("start_time, end_time")
+        .eq("advisor_id", advisorId)
+        .eq("day_of_week", dayOfWeek)
+        .single();
+
+      if (windowError || !availWindow) {
+        throw new Error("Advisor is not available on this day");
+      }
+
+      // Check times are within window (comparing just the time part)
+      const slotStartHour = slotDate.getUTCHours();
+      const slotStartMinutes = slotDate.getUTCMinutes();
+      const slotStartTimeStr = `${slotStartHour.toString().padStart(2, "0")}:${slotStartMinutes.toString().padStart(2, "0")}:00`;
+
+      const slotEndDate = new Date(finalEndTime);
+      const slotEndHour = slotEndDate.getUTCHours();
+      const slotEndMinutes = slotEndDate.getUTCMinutes();
+      const slotEndTimeStr = `${slotEndHour.toString().padStart(2, "0")}:${slotEndMinutes.toString().padStart(2, "0")}:00`;
+
+      if (slotStartTimeStr < availWindow.start_time || slotEndTimeStr > availWindow.end_time) {
+        throw new Error("Selected time is outside advisor's available hours");
+      }
+
+      // Create the slot dynamically
+      const { data: newSlot, error: createError } = await supabaseAdmin
+        .from("availability_slots")
+        .insert({
+          advisor_id: advisorId,
+          start_time: finalStartTime,
+          end_time: finalEndTime,
+          is_virtual: true,
+          is_booked: false,
+        })
+        .select("id")
+        .single();
+
+      if (createError || !newSlot) {
+        console.error("Slot creation error:", createError);
+        throw new Error("Failed to create booking slot");
+      }
+
+      finalSlotId = newSlot.id;
+    } else if (slotId) {
+      // Legacy slot: verify existing slot
+      const { data: slot, error: slotError } = await supabaseAdmin
+        .from("availability_slots")
+        .select("id, advisor_id, is_booked, start_time, end_time")
+        .eq("id", slotId)
+        .single();
+
+      if (slotError || !slot) {
+        throw new Error("Time slot not found");
+      }
+
+      if (slot.advisor_id !== advisorId) {
+        throw new Error("Slot does not belong to this advisor");
+      }
+
+      if (slot.is_booked) {
+        throw new Error("This time slot is no longer available");
+      }
+
+      if (new Date(slot.start_time) <= new Date()) {
+        throw new Error("Cannot book a past time slot");
+      }
+
+      finalSlotId = slot.id;
+      finalStartTime = slot.start_time;
+      finalEndTime = slot.end_time;
+    } else {
+      throw new Error("No slot information provided");
     }
 
     const amount = advisor.price_per_session;
@@ -137,11 +244,11 @@ serve(async (req) => {
       ],
       mode: "payment",
       automatic_tax: { enabled: true }, // Enable Stripe Tax for dynamic calculation
-      success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}&advisor_id=${advisorId}&slot_id=${slotId}`,
+      success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}&advisor_id=${advisorId}&slot_id=${finalSlotId}`,
       cancel_url: `${origin}/advisors/${advisorId}`,
       metadata: {
         advisor_id: advisorId,
-        slot_id: slotId,
+        slot_id: finalSlotId,
         client_user_id: user.id,
       },
     });
