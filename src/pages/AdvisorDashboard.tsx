@@ -116,7 +116,7 @@ const AdvisorDashboard = () => {
           .order("created_at", { ascending: false }),
         supabase
           .from("payments")
-          .select("*")
+          .select("*, booking:bookings(slot:availability_slots(start_time))")
           .eq("advisor_id", profile.id),
         calculatePlatformFee(profile.id),
       ]);
@@ -124,18 +124,49 @@ const AdvisorDashboard = () => {
       setBookings(bookingsResult.data || []);
       setPlatformFee(feeResult);
 
-      // Calculate earnings
+      // Calculate earnings with escrow logic
+      // Funds are only available 48 hours after the meeting start time
       if (paymentsResult.data) {
-        const total = paymentsResult.data
+        const now = new Date();
+        const escrowReleaseHours = 48;
+        
+        let availableEarnings = 0;
+        let pendingEscrowEarnings = 0;
+        
+        paymentsResult.data
           .filter(p => p.status === "completed")
-          .reduce((sum, p) => sum + Number(p.advisor_payout || p.amount * (1 - feeResult.feePercent / 100)), 0);
+          .forEach(p => {
+            const payout = Number(p.advisor_payout || p.amount * (1 - feeResult.feePercent / 100));
+            const meetingStartTime = p.booking?.slot?.start_time 
+              ? new Date(p.booking.slot.start_time)
+              : null;
+            
+            let isReleased = false;
+            
+            if (p.escrow_status === 'released') {
+              isReleased = true;
+            } else if (meetingStartTime) {
+              const releaseTime = new Date(meetingStartTime.getTime() + escrowReleaseHours * 60 * 60 * 1000);
+              isReleased = now >= releaseTime;
+            } else if (p.escrow_release_at) {
+              isReleased = now >= new Date(p.escrow_release_at);
+            }
+            
+            if (isReleased) {
+              availableEarnings += payout;
+            } else {
+              pendingEscrowEarnings += payout;
+            }
+          });
+
+        const total = availableEarnings + pendingEscrowEarnings;
 
         const { data: withdrawalsData } = await supabase
           .from("withdrawal_requests")
           .select("*")
           .eq("advisor_id", profile.id);
 
-        const pending = (withdrawalsData || [])
+        const pendingWithdrawals = (withdrawalsData || [])
           .filter(w => w.status === "pending" || w.status === "approved")
           .reduce((sum, w) => sum + Number(w.amount), 0);
 
@@ -145,8 +176,8 @@ const AdvisorDashboard = () => {
 
         setEarnings({
           total,
-          pending,
-          available: total - withdrawn - pending,
+          pending: pendingWithdrawals + pendingEscrowEarnings,
+          available: Math.max(0, availableEarnings - withdrawn - pendingWithdrawals),
         });
       }
 
@@ -342,7 +373,7 @@ const AdvisorDashboard = () => {
                     ${earnings.available.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    ${earnings.pending.toFixed(2)} pending
+                    ${earnings.pending.toFixed(2)} in escrow
                   </p>
                 </CardContent>
               </Card>
