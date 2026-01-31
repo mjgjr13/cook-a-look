@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
 import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
-import VisibilityToggle from "@/components/advisor/VisibilityToggle";
+import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
@@ -315,25 +315,40 @@ const AdvisorDashboard = () => {
             </motion.div>
           )}
 
-          {/* Profile Completion Card - shows until profile is complete */}
-          {isApproved && (
+          {/* New Advisor Setup Card - prominent setup prompt when not visible */}
+          {isApproved && !advisorProfile?.is_listed && (
             <div className="mb-8">
-              <ProfileCompletionCard 
-                completionStatus={completionStatus} 
-                isApproved={isApproved} 
+              <NewAdvisorSetupCard
+                completionStatus={completionStatus}
+                isListed={advisorProfile?.is_listed ?? false}
+                hasAvailability={completionStatus.hasAvailability}
+                portfolioCount={advisorProfile?.portfolio_images?.length || 0}
+                onToggleVisibility={async () => {
+                  const result = await toggleVisibility(true);
+                  if (!result.success) {
+                    toast({
+                      title: "Cannot go live",
+                      description: result.error,
+                      variant: "destructive",
+                    });
+                  } else {
+                    toast({
+                      title: "🎉 You're Live!",
+                      description: "Your profile is now visible on the Style Advisors page.",
+                    });
+                    refetchAdvisorProfile();
+                  }
+                }}
               />
             </div>
           )}
 
-          {/* Visibility Status Bar - only show when profile is NOT visible */}
-          {isApproved && !advisorProfile?.is_listed && (
+          {/* Profile Completion Card - only show when visible but profile incomplete */}
+          {isApproved && advisorProfile?.is_listed && !completionStatus.isComplete && (
             <div className="mb-8">
-              <VisibilityToggle
-                isListed={advisorProfile?.is_listed ?? false}
-                isApproved={isApproved}
-                completionStatus={completionStatus}
-                pendingBookingsCount={pendingBookingsCount}
-                onToggle={toggleVisibility}
+              <ProfileCompletionCard 
+                completionStatus={completionStatus} 
+                isApproved={isApproved} 
               />
             </div>
           )}
