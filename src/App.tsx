@@ -26,6 +26,7 @@ import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import AdminLookbook from "./pages/admin/AdminLookbook";
+import AdminBookings from "./pages/admin/AdminBookings";
 import AdminAdvisors from "./pages/admin/AdminAdvisors";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPayments from "./pages/admin/AdminPayments";
@@ -96,6 +97,11 @@ const App = () => (
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminDashboard />
+              </AdminRoute>
+            } />
+            <Route path="/admin/bookings" element={
+              <AdminRoute>
+                <AdminBookings />
               </AdminRoute>
             } />
             <Route path="/admin/lookbook" element={

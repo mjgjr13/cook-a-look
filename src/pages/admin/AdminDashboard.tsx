@@ -184,6 +184,23 @@ const AdminDashboard = () => {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Booking Management
+              </CardTitle>
+              <CardDescription>
+                View and monitor all platform bookings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link to="/admin/bookings">Manage Bookings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Advisor Management
               </CardTitle>
