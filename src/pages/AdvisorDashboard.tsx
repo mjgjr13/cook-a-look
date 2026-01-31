@@ -15,7 +15,8 @@ import {
   Users,
   ArrowRight,
   ChevronRight,
-  CheckCircle
+  CheckCircle,
+  Mail
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,7 @@ import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
+import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
@@ -454,7 +456,11 @@ const AdvisorDashboard = () => {
             </motion.div>
           </div>
 
-          {/* Upcoming Sessions */}
+          {/* Admin Messages Inbox */}
+          <div className="mb-8">
+            <AdminMessagesInbox />
+          </div>
+
           <div className="mb-8">
             <h2 className="font-serif text-2xl font-medium mb-6">Upcoming Sessions</h2>
             {upcomingBookings.length === 0 ? (

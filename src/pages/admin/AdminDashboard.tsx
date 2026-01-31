@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ interface DemoAdvisor {
 }
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalAdvisors: 0,
     pendingApplications: 0,
@@ -58,6 +59,10 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
+  const handleCardClick = (route: string) => {
+    navigate(route);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -78,19 +83,26 @@ const AdminDashboard = () => {
           </p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Clickable Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card>
+          <Card 
+            className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+            onClick={() => handleCardClick("/admin/advisors")}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Advisors</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalAdvisors}</div>
+              <p className="text-xs text-primary mt-1">Click to manage →</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+            onClick={() => handleCardClick("/admin/advisors")}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Pending Applications</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -98,28 +110,39 @@ const AdminDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold">{stats.pendingApplications}</div>
               {stats.pendingApplications > 0 && (
-                <p className="text-xs text-orange-600">Requires attention</p>
+                <p className="text-xs text-orange-600">Requires attention →</p>
+              )}
+              {stats.pendingApplications === 0 && (
+                <p className="text-xs text-muted-foreground">All caught up</p>
               )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+            onClick={() => handleCardClick("/admin/bookings")}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalBookings}</div>
+              <p className="text-xs text-primary mt-1">Click to view →</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+            onClick={() => handleCardClick("/admin/lookbook")}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Lookbook Items</CardTitle>
               <Image className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.lookbookItems}</div>
+              <p className="text-xs text-primary mt-1">Click to manage →</p>
             </CardContent>
           </Card>
         </div>
