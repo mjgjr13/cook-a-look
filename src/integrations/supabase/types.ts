@@ -1166,6 +1166,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_booking_participant: {
+        Args: { _booking_id: string; _user_id: string }
+        Returns: boolean
+      }
       redeem_site_credits: {
         Args: { _amount_cents: number; _description?: string; _user_id: string }
         Returns: number
