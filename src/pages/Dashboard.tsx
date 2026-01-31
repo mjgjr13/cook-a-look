@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
+import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import { useProfile } from "@/hooks/useProfile";
 
 interface Booking {
@@ -35,6 +36,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   // All hooks must be called before any conditional returns
   useEffect(() => {
@@ -188,6 +190,14 @@ const Dashboard = () => {
         />
       )}
 
+      <BookingDetailsModal
+        isOpen={!!selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+        booking={selectedBooking}
+        userRole="client"
+        onJoinCall={handleJoinCall}
+      />
+
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
@@ -286,13 +296,11 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      {booking.slot.is_virtual && (
-                        <Button variant="hero" size="sm" onClick={() => handleJoinCall(booking.id)}>
-                          <Video className="w-4 h-4 mr-2" />
-                          Join Call
-                        </Button>
-                      )}
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedBooking(booking)}
+                      >
                         View Details
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
