@@ -11,6 +11,15 @@ export interface AvailabilityWindow {
   is_virtual: boolean;
 }
 
+export interface AvailabilityBreak {
+  id?: string;
+  advisor_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  label?: string;
+}
+
 export interface DynamicSlot {
   slot_start: string;
   slot_end: string;
@@ -22,27 +31,52 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 export const useAdvisorAvailability = (advisorId: string | null) => {
   const { toast } = useToast();
   const [windows, setWindows] = useState<AvailabilityWindow[]>([]);
+  const [breaks, setBreaks] = useState<AvailabilityBreak[]>([]);
+  const [timezone, setTimezone] = useState<string>("UTC");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchWindows = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!advisorId) {
       setWindows([]);
+      setBreaks([]);
       setIsLoading(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase
-        .from("advisor_availability_windows")
-        .select("*")
-        .eq("advisor_id", advisorId)
-        .order("day_of_week");
+      // Fetch windows, breaks, and timezone in parallel
+      const [windowsRes, breaksRes, profileRes] = await Promise.all([
+        supabase
+          .from("advisor_availability_windows")
+          .select("*")
+          .eq("advisor_id", advisorId)
+          .order("day_of_week"),
+        supabase
+          .from("advisor_availability_breaks")
+          .select("*")
+          .eq("advisor_id", advisorId)
+          .order("day_of_week")
+          .order("start_time"),
+        supabase
+          .from("advisor_profiles")
+          .select("timezone")
+          .eq("user_id", (await supabase.from("profiles").select("user_id").eq("id", advisorId).single()).data?.user_id || "")
+          .single(),
+      ]);
 
-      if (error) throw error;
-      setWindows(data || []);
+      if (windowsRes.error) throw windowsRes.error;
+      setWindows(windowsRes.data || []);
+
+      if (!breaksRes.error) {
+        setBreaks(breaksRes.data || []);
+      }
+
+      if (profileRes.data?.timezone) {
+        setTimezone(profileRes.data.timezone);
+      }
     } catch (err) {
-      console.error("Error fetching availability windows:", err);
+      console.error("Error fetching availability data:", err);
       toast({
         title: "Error loading availability",
         description: "Please try again.",
@@ -54,20 +88,18 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
   }, [advisorId, toast]);
 
   useEffect(() => {
-    fetchWindows();
-  }, [fetchWindows]);
+    fetchData();
+  }, [fetchData]);
 
   const saveWindow = async (window: Omit<AvailabilityWindow, "id">) => {
     if (!advisorId) return { success: false, error: "No advisor ID" };
 
     setIsSaving(true);
     try {
-      // Validate time range
       if (window.start_time >= window.end_time) {
         return { success: false, error: "End time must be after start time" };
       }
 
-      // Upsert - update if exists, insert if not
       const { error } = await supabase
         .from("advisor_availability_windows")
         .upsert(
@@ -85,7 +117,7 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
 
       if (error) throw error;
 
-      await fetchWindows();
+      await fetchData();
       return { success: true };
     } catch (err) {
       console.error("Error saving availability window:", err);
@@ -111,7 +143,7 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
 
       if (error) throw error;
 
-      await fetchWindows();
+      await fetchData();
       return { success: true };
     } catch (err) {
       console.error("Error deleting availability window:", err);
@@ -124,8 +156,10 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
     }
   };
 
-  const saveBulkWindows = async (
-    windowsToSave: Array<{ day_of_week: number; start_time: string; end_time: string; is_virtual: boolean }>
+  const saveAll = async (
+    windowsToSave: Array<{ day_of_week: number; start_time: string; end_time: string; is_virtual: boolean }>,
+    breaksToSave: Array<{ day_of_week: number; start_time: string; end_time: string; label: string }>,
+    newTimezone: string
   ) => {
     if (!advisorId) return { success: false, error: "No advisor ID" };
 
@@ -141,15 +175,42 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
         }
       }
 
-      // Delete all existing windows for this advisor
-      await supabase
-        .from("advisor_availability_windows")
-        .delete()
-        .eq("advisor_id", advisorId);
+      // Validate all breaks
+      for (const b of breaksToSave) {
+        if (b.start_time >= b.end_time) {
+          return { 
+            success: false, 
+            error: `Invalid break time for ${DAY_NAMES[b.day_of_week]}: End time must be after start time` 
+          };
+        }
+      }
+
+      // Get user_id from profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("id", advisorId)
+        .single();
+
+      if (!profile?.user_id) {
+        return { success: false, error: "Profile not found" };
+      }
+
+      // Delete all existing windows and breaks
+      await Promise.all([
+        supabase
+          .from("advisor_availability_windows")
+          .delete()
+          .eq("advisor_id", advisorId),
+        supabase
+          .from("advisor_availability_breaks")
+          .delete()
+          .eq("advisor_id", advisorId),
+      ]);
 
       // Insert new windows
       if (windowsToSave.length > 0) {
-        const { error } = await supabase
+        const { error: windowsError } = await supabase
           .from("advisor_availability_windows")
           .insert(
             windowsToSave.map((w) => ({
@@ -161,27 +222,41 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
             }))
           );
 
-        if (error) throw error;
+        if (windowsError) throw windowsError;
       }
 
-      // Update advisor_profiles to mark availability as set
-      const { data: userProfile } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("id", advisorId)
-        .single();
+      // Insert new breaks
+      if (breaksToSave.length > 0) {
+        const { error: breaksError } = await supabase
+          .from("advisor_availability_breaks")
+          .insert(
+            breaksToSave.map((b) => ({
+              advisor_id: advisorId,
+              day_of_week: b.day_of_week,
+              start_time: b.start_time,
+              end_time: b.end_time,
+              label: b.label,
+            }))
+          );
 
-      if (userProfile?.user_id) {
-        await supabase
-          .from("advisor_profiles")
-          .update({ availability_set: windowsToSave.length > 0 })
-          .eq("user_id", userProfile.user_id);
+        if (breaksError) throw breaksError;
       }
 
-      await fetchWindows();
+      // Update timezone and availability_set flag
+      const { error: profileError } = await supabase
+        .from("advisor_profiles")
+        .update({ 
+          availability_set: windowsToSave.length > 0,
+          timezone: newTimezone,
+        })
+        .eq("user_id", profile.user_id);
+
+      if (profileError) throw profileError;
+
+      await fetchData();
       return { success: true };
     } catch (err) {
-      console.error("Error saving bulk windows:", err);
+      console.error("Error saving availability data:", err);
       return { 
         success: false, 
         error: err instanceof Error ? err.message : "Failed to save" 
@@ -191,14 +266,29 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
     }
   };
 
+  // Legacy function for backward compatibility
+  const saveBulkWindows = async (
+    windowsToSave: Array<{ day_of_week: number; start_time: string; end_time: string; is_virtual: boolean }>
+  ) => {
+    return saveAll(windowsToSave, breaks.map(b => ({
+      day_of_week: b.day_of_week,
+      start_time: b.start_time,
+      end_time: b.end_time,
+      label: b.label || "Break",
+    })), timezone);
+  };
+
   return {
     windows,
+    breaks,
+    timezone,
     isLoading,
     isSaving,
     saveWindow,
     deleteWindow,
+    saveAll,
     saveBulkWindows,
-    refetch: fetchWindows,
+    refetch: fetchData,
     DAY_NAMES,
   };
 };
@@ -223,6 +313,29 @@ export const getAvailableSlotsForDate = async (
   } catch (err) {
     console.error("Error fetching available slots:", err);
     return [];
+  }
+};
+
+// Get advisor's timezone
+export const getAdvisorTimezone = async (advisorId: string): Promise<string> => {
+  try {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("id", advisorId)
+      .single();
+
+    if (!profile?.user_id) return "UTC";
+
+    const { data: advisorProfile } = await supabase
+      .from("advisor_profiles")
+      .select("timezone")
+      .eq("user_id", profile.user_id)
+      .single();
+
+    return advisorProfile?.timezone || "UTC";
+  } catch {
+    return "UTC";
   }
 };
 

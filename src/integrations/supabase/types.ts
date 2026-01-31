@@ -95,6 +95,47 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_availability_breaks: {
+        Row: {
+          advisor_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          label: string | null
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          label?: string | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          label?: string | null
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_availability_breaks_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_availability_windows: {
         Row: {
           advisor_id: string
@@ -185,6 +226,7 @@ export type Database = {
           price: number | null
           specialties: string[] | null
           status: string
+          timezone: string | null
           updated_at: string | null
           user_id: string
           verification_completed_at: string | null
@@ -205,6 +247,7 @@ export type Database = {
           price?: number | null
           specialties?: string[] | null
           status?: string
+          timezone?: string | null
           updated_at?: string | null
           user_id: string
           verification_completed_at?: string | null
@@ -225,6 +268,7 @@ export type Database = {
           price?: number | null
           specialties?: string[] | null
           status?: string
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string
           verification_completed_at?: string | null
