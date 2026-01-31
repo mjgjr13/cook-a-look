@@ -51,6 +51,27 @@ const Dashboard = () => {
     }
 
     loadBookings();
+
+    // Subscribe to realtime booking updates
+    const channel = supabase
+      .channel("client-bookings")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "bookings",
+          filter: `client_id=eq.${profile.id}`,
+        },
+        () => {
+          loadBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profileLoading, profile, roles.isAdvisor]);
 
   const loadBookings = async () => {

@@ -66,6 +66,27 @@ const AdvisorDashboard = () => {
   useEffect(() => {
     if (!profileLoading && profile) {
       loadDashboard();
+
+      // Subscribe to realtime booking updates
+      const channel = supabase
+        .channel("advisor-bookings")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "bookings",
+            filter: `advisor_id=eq.${profile.id}`,
+          },
+          () => {
+            loadDashboard();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else if (!profileLoading && !profile) {
       navigate("/become-advisor");
     }
