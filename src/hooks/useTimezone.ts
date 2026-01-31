@@ -86,14 +86,6 @@ export const getTimezoneLabel = (timezone: string): string => {
 export const useTimezone = () => {
   const [timezone, setTimezone] = useState<string>(getBrowserTimezone());
 
-  useEffect(() => {
-    // Update if timezone changes (e.g., user travels)
-    const detected = getBrowserTimezone();
-    if (detected !== timezone) {
-      setTimezone(detected);
-    }
-  }, []);
-
   return {
     timezone,
     setTimezone,

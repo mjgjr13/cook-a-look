@@ -159,7 +159,7 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
   const saveAll = async (
     windowsToSave: Array<{ day_of_week: number; start_time: string; end_time: string; is_virtual: boolean }>,
     breaksToSave: Array<{ day_of_week: number; start_time: string; end_time: string; label: string }>,
-    newTimezone: string
+    newTimezone?: string
   ) => {
     if (!advisorId) return { success: false, error: "No advisor ID" };
 
@@ -242,13 +242,18 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
         if (breaksError) throw breaksError;
       }
 
-      // Update timezone and availability_set flag
+      // Update availability_set flag (and timezone if provided)
+      const updateData: { availability_set: boolean; timezone?: string } = { 
+        availability_set: windowsToSave.length > 0,
+      };
+      
+      if (newTimezone) {
+        updateData.timezone = newTimezone;
+      }
+
       const { error: profileError } = await supabase
         .from("advisor_profiles")
-        .update({ 
-          availability_set: windowsToSave.length > 0,
-          timezone: newTimezone,
-        })
+        .update(updateData)
         .eq("user_id", profile.user_id);
 
       if (profileError) throw profileError;
@@ -264,6 +269,14 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Simplified save for weekly defaults only (no timezone change)
+  const saveWeeklyDefaults = async (
+    windowsToSave: Array<{ day_of_week: number; start_time: string; end_time: string; is_virtual: boolean }>,
+    breaksToSave: Array<{ day_of_week: number; start_time: string; end_time: string; label: string }>
+  ) => {
+    return saveAll(windowsToSave, breaksToSave);
   };
 
   // Legacy function for backward compatibility
@@ -287,6 +300,7 @@ export const useAdvisorAvailability = (advisorId: string | null) => {
     saveWindow,
     deleteWindow,
     saveAll,
+    saveWeeklyDefaults,
     saveBulkWindows,
     refetch: fetchData,
     DAY_NAMES,

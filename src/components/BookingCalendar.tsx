@@ -10,12 +10,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Globe } from "lucide-react";
+import { Loader2, Globe, Info } from "lucide-react";
 import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
-import { getAdvisorTimezone } from "@/hooks/useAdvisorAvailability";
 
 interface BookingCalendarProps {
   advisorId: string;
@@ -49,8 +48,7 @@ const BookingCalendar = ({
   const [isLoading, setIsLoading] = useState(false);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-  const [clientTimezone, setClientTimezone] = useState<string>(getBrowserTimezone());
-  const [advisorTimezone, setAdvisorTimezone] = useState<string>("UTC");
+  const [clientTimezone] = useState<string>(getBrowserTimezone());
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -67,13 +65,6 @@ const BookingCalendar = ({
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Fetch advisor's timezone
-  useEffect(() => {
-    if (advisorId && UUID_REGEX.test(advisorId)) {
-      getAdvisorTimezone(advisorId).then(setAdvisorTimezone);
-    }
-  }, [advisorId]);
 
   // Fetch dynamically calculated slots when date changes
   useEffect(() => {
@@ -241,9 +232,11 @@ const BookingCalendar = ({
     }
   };
 
-  // Only disable past dates - allow any future date including weekends
+  // Limit booking to 1 month in advance, disable past dates
+  const maxDate = addMonths(new Date(), 1);
   const disabledDays = [
     { before: new Date() },
+    { after: maxDate },
   ];
 
   const clientTzAbbr = getTimezoneAbbreviation(clientTimezone);
@@ -262,11 +255,15 @@ const BookingCalendar = ({
 
         <div className="py-4">
           {/* Timezone indicator */}
-          <div className="flex items-center justify-center gap-2 mb-4 p-2 bg-secondary/50 rounded-lg">
+          <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-secondary/50 rounded-lg">
             <Globe className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
               All times shown in your local time ({clientTzAbbr})
             </span>
+          </div>
+          <div className="flex items-center justify-center gap-2 mb-4 text-xs text-muted-foreground">
+            <Info className="w-3 h-3" />
+            <span>You can book up to 1 month in advance</span>
           </div>
 
           <Calendar

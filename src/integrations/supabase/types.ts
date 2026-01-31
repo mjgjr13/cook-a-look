@@ -177,6 +177,82 @@ export type Database = {
           },
         ]
       }
+      advisor_date_blocks: {
+        Row: {
+          advisor_id: string
+          block_date: string
+          created_at: string
+          end_time: string
+          id: string
+          start_time: string
+        }
+        Insert: {
+          advisor_id: string
+          block_date: string
+          created_at?: string
+          end_time: string
+          id?: string
+          start_time: string
+        }
+        Update: {
+          advisor_id?: string
+          block_date?: string
+          created_at?: string
+          end_time?: string
+          id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_date_blocks_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      advisor_date_overrides: {
+        Row: {
+          advisor_id: string
+          created_at: string
+          end_time: string | null
+          id: string
+          is_available: boolean
+          override_date: string
+          start_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_available?: boolean
+          override_date: string
+          start_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_available?: boolean
+          override_date?: string
+          start_time?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_date_overrides_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_monthly_stats: {
         Row: {
           advisor_id: string
