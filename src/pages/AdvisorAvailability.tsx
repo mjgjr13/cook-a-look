@@ -3,14 +3,15 @@ import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Clock, Calendar, Info, Globe } from "lucide-react";
+import { ArrowLeft, Calendar, Info, Clock } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import AvailabilityWindowPicker from "@/components/advisor/AvailabilityWindowPicker";
+import CalendarAvailabilityManager from "@/components/advisor/CalendarAvailabilityManager";
 import { useAdvisorAvailability } from "@/hooks/useAdvisorAvailability";
+import { useDateOverrides } from "@/hooks/useDateOverrides";
 import { useProfile } from "@/hooks/useProfile";
 import { BreakConfig } from "@/components/advisor/BreakTimeManager";
+import { getBrowserTimezone, getTimezoneLabel } from "@/hooks/useTimezone";
 
 const AdvisorAvailability = () => {
   const navigate = useNavigate();
@@ -18,7 +19,24 @@ const AdvisorAvailability = () => {
   const { profile, roles, isLoading: profileLoading } = useProfile();
   const [profileId, setProfileId] = useState<string | null>(null);
 
-  const { windows, breaks, timezone, isLoading, isSaving, saveAll } = useAdvisorAvailability(profileId);
+  const { 
+    windows, 
+    breaks, 
+    isLoading, 
+    isSaving, 
+    saveWeeklyDefaults 
+  } = useAdvisorAvailability(profileId);
+
+  const {
+    overrides: dateOverrides,
+    blocks: dateBlocks,
+    isLoading: overridesLoading,
+    isSaving: overridesSaving,
+    saveOverride,
+    deleteOverride,
+    addBlock,
+    deleteBlock,
+  } = useDateOverrides(profileId);
 
   useEffect(() => {
     if (!profileLoading && profile) {
@@ -36,7 +54,6 @@ const AdvisorAvailability = () => {
   }, [profileLoading, profile, roles.isAdvisor, navigate, toast]);
 
   const handleBack = () => {
-    // Always navigate to the advisor dashboard - never to client dashboard
     navigate("/advisor");
   };
 
@@ -49,7 +66,9 @@ const AdvisorAvailability = () => {
     label: b.label || "Break",
   }));
 
-  if (profileLoading || isLoading) {
+  const detectedTimezone = getBrowserTimezone();
+
+  if (profileLoading || isLoading || overridesLoading) {
     return (
       <Layout>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -62,7 +81,7 @@ const AdvisorAvailability = () => {
   return (
     <Layout>
       <section className="py-16 bg-card min-h-screen">
-        <div className="container mx-auto px-6 lg:px-8 max-w-4xl">
+        <div className="container mx-auto px-6 lg:px-8 max-w-5xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <Button variant="ghost" size="icon" onClick={handleBack}>
@@ -86,21 +105,26 @@ const AdvisorAvailability = () => {
               <CardContent className="py-4">
                 <div className="flex gap-3">
                   <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <p className="font-medium text-foreground">How it works</p>
-                    <p className="text-sm text-muted-foreground">
-                      Set your available hours for each day of the week. The system automatically creates 
-                      60-minute appointment slots starting on the hour. When a client books, the next 
-                      available slot starts 15 minutes after the previous appointment ends.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Breaks:</strong> Add breaks or blocked time to mark yourself as unavailable during 
-                      lunch, personal time, or other commitments. Clients won't be able to book during these times.
-                    </p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Globe className="w-4 h-4" />
-                      <strong>Timezone:</strong> All times are set in your local timezone and automatically 
-                      converted for clients viewing from different locations.
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>
+                        <strong>Quick Setup:</strong> Choose a preset to set your availability in seconds
+                      </li>
+                      <li>
+                        <strong>Weekly Defaults:</strong> Set your regular hours for each day of the week
+                      </li>
+                      <li>
+                        <strong>Calendar Overrides:</strong> Click any date to customize hours or block the day
+                      </li>
+                      <li>
+                        <strong>Block Time:</strong> Mark portions of any day as unavailable (no labels needed)
+                      </li>
+                    </ul>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 pt-1">
+                      <Clock className="w-4 h-4" />
+                      All times are shown in your local timezone ({getTimezoneLabel(detectedTimezone)}). 
+                      Clients will see times converted to their own timezone automatically.
                     </p>
                   </div>
                 </div>
@@ -121,20 +145,25 @@ const AdvisorAvailability = () => {
                     <Calendar className="w-6 h-6 text-gold" />
                   </div>
                   <div>
-                    <CardTitle className="font-serif text-xl">Weekly Availability</CardTitle>
+                    <CardTitle className="font-serif text-xl">Calendar-Based Scheduling</CardTitle>
                     <CardDescription>
-                      Set your recurring availability for each day of the week
+                      Set weekly defaults and customize specific dates as needed
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <AvailabilityWindowPicker
+                <CalendarAvailabilityManager
                   windows={windows}
                   breaks={breaksAsConfig}
-                  timezone={timezone}
-                  isSaving={isSaving}
-                  onSave={saveAll}
+                  dateOverrides={dateOverrides}
+                  dateBlocks={dateBlocks}
+                  isSaving={isSaving || overridesSaving}
+                  onSaveWeeklyDefaults={saveWeeklyDefaults}
+                  onSaveDateOverride={saveOverride}
+                  onDeleteDateOverride={deleteOverride}
+                  onAddDateBlock={addBlock}
+                  onDeleteDateBlock={deleteBlock}
                 />
               </CardContent>
             </Card>
@@ -148,7 +177,7 @@ const AdvisorAvailability = () => {
             className="mt-8 text-center"
           >
             <p className="text-sm text-muted-foreground">
-              Need help setting up your availability?{" "}
+              Clients can book appointments up to 1 month in advance.{" "}
               <Button variant="link" className="p-0 h-auto" asChild>
                 <Link to="/settings">Update your profile settings</Link>
               </Button>
