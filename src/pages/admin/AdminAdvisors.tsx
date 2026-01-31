@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -53,13 +53,17 @@ import {
   Ban,
   UserCheck,
   Mail,
+  Image as ImageIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import AdvisorDetailModal from "@/components/admin/AdvisorDetailModal";
 
 interface AdvisorApplication {
   id: string;
+  user_id: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -80,6 +84,8 @@ interface AdvisorApplication {
   admin_notes: string | null;
   reviewed_at: string | null;
   created_at: string;
+  // From profile
+  profile_avatar_url?: string | null;
 }
 
 interface ActiveAdvisor {
@@ -88,6 +94,7 @@ interface ActiveAdvisor {
   full_name: string | null;
   email: string | null;
   specialty: string | null;
+  avatar_url: string | null;
   is_demo: boolean;
   advisor_approved: boolean;
   advisor_status: string | null;
@@ -113,9 +120,13 @@ const AdminAdvisors = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"approve" | "deny" | null>(null);
 
+  // Advisor detail modal
+  const [selectedAdvisorDetail, setSelectedAdvisorDetail] = useState<ActiveAdvisor | null>(null);
+
   // Message dialog state
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
-  const [messageRecipient, setMessageRecipient] = useState<{ email: string; name: string } | null>(null);
+  const [messageRecipient, setMessageRecipient] = useState<{ userId: string; email: string; name: string } | null>(null);
+  const [messageSubject, setMessageSubject] = useState("");
   const [messageContent, setMessageContent] = useState("");
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
@@ -131,7 +142,7 @@ const AdminAdvisors = () => {
     setIsLoading(true);
     try {
       if (activeTab === "applications") {
-        // Fetch applications that are NOT approved (pending + denied)
+        // Fetch applications with profile data for avatar
         const { data, error } = await supabase
           .from("advisor_applications")
           .select("*")
@@ -139,16 +150,31 @@ const AdminAdvisors = () => {
 
         if (error) throw error;
         
+        // Fetch profile avatars for applications
+        const userIds = (data || []).map(app => app.user_id);
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("user_id, avatar_url")
+          .in("user_id", userIds);
+
+        const avatarMap = new Map(
+          (profilesData || []).map(p => [p.user_id, p.avatar_url])
+        );
+
         // Filter to only show pending/denied (not in Active Advisors)
-        const filtered = (data as AdvisorApplication[])?.filter(app => 
+        const enrichedApplications = (data as AdvisorApplication[])?.map(app => ({
+          ...app,
+          profile_avatar_url: avatarMap.get(app.user_id) || null,
+        })).filter(app => 
           app.status === "pending" || app.status === "denied"
         ) || [];
-        setApplications(filtered);
+        
+        setApplications(enrichedApplications);
       } else {
-        // Fetch active advisors (approved with visibility control)
+        // Fetch ALL advisors (approved, not approved, etc.)
         const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
-          .select("id, user_id, full_name, email, specialty, is_demo, advisor_approved, advisor_status, created_at")
+          .select("id, user_id, full_name, email, specialty, avatar_url, is_demo, advisor_approved, advisor_status, created_at")
           .eq("is_advisor", true)
           .order("created_at", { ascending: false });
 
@@ -167,8 +193,6 @@ const AdminAdvisors = () => {
           const ap = advisorProfileMap.get(p.user_id);
           return {
             ...p,
-            // If advisor_approved in profiles and no advisor_profiles record,
-            // treat as listed (legacy data compatibility)
             is_listed: ap?.is_listed ?? (p.advisor_approved === true),
             application_status: ap?.application_status ?? 
               (p.advisor_approved ? "approved" : "pending"),
@@ -176,10 +200,8 @@ const AdminAdvisors = () => {
           };
         });
 
-        // Filter to only show approved advisors
-        setActiveAdvisors(enrichedAdvisors.filter(a => 
-          a.application_status === "approved" || a.advisor_approved || a.is_demo
-        ));
+        // Show ALL advisors, not just approved ones
+        setActiveAdvisors(enrichedAdvisors);
       }
     } catch (err) {
       console.error("Error loading data:", err);
@@ -212,20 +234,20 @@ const AdminAdvisors = () => {
 
       if (appError) throw appError;
 
-      // Get the user profile by email
+      // Get the user profile by user_id
       const { data: userProfile } = await supabase
         .from("profiles")
         .select("id, user_id")
-        .eq("email", selectedApplication.email)
+        .eq("user_id", selectedApplication.user_id)
         .single();
 
       if (userProfile) {
-        // Update profiles table - advisor_approved = false (controlled by visibility toggle)
+        // Update profiles table
         const { error: profileError } = await supabase
           .from("profiles")
           .update({
             is_advisor: true,
-            advisor_approved: false, // Will become true when advisor toggles visibility ON
+            advisor_approved: false,
             advisor_status: "approved",
             specialty: selectedApplication.specialty,
             bio: selectedApplication.bio,
@@ -239,14 +261,14 @@ const AdminAdvisors = () => {
 
         if (profileError) throw profileError;
 
-        // Upsert advisor_profiles table (creates if doesn't exist)
+        // Upsert advisor_profiles table
         const { error: advisorProfileError } = await supabase
           .from("advisor_profiles")
           .upsert({
             user_id: userProfile.user_id,
             application_status: "approved",
             onboarding_status: "complete",
-            is_listed: false, // Advisor must manually toggle this ON
+            is_listed: false,
             is_published: false,
             bio: selectedApplication.bio,
           }, {
@@ -272,7 +294,7 @@ const AdminAdvisors = () => {
         }
       }
 
-      toast.success("Application approved! Advisor can now toggle their profile visibility.");
+      toast.success("Application approved!");
       setIsReviewDialogOpen(false);
       setConfirmAction(null);
       loadData();
@@ -300,22 +322,20 @@ const AdminAdvisors = () => {
 
       if (appError) throw appError;
 
-      if (selectedApplication.email) {
-        const { data: userProfile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", selectedApplication.email)
-          .single();
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", selectedApplication.user_id)
+        .single();
 
-        if (userProfile) {
-          await supabase
-            .from("profiles")
-            .update({
-              advisor_approved: false,
-              advisor_status: "rejected",
-            })
-            .eq("id", userProfile.id);
-        }
+      if (userProfile) {
+        await supabase
+          .from("profiles")
+          .update({
+            advisor_approved: false,
+            advisor_status: "rejected",
+          })
+          .eq("id", userProfile.id);
       }
 
       toast.success("Application denied");
@@ -335,7 +355,6 @@ const AdminAdvisors = () => {
     setIsProcessing(true);
 
     try {
-      // Suspend: set advisor_status to 'suspended', advisor_approved to false
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -346,7 +365,6 @@ const AdminAdvisors = () => {
 
       if (profileError) throw profileError;
 
-      // Also update advisor_profiles
       if (advisorToSuspend.user_id) {
         await supabase
           .from("advisor_profiles")
@@ -356,7 +374,7 @@ const AdminAdvisors = () => {
           .eq("user_id", advisorToSuspend.user_id);
       }
 
-      toast.success("Advisor suspended. They will no longer appear publicly or receive bookings.");
+      toast.success("Advisor suspended.");
       setAdvisorToSuspend(null);
       loadData();
     } catch (err) {
@@ -380,7 +398,7 @@ const AdminAdvisors = () => {
 
       if (profileError) throw profileError;
 
-      toast.success("Advisor unsuspended. They can now toggle their visibility back on.");
+      toast.success("Advisor unsuspended.");
       loadData();
     } catch (err) {
       console.error("Error unsuspending advisor:", err);
@@ -395,7 +413,6 @@ const AdminAdvisors = () => {
     setIsProcessing(true);
 
     try {
-      // Delete from advisor_profiles first
       if (advisorToDelete.user_id) {
         await supabase
           .from("advisor_profiles")
@@ -403,7 +420,6 @@ const AdminAdvisors = () => {
           .eq("user_id", advisorToDelete.user_id);
       }
 
-      // Reset profile to non-advisor
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -416,7 +432,7 @@ const AdminAdvisors = () => {
 
       if (profileError) throw profileError;
 
-      toast.success("Advisor account deleted. User profile has been reset to client.");
+      toast.success("Advisor account deleted.");
       setAdvisorToDelete(null);
       loadData();
     } catch (err) {
@@ -429,9 +445,11 @@ const AdminAdvisors = () => {
 
   const handleOpenMessageDialog = (advisor: ActiveAdvisor) => {
     setMessageRecipient({
+      userId: advisor.user_id,
       email: advisor.email || "",
       name: advisor.full_name || "Advisor",
     });
+    setMessageSubject("");
     setMessageContent("");
     setMessageDialogOpen(true);
   };
@@ -441,11 +459,24 @@ const AdminAdvisors = () => {
     setIsSendingMessage(true);
 
     try {
-      // This would typically call an edge function to send an email
-      // For now, we'll just show a success message
+      // Get current admin user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Insert message into admin_messages table
+      const { error } = await supabase.from("admin_messages").insert({
+        sender_id: user.id,
+        recipient_id: messageRecipient.userId,
+        subject: messageSubject || "Message from Admin",
+        message: messageContent.trim(),
+      });
+
+      if (error) throw error;
+
       toast.success(`Message sent to ${messageRecipient.name}`);
       setMessageDialogOpen(false);
       setMessageContent("");
+      setMessageSubject("");
       setMessageRecipient(null);
     } catch (err) {
       console.error("Error sending message:", err);
@@ -468,9 +499,17 @@ const AdminAdvisors = () => {
     (advisor.email || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Separate active (visible) from inactive (approved but hidden)
-  const visibleAdvisors = filteredAdvisors.filter(a => a.is_listed && !a.is_suspended);
-  const hiddenAdvisors = filteredAdvisors.filter(a => !a.is_listed || a.is_suspended);
+  // Separate active (visible) from inactive (approved but hidden or not yet approved)
+  const visibleAdvisors = filteredAdvisors.filter(a => 
+    a.application_status === "approved" && a.is_listed && !a.is_suspended
+  );
+  const hiddenAdvisors = filteredAdvisors.filter(a => 
+    a.application_status === "approved" && (!a.is_listed || a.is_suspended)
+  );
+  const pendingAdvisors = filteredAdvisors.filter(a => 
+    a.application_status !== "approved" && !a.is_demo
+  );
+  const demoAdvisors = filteredAdvisors.filter(a => a.is_demo);
 
   if (isLoading) {
     return (
@@ -489,6 +528,79 @@ const AdminAdvisors = () => {
     );
   }
 
+  const renderAdvisorRow = (advisor: ActiveAdvisor, statusBadge: React.ReactNode) => (
+    <motion.div
+      key={advisor.id}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card border border-border p-4 rounded-lg hover:border-primary/30 transition-colors"
+    >
+      <div className="flex items-center justify-between">
+        <div 
+          className="flex items-center gap-3 flex-1 cursor-pointer"
+          onClick={() => setSelectedAdvisorDetail(advisor)}
+        >
+          <Avatar className="w-10 h-10">
+            <AvatarImage src={advisor.avatar_url || undefined} />
+            <AvatarFallback>
+              {(advisor.full_name || "A").charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-medium">{advisor.full_name || "Unnamed"}</h3>
+              {advisor.is_demo && <Badge variant="outline">Demo</Badge>}
+              {statusBadge}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {advisor.email} • {advisor.specialty || "No specialty"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleOpenMessageDialog(advisor)}
+            title="Message advisor"
+          >
+            <MessageSquare className="w-4 h-4" />
+          </Button>
+          {advisor.is_suspended ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleUnsuspendAdvisor(advisor)}
+              className="gap-1"
+            >
+              <UserCheck className="w-4 h-4" />
+              Unsuspend
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAdvisorToSuspend(advisor)}
+              className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+              title="Suspend advisor"
+            >
+              <Ban className="w-4 h-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAdvisorToDelete(advisor)}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            title="Delete advisor"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  );
+
   return (
     <Layout>
       <section className="py-16 bg-background">
@@ -499,7 +611,7 @@ const AdminAdvisors = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/admin")}
                 className="gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -531,9 +643,9 @@ const AdminAdvisors = () => {
               </TabsTrigger>
               <TabsTrigger value="active" className="gap-2">
                 <UserCheck className="w-4 h-4" />
-                Active Advisors
+                All Advisors
                 <Badge variant="secondary" className="ml-1">
-                  {visibleAdvisors.length}
+                  {activeAdvisors.length}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -579,35 +691,43 @@ const AdminAdvisors = () => {
                       className="bg-card border border-border p-4 hover:border-primary/30 transition-colors"
                     >
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-medium">
-                              {app.first_name} {app.last_name}
-                            </h3>
-                            <Badge
-                              variant={
-                                app.status === "approved"
-                                  ? "default"
-                                  : app.status === "denied"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                            >
-                              {app.status}
-                            </Badge>
-                            {app.liveness_verified && (
-                              <Badge variant="outline" className="gap-1">
-                                <Shield className="w-3 h-3" />
-                                Verified
+                        <div className="flex items-start gap-3 flex-1">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={app.profile_avatar_url || undefined} />
+                            <AvatarFallback>
+                              {app.first_name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-medium">
+                                {app.first_name} {app.last_name}
+                              </h3>
+                              <Badge
+                                variant={
+                                  app.status === "approved"
+                                    ? "default"
+                                    : app.status === "denied"
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                              >
+                                {app.status}
                               </Badge>
-                            )}
+                              {app.liveness_verified && (
+                                <Badge variant="outline" className="gap-1">
+                                  <Shield className="w-3 h-3" />
+                                  Verified
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-1">
+                              {app.email} • {app.specialty}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Applied {format(new Date(app.created_at), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-1">
-                            {app.email} • {app.specialty}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Applied {format(new Date(app.created_at), "MMM d, yyyy 'at' h:mm a")}
-                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           {app.instagram && (
@@ -641,8 +761,8 @@ const AdminAdvisors = () => {
               {/* Active (Visible) Advisors */}
               <div className="mb-8">
                 <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-primary" />
-                  Visible on Style Advisors Page ({visibleAdvisors.length})
+                  <Eye className="w-5 h-5 text-primary" />
+                  Active & Visible ({visibleAdvisors.length})
                 </h3>
                 {visibleAdvisors.length === 0 ? (
                   <div className="text-center py-8 border border-dashed border-border rounded-lg">
@@ -650,70 +770,23 @@ const AdminAdvisors = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {visibleAdvisors.map((advisor, index) => (
-                      <motion.div
-                        key={advisor.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        className="bg-card border border-primary/30 p-4 rounded-lg"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-3 mb-1">
-                              <h3 className="font-medium">{advisor.full_name || "Unnamed"}</h3>
-                              {advisor.is_demo && (
-                                <Badge variant="outline">Demo</Badge>
-                              )}
-                              <Badge variant="default" className="bg-primary">
-                                <Eye className="w-3 h-3 mr-1" />
-                                Active
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {advisor.email} • {advisor.specialty || "No specialty"}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenMessageDialog(advisor)}
-                              title="Message advisor"
-                            >
-                              <MessageSquare className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setAdvisorToSuspend(advisor)}
-                              className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-                              title="Suspend advisor"
-                            >
-                              <Ban className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setAdvisorToDelete(advisor)}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              title="Delete advisor"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {visibleAdvisors.map((advisor) => 
+                      renderAdvisorRow(advisor, (
+                        <Badge variant="default" className="bg-primary gap-1">
+                          <Eye className="w-3 h-3" />
+                          Active
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
 
               {/* Inactive (Hidden/Suspended) Advisors */}
-              <div>
+              <div className="mb-8">
                 <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
                   <UserX className="w-5 h-5 text-muted-foreground" />
-                  Hidden / Suspended ({hiddenAdvisors.length})
+                  Approved but Hidden / Suspended ({hiddenAdvisors.length})
                 </h3>
                 {hiddenAdvisors.length === 0 ? (
                   <div className="text-center py-8 border border-dashed border-border rounded-lg">
@@ -721,89 +794,67 @@ const AdminAdvisors = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {hiddenAdvisors.map((advisor, index) => (
-                      <motion.div
-                        key={advisor.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
-                        className={`bg-card border p-4 rounded-lg ${
-                          advisor.is_suspended ? "border-orange-300 bg-orange-50/30" : "border-border"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-3 mb-1">
-                              <h3 className="font-medium">{advisor.full_name || "Unnamed"}</h3>
-                              {advisor.is_demo && (
-                                <Badge variant="outline">Demo</Badge>
-                              )}
-                              {advisor.is_suspended ? (
-                                <Badge variant="destructive" className="bg-orange-500">
-                                  <Ban className="w-3 h-3 mr-1" />
-                                  Suspended
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary">
-                                  Hidden
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {advisor.email} • {advisor.specialty || "No specialty"}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenMessageDialog(advisor)}
-                              title="Message advisor"
-                            >
-                              <MessageSquare className="w-4 h-4" />
-                            </Button>
-                            {advisor.is_suspended && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleUnsuspendAdvisor(advisor)}
-                                className="gap-1"
-                              >
-                                <UserCheck className="w-4 h-4" />
-                                Unsuspend
-                              </Button>
-                            )}
-                            {!advisor.is_suspended && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setAdvisorToSuspend(advisor)}
-                                className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-                                title="Suspend advisor"
-                              >
-                                <Ban className="w-4 h-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setAdvisorToDelete(advisor)}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              title="Delete advisor"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {hiddenAdvisors.map((advisor) => 
+                      renderAdvisorRow(advisor, advisor.is_suspended ? (
+                        <Badge variant="destructive" className="bg-orange-500 gap-1">
+                          <Ban className="w-3 h-3" />
+                          Suspended
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Hidden</Badge>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Pending / Not Yet Approved */}
+              {pendingAdvisors.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-yellow-500" />
+                    Pending Approval ({pendingAdvisors.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {pendingAdvisors.map((advisor) => 
+                      renderAdvisorRow(advisor, (
+                        <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                          Pending
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Demo Advisors */}
+              {demoAdvisors.length > 0 && (
+                <div>
+                  <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-500" />
+                    Demo / Test Advisors ({demoAdvisors.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {demoAdvisors.map((advisor) => 
+                      renderAdvisorRow(advisor, (
+                        <Badge variant="outline">Demo</Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
       </section>
+
+      {/* Advisor Detail Modal */}
+      <AdvisorDetailModal
+        isOpen={!!selectedAdvisorDetail}
+        onClose={() => setSelectedAdvisorDetail(null)}
+        advisorId={selectedAdvisorDetail?.id || ""}
+        userId={selectedAdvisorDetail?.user_id || ""}
+      />
 
       {/* Review Application Dialog */}
       <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
@@ -817,25 +868,45 @@ const AdminAdvisors = () => {
 
           {selectedApplication && (
             <div className="space-y-6">
-              {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground text-xs">Name</Label>
-                  <p className="font-medium">
-                    {selectedApplication.first_name} {selectedApplication.last_name}
-                  </p>
+              {/* Profile Photo */}
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <Label className="text-muted-foreground text-xs mb-2 block">Profile Photo</Label>
+                  {selectedApplication.profile_avatar_url ? (
+                    <Avatar className="w-20 h-20">
+                      <AvatarImage src={selectedApplication.profile_avatar_url} />
+                      <AvatarFallback className="text-2xl">
+                        {selectedApplication.first_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+                      <User className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Email</Label>
-                  <p>{selectedApplication.email}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Phone</Label>
-                  <p>{selectedApplication.phone || "Not provided"}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Specialty</Label>
-                  <p>{selectedApplication.specialty}</p>
+                <div className="flex-1">
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Name</Label>
+                      <p className="font-medium">
+                        {selectedApplication.first_name} {selectedApplication.last_name}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Email</Label>
+                      <p>{selectedApplication.email}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Phone</Label>
+                      <p>{selectedApplication.phone || "Not provided"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Specialty</Label>
+                      <p>{selectedApplication.specialty}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -878,7 +949,7 @@ const AdminAdvisors = () => {
                 </Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="border border-border rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-2">Selfie</p>
+                    <p className="text-xs text-muted-foreground mb-2">Liveness / Selfie</p>
                     {selectedApplication.selfie_url ? (
                       <img
                         src={selectedApplication.selfie_url}
@@ -886,8 +957,11 @@ const AdminAdvisors = () => {
                         className="w-full aspect-square object-cover rounded"
                       />
                     ) : (
-                      <div className="aspect-square bg-muted flex items-center justify-center rounded">
-                        <span className="text-muted-foreground text-sm">Not uploaded</span>
+                      <div className="aspect-square bg-muted flex flex-col items-center justify-center rounded">
+                        <AlertTriangle className="w-8 h-8 text-yellow-500 mb-2" />
+                        <span className="text-muted-foreground text-sm text-center px-2">
+                          Not uploaded during signup
+                        </span>
                       </div>
                     )}
                     {selectedApplication.liveness_verified && (
@@ -906,8 +980,11 @@ const AdminAdvisors = () => {
                         className="w-full aspect-video object-cover rounded"
                       />
                     ) : (
-                      <div className="aspect-video bg-muted flex items-center justify-center rounded">
-                        <span className="text-muted-foreground text-sm">Not uploaded</span>
+                      <div className="aspect-video bg-muted flex flex-col items-center justify-center rounded">
+                        <AlertTriangle className="w-8 h-8 text-yellow-500 mb-2" />
+                        <span className="text-muted-foreground text-sm text-center px-2">
+                          Not uploaded during signup
+                        </span>
                       </div>
                     )}
                   </div>
@@ -986,7 +1063,7 @@ const AdminAdvisors = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Suspend Advisor?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will temporarily suspend {advisorToSuspend?.full_name}'s account. They will not appear publicly and cannot receive new bookings. Existing bookings will need to be handled manually. You can unsuspend them later.
+              This will temporarily suspend {advisorToSuspend?.full_name}'s account. They will not appear publicly and cannot receive new bookings.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1008,7 +1085,7 @@ const AdminAdvisors = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Permanently Delete Advisor Account?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove {advisorToDelete?.full_name}'s advisor status. Their user account will be converted back to a regular client. This action cannot be undone. All advisor-specific data will be deleted.
+              This will permanently remove {advisorToDelete?.full_name}'s advisor status. Their account will be converted to a client.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1033,10 +1110,20 @@ const AdminAdvisors = () => {
               Message {messageRecipient?.name}
             </DialogTitle>
             <DialogDescription>
-              Send a direct message to this advisor at {messageRecipient?.email}
+              Send a message to this advisor (they will receive it in their dashboard)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="subject">Subject</Label>
+              <Input
+                id="subject"
+                value={messageSubject}
+                onChange={(e) => setMessageSubject(e.target.value)}
+                placeholder="Message subject..."
+                className="mt-1"
+              />
+            </div>
             <div>
               <Label htmlFor="message">Message</Label>
               <Textarea

@@ -43,14 +43,13 @@ export const bookingRequestSchema = z.object({
   slotId: uuidSchema,
 });
 
-// Phone number validation - optional but must be valid if provided
+// Phone number validation - required for advisors
 export const phoneSchema = z
   .string()
   .trim()
+  .min(10, { message: "Phone number is required" })
   .max(20, { message: "Phone number must be less than 20 characters" })
-  .regex(/^[+]?[\d\s\-()]*$/, { message: "Please enter a valid phone number" })
-  .optional()
-  .or(z.literal(""));
+  .regex(/^[+]?[\d\s\-()]+$/, { message: "Please enter a valid phone number" });
 
 // Instagram handle validation
 export const instagramSchema = z
