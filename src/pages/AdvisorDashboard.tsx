@@ -42,6 +42,7 @@ interface Booking {
     full_name: string;
     email: string;
     avatar_url: string;
+    user_id: string;
   };
 }
 
@@ -110,7 +111,7 @@ const AdvisorDashboard = () => {
           .select(`
             *,
             slot:availability_slots(*),
-            client:profiles!bookings_client_id_fkey(full_name, email, avatar_url)
+            client:profiles!bookings_client_id_fkey(full_name, email, avatar_url, user_id)
           `)
           .eq("advisor_id", profile.id)
           .order("created_at", { ascending: false }),
@@ -243,6 +244,7 @@ const AdvisorDashboard = () => {
         onClose={() => setSelectedBooking(null)}
         booking={selectedBooking}
         userRole="advisor"
+        currentUserId={profile?.user_id || undefined}
         onJoinCall={(id) => setActiveVideoBooking(id)}
       />
 

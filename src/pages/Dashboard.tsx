@@ -24,6 +24,7 @@ interface Booking {
     full_name: string;
     specialty: string;
     avatar_url: string;
+    user_id: string;
   };
 }
 
@@ -89,7 +90,7 @@ const Dashboard = () => {
         .select(`
           *,
           slot:availability_slots(*),
-          advisor:profiles!bookings_advisor_id_fkey(full_name, specialty, avatar_url)
+          advisor:profiles!bookings_advisor_id_fkey(full_name, specialty, avatar_url, user_id)
         `)
         .eq("client_id", profile.id)
         .order("created_at", { ascending: false });
@@ -195,6 +196,7 @@ const Dashboard = () => {
         onClose={() => setSelectedBooking(null)}
         booking={selectedBooking}
         userRole="client"
+        currentUserId={profile?.user_id || undefined}
         onJoinCall={handleJoinCall}
       />
 
