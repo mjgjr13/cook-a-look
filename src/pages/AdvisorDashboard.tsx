@@ -326,10 +326,10 @@ const AdvisorDashboard = () => {
           )}
 
           {/* Visibility Status Bar - only show when profile is NOT visible */}
-          {isApproved && advisorProfile && !advisorProfile.is_listed && (
+          {isApproved && !advisorProfile?.is_listed && (
             <div className="mb-8">
               <VisibilityToggle
-                isListed={advisorProfile.is_listed}
+                isListed={advisorProfile?.is_listed ?? false}
                 isApproved={isApproved}
                 completionStatus={completionStatus}
                 pendingBookingsCount={pendingBookingsCount}

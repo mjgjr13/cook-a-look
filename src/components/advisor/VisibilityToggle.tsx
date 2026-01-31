@@ -55,12 +55,10 @@ const VisibilityToggle = ({
             <EyeOff className="w-5 h-5 text-muted-foreground" />
             <CardTitle className="text-base font-medium">Profile Visibility</CardTitle>
           </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
+          <CardDescription>
             Your profile will be available to list once your application is approved.
-          </p>
-        </CardContent>
+          </CardDescription>
+        </CardHeader>
       </Card>
     );
   }

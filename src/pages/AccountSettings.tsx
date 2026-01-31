@@ -441,10 +441,10 @@ const AccountSettings = () => {
               {/* Advisor-specific settings */}
               {profile?.is_advisor && (
                 <div className="space-y-6">
-                  {/* Visibility Toggle for approved advisors */}
-                  {isApprovedAdvisor && advisorProfile && (
+                  {/* Visibility Toggle for approved advisors - always show in settings */}
+                  {isApprovedAdvisor && (
                     <VisibilityToggle
-                      isListed={advisorProfile.is_listed}
+                      isListed={advisorProfile?.is_listed ?? false}
                       isApproved={isApprovedAdvisor}
                       completionStatus={completionStatus}
                       pendingBookingsCount={pendingBookingsCount}
