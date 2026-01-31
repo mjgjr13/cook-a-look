@@ -13,7 +13,9 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Globe } from "lucide-react";
+import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
+import { getAdvisorTimezone } from "@/hooks/useAdvisorAvailability";
 
 interface BookingCalendarProps {
   advisorId: string;
@@ -47,6 +49,8 @@ const BookingCalendar = ({
   const [isLoading, setIsLoading] = useState(false);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [clientTimezone, setClientTimezone] = useState<string>(getBrowserTimezone());
+  const [advisorTimezone, setAdvisorTimezone] = useState<string>("UTC");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -63,6 +67,13 @@ const BookingCalendar = ({
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch advisor's timezone
+  useEffect(() => {
+    if (advisorId && UUID_REGEX.test(advisorId)) {
+      getAdvisorTimezone(advisorId).then(setAdvisorTimezone);
+    }
+  }, [advisorId]);
 
   // Fetch dynamically calculated slots when date changes
   useEffect(() => {
@@ -90,14 +101,10 @@ const BookingCalendar = ({
         );
 
         if (!dynamicError && dynamicSlots && dynamicSlots.length > 0) {
-          // Use dynamic slots from the new system
+          // Use dynamic slots from the new system - convert to client timezone for display
           const formattedSlots: TimeSlot[] = dynamicSlots.map((slot: { slot_start: string; slot_end: string; is_virtual: boolean }, index: number) => ({
             id: `dynamic-${index}-${slot.slot_start}`,
-            time: new Date(slot.slot_start).toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            }),
+            time: formatTimeInTimezone(new Date(slot.slot_start), clientTimezone),
             isVirtual: slot.is_virtual ?? true,
             startTime: slot.slot_start,
             endTime: slot.slot_end,
@@ -129,11 +136,7 @@ const BookingCalendar = ({
           if (data && data.length > 0) {
             const formattedSlots: TimeSlot[] = data.map((slot) => ({
               id: slot.id,
-              time: new Date(slot.start_time).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              }),
+              time: formatTimeInTimezone(new Date(slot.start_time), clientTimezone),
               isVirtual: slot.is_virtual ?? true,
               startTime: slot.start_time,
               endTime: slot.end_time,
@@ -152,7 +155,7 @@ const BookingCalendar = ({
     };
 
     fetchSlots();
-  }, [selectedDate, advisorId]);
+  }, [selectedDate, advisorId, clientTimezone]);
 
   const handleBooking = async () => {
     if (!user) {
@@ -184,8 +187,9 @@ const BookingCalendar = ({
       return;
     }
 
-    // Validate slot ID is a valid UUID
-    if (!UUID_REGEX.test(selectedSlot.id)) {
+    // Validate slot ID is a valid UUID (for legacy slots)
+    const isDynamicSlot = selectedSlot.id.startsWith("dynamic-");
+    if (!isDynamicSlot && !UUID_REGEX.test(selectedSlot.id)) {
       toast({
         title: "Invalid request",
         description: "Invalid time slot selection.",
@@ -202,9 +206,6 @@ const BookingCalendar = ({
         month: "long",
         day: "numeric",
       });
-
-      // Determine if this is a dynamic slot (from the new system) or legacy slot
-      const isDynamicSlot = selectedSlot.id.startsWith("dynamic-");
 
       // Note: Amount is fetched server-side for security - not sent from client
       const { data, error } = await supabase.functions.invoke("create-checkout", {
@@ -245,6 +246,8 @@ const BookingCalendar = ({
     { before: new Date() },
   ];
 
+  const clientTzAbbr = getTimezoneAbbreviation(clientTimezone);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
@@ -258,6 +261,14 @@ const BookingCalendar = ({
         </DialogHeader>
 
         <div className="py-4">
+          {/* Timezone indicator */}
+          <div className="flex items-center justify-center gap-2 mb-4 p-2 bg-secondary/50 rounded-lg">
+            <Globe className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              All times shown in your local time ({clientTzAbbr})
+            </span>
+          </div>
+
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -309,6 +320,10 @@ const BookingCalendar = ({
 
           {selectedDate && selectedSlot && (
             <div className="mt-6 p-4 bg-secondary border border-border">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-sans text-sm">Selected time</span>
+                <span className="font-sans font-medium">{selectedSlot.time} ({clientTzAbbr})</span>
+              </div>
               <div className="flex justify-between items-center mb-4">
                 <span className="font-sans text-sm">Consultation Fee</span>
                 <span className="font-sans font-medium">${price}</span>

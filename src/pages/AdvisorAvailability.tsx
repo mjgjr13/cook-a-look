@@ -3,13 +3,14 @@ import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Clock, Calendar, Info } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Info, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AvailabilityWindowPicker from "@/components/advisor/AvailabilityWindowPicker";
 import { useAdvisorAvailability } from "@/hooks/useAdvisorAvailability";
 import { useProfile } from "@/hooks/useProfile";
+import { BreakConfig } from "@/components/advisor/BreakTimeManager";
 
 const AdvisorAvailability = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const AdvisorAvailability = () => {
   const { profile, roles, isLoading: profileLoading } = useProfile();
   const [profileId, setProfileId] = useState<string | null>(null);
 
-  const { windows, isLoading, isSaving, saveBulkWindows } = useAdvisorAvailability(profileId);
+  const { windows, breaks, timezone, isLoading, isSaving, saveAll } = useAdvisorAvailability(profileId);
 
   useEffect(() => {
     if (!profileLoading && profile) {
@@ -38,6 +39,15 @@ const AdvisorAvailability = () => {
     // Always navigate to the advisor dashboard - never to client dashboard
     navigate("/advisor");
   };
+
+  // Convert breaks to BreakConfig format
+  const breaksAsConfig: BreakConfig[] = breaks.map((b) => ({
+    id: b.id || "",
+    day_of_week: b.day_of_week,
+    start_time: b.start_time,
+    end_time: b.end_time,
+    label: b.label || "Break",
+  }));
 
   if (profileLoading || isLoading) {
     return (
@@ -84,8 +94,13 @@ const AdvisorAvailability = () => {
                       available slot starts 15 minutes after the previous appointment ends.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      <strong>Example:</strong> If you're available 9 AM - 5 PM, clients can book 9:00, 10:00, 11:00, etc.
-                      If someone books 10:00-11:00, the next available slot is 11:15.
+                      <strong>Breaks:</strong> Add breaks or blocked time to mark yourself as unavailable during 
+                      lunch, personal time, or other commitments. Clients won't be able to book during these times.
+                    </p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Globe className="w-4 h-4" />
+                      <strong>Timezone:</strong> All times are set in your local timezone and automatically 
+                      converted for clients viewing from different locations.
                     </p>
                   </div>
                 </div>
@@ -116,8 +131,10 @@ const AdvisorAvailability = () => {
               <CardContent>
                 <AvailabilityWindowPicker
                   windows={windows}
+                  breaks={breaksAsConfig}
+                  timezone={timezone}
                   isSaving={isSaving}
-                  onSave={saveBulkWindows}
+                  onSave={saveAll}
                 />
               </CardContent>
             </Card>
