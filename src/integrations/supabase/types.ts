@@ -95,6 +95,47 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_availability_windows: {
+        Row: {
+          advisor_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_virtual: boolean
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_virtual?: boolean
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_virtual?: boolean
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_availability_windows_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_monthly_stats: {
         Row: {
           advisor_id: string
@@ -1166,6 +1207,19 @@ export type Database = {
           virtual_available: boolean
         }[]
       }
+      get_available_booking_slots: {
+        Args: {
+          p_advisor_id: string
+          p_buffer_minutes?: number
+          p_date: string
+          p_duration_minutes?: number
+        }
+        Returns: {
+          is_virtual: boolean
+          slot_end: string
+          slot_start: string
+        }[]
+      }
       get_client_rewards_summary: {
         Args: { _user_id: string }
         Returns: {
@@ -1227,6 +1281,10 @@ export type Database = {
       }
       is_booking_participant: {
         Args: { _booking_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_slot_available: {
+        Args: { p_advisor_id: string; p_end_time: string; p_start_time: string }
         Returns: boolean
       }
       redeem_site_credits: {

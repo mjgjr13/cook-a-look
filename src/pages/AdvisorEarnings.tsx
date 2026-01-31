@@ -307,7 +307,7 @@ const AdvisorEarnings = () => {
         <div className="container mx-auto px-6 lg:px-8 max-w-6xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/advisor")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
