@@ -22,25 +22,16 @@ const useFeaturedAdvisors = () => {
   return useQuery({
     queryKey: ['featured-advisors'],
     queryFn: async () => {
-      // First get featured advisor IDs
-      const { data: featuredData, error: featuredError } = await supabase
-        .rpc('get_public_featured_advisors');
-      
-      if (featuredError) throw featuredError;
-      if (!featuredData || featuredData.length === 0) return [];
-
-      const advisorIds = featuredData.map(f => f.advisor_id);
-
-      // Then get full advisor profiles
-      const { data: advisorsData, error: advisorsError } = await supabase
+      const { data: advisorsData, error } = await supabase
         .rpc('get_public_advisor_profiles');
       
-      if (advisorsError) throw advisorsError;
+      if (error) throw error;
+      if (!advisorsData || advisorsData.length === 0) return [];
 
-      // Filter to only featured advisors and limit to 4
-      return (advisorsData || [])
-        .filter(a => advisorIds.includes(a.id))
-        .slice(0, 4) as FeaturedAdvisor[];
+      // Sort by review count (highest first) and take top 4
+      return (advisorsData as FeaturedAdvisor[])
+        .sort((a, b) => (b.review_count || 0) - (a.review_count || 0))
+        .slice(0, 4);
     }
   });
 };
