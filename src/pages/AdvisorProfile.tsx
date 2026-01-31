@@ -185,9 +185,9 @@ const AdvisorProfile = () => {
                       <Video className="w-4 h-4" /> Virtual
                     </span>
                   )}
-                  {advisor.in_person_available && advisor.location && (
+                  {advisor.in_person_available && (
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" /> {advisor.location}
+                      <MapPin className="w-4 h-4" /> In-Person{advisor.location && ` · ${advisor.location}`}
                     </span>
                   )}
                 </div>
