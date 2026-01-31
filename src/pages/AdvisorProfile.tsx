@@ -7,6 +7,7 @@ import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft } from "luci
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCalendar from "@/components/BookingCalendar";
+import AdvisorReviews from "@/components/reviews/AdvisorReviews";
 
 // Fallback images for when no portfolio images exist
 import inspiration1 from "@/assets/inspiration-1.jpg";
@@ -325,6 +326,30 @@ const AdvisorProfile = () => {
                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors duration-300" />
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Reviews Section */}
+      <section className="py-16 bg-card">
+        <div className="container mx-auto px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+              Client Reviews
+            </h2>
+            <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
+              What clients say about working with {displayName.split(' ')[0]}
+            </p>
+          </motion.div>
+
+          <div className="max-w-2xl mx-auto">
+            <AdvisorReviews advisorId={id || ""} />
           </div>
         </div>
       </section>

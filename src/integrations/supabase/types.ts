@@ -191,6 +191,61 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_reviews: {
+        Row: {
+          advisor_id: string
+          booking_id: string
+          client_id: string
+          created_at: string
+          id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          advisor_id: string
+          booking_id: string
+          client_id: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advisor_id?: string
+          booking_id?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_reviews_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_verification_archive: {
         Row: {
           application_id: string
@@ -1022,6 +1077,10 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      can_leave_review: {
+        Args: { _booking_id: string; _user_id: string }
+        Returns: boolean
       }
       generate_referral_code: { Args: never; Returns: string }
       get_active_published_advisors: {

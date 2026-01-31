@@ -99,11 +99,13 @@ const BookingChat = ({ bookingId, currentUserId, otherParticipant }: BookingChat
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
 
+    const messageContent = newMessage.trim();
     setIsSending(true);
+    
     const { error } = await supabase.from("booking_messages").insert({
       booking_id: bookingId,
       sender_id: currentUserId,
-      message: newMessage.trim(),
+      message: messageContent,
     });
 
     if (error) {
@@ -115,6 +117,17 @@ const BookingChat = ({ bookingId, currentUserId, otherParticipant }: BookingChat
       });
     } else {
       setNewMessage("");
+      
+      // Send email notification to the other participant (fire and forget)
+      supabase.functions
+        .invoke("send-chat-notification", {
+          body: { bookingId, messagePreview: messageContent },
+        })
+        .then(({ error: notifyError }) => {
+          if (notifyError) {
+            console.log("Chat notification skipped:", notifyError.message);
+          }
+        });
     }
     setIsSending(false);
   };
