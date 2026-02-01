@@ -27,6 +27,7 @@ import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import { useProfile } from "@/hooks/useProfile";
+import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS } from "@/components/advisor/CategorySelect";
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
   userId: string | null;
@@ -199,6 +200,8 @@ interface Profile {
   instagram_url: string;
   portfolio_url: string;
   portfolio_images: string[];
+  target_demographics: string[];
+  use_cases: string[];
 }
 
 const AccountSettings = () => {
@@ -282,6 +285,8 @@ const AccountSettings = () => {
         instagram_url: profile.instagram_url,
         portfolio_url: profile.portfolio_url,
         portfolio_images: profile.portfolio_images,
+        target_demographics: profile.target_demographics,
+        use_cases: profile.use_cases,
       })
       .eq("id", profile.id);
 
@@ -526,6 +531,27 @@ const AccountSettings = () => {
                         onCheckedChange={(checked) => updateProfile("in_person_available", checked)}
                       />
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Client Focus & Use Cases */}
+                  <div className="space-y-6">
+                    <CategorySelect
+                      label="Who Do You Style?"
+                      description="Select the client groups you specialize in"
+                      options={CLIENT_FOCUS_OPTIONS}
+                      selected={profile?.target_demographics || []}
+                      onChange={(selected) => updateProfile("target_demographics", selected)}
+                    />
+
+                    <CategorySelect
+                      label="What Occasions Do You Style For?"
+                      description="Select the use cases you help clients with"
+                      options={USE_CASE_OPTIONS}
+                      selected={profile?.use_cases || []}
+                      onChange={(selected) => updateProfile("use_cases", selected)}
+                    />
                   </div>
 
                   <Separator />

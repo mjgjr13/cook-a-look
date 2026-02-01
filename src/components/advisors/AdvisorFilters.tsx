@@ -14,12 +14,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Search, SlidersHorizontal, ArrowUpDown, X, Video, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Style categories for filtering
+// Import standardized category options
+import { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS } from "@/components/advisor/CategorySelect";
+
+// Style categories for filtering (legacy - will be replaced with use cases)
 const styleCategories = [
   "Casual",
   "Athletic",
@@ -28,13 +30,6 @@ const styleCategories = [
   "Formal",
   "Streetwear",
   "Vintage",
-];
-
-// Client focus options
-const clientFocusOptions = [
-  "Men",
-  "Women",
-  "Plus Size",
 ];
 
 // Sort options
@@ -48,6 +43,7 @@ export interface FilterState {
   searchTerm: string;
   styles: string[];
   clientFocus: string[];
+  useCases: string[];
   sessionTypes: ("virtual" | "in-person")[];
   minPrice: string;
   maxPrice: string;
@@ -83,6 +79,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
       searchTerm: "",
       styles: [],
       clientFocus: [],
+      useCases: [],
       sessionTypes: [],
       minPrice: "",
       maxPrice: "",
@@ -93,6 +90,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
   const activeFilterCount =
     filters.styles.length +
     filters.clientFocus.length +
+    filters.useCases.length +
     filters.sessionTypes.length +
     (filters.minPrice ? 1 : 0) +
     (filters.maxPrice ? 1 : 0);
@@ -184,18 +182,41 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               {/* Client Focus */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Client Focus</Label>
-                <div className="space-y-2">
-                  {clientFocusOptions.map((focus) => (
-                    <div key={focus} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`focus-${focus}`}
-                        checked={filters.clientFocus.includes(focus)}
-                        onCheckedChange={() => toggleArrayFilter("clientFocus", focus)}
-                      />
-                      <Label htmlFor={`focus-${focus}`} className="text-sm font-normal cursor-pointer">
-                        {focus}
-                      </Label>
-                    </div>
+                <div className="flex flex-wrap gap-2">
+                  {CLIENT_FOCUS_OPTIONS.map((focus) => (
+                    <button
+                      key={focus}
+                      onClick={() => toggleArrayFilter("clientFocus", focus)}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-sans border transition-colors",
+                        filters.clientFocus.includes(focus)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                      )}
+                    >
+                      {focus}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Use Cases */}
+              <div>
+                <Label className="text-sm font-medium mb-3 block">Use Cases</Label>
+                <div className="flex flex-wrap gap-2">
+                  {USE_CASE_OPTIONS.map((useCase) => (
+                    <button
+                      key={useCase}
+                      onClick={() => toggleArrayFilter("useCases", useCase)}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-sans border transition-colors",
+                        filters.useCases.includes(useCase)
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                      )}
+                    >
+                      {useCase}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -295,6 +316,18 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               {focus}
               <button
                 onClick={() => toggleArrayFilter("clientFocus", focus)}
+                className="ml-1 hover:bg-muted rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+
+          {filters.useCases.map((useCase) => (
+            <Badge key={useCase} variant="secondary" className="gap-1 pr-1">
+              {useCase}
+              <button
+                onClick={() => toggleArrayFilter("useCases", useCase)}
                 className="ml-1 hover:bg-muted rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />

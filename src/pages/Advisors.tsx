@@ -23,6 +23,7 @@ interface AdvisorData {
   location: string | null;
   style_tags: string[] | null;
   target_demographics: string[] | null;
+  use_cases?: string[] | null;
   verified: boolean | null;
   advisor_approved: boolean | null;
   is_demo?: boolean | null;
@@ -39,6 +40,7 @@ const Advisors = () => {
     searchTerm: "",
     styles: [],
     clientFocus: [],
+    useCases: [],
     sessionTypes: [],
     minPrice: "",
     maxPrice: "",
@@ -74,6 +76,7 @@ const Advisors = () => {
       const specialty = advisor.specialty || "";
       const styleTags = advisor.style_tags || [];
       const demographics = advisor.target_demographics || [];
+      const useCases = (advisor as any).use_cases || [];
       const price = advisor.price_per_session || 0;
 
       // Search filter
@@ -102,12 +105,19 @@ const Advisors = () => {
           demographics.some((demo) => demo.toLowerCase().includes(focus.toLowerCase()))
         );
 
+      // Use cases filter - match any selected use case
+      const matchesUseCases =
+        filters.useCases.length === 0 ||
+        filters.useCases.some((uc) => 
+          useCases.some((advisorUc: string) => advisorUc.toLowerCase().includes(uc.toLowerCase()))
+        );
+
       // Price range filter
       const minPrice = filters.minPrice ? parseFloat(filters.minPrice) : 0;
       const maxPrice = filters.maxPrice ? parseFloat(filters.maxPrice) : Infinity;
       const matchesPrice = price >= minPrice && price <= maxPrice;
 
-      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesPrice;
+      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesUseCases && matchesPrice;
     });
 
     // Sort results

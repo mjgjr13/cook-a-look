@@ -910,6 +910,7 @@ export type Database = {
           target_demographics: string[] | null
           terms_accepted_at: string | null
           updated_at: string | null
+          use_cases: string[] | null
           user_id: string | null
           verification_status: string | null
           verified: boolean | null
@@ -950,6 +951,7 @@ export type Database = {
           target_demographics?: string[] | null
           terms_accepted_at?: string | null
           updated_at?: string | null
+          use_cases?: string[] | null
           user_id?: string | null
           verification_status?: string | null
           verified?: boolean | null
@@ -990,6 +992,7 @@ export type Database = {
           target_demographics?: string[] | null
           terms_accepted_at?: string | null
           updated_at?: string | null
+          use_cases?: string[] | null
           user_id?: string | null
           verification_status?: string | null
           verified?: boolean | null
