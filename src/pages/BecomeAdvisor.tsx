@@ -44,6 +44,7 @@ import PricingInput from "@/components/advisor/PricingInput";
 import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
+import LanguageSelect from "@/components/advisor/LanguageSelect";
 
 const benefits = [
   {
@@ -92,6 +93,7 @@ interface FormErrors {
   experience?: string;
   location?: string;
   price?: string;
+  languages?: string;
 }
 
 const BecomeAdvisor = () => {
@@ -118,6 +120,8 @@ const BecomeAdvisor = () => {
     linkedin: "",
     portfolio: "",
     price: "",
+    // Languages (required - at least one)
+    languages: [] as string[],
     // Category selections (optional)
     styleCategories: [] as string[],
     clientFocus: [] as string[],
@@ -367,6 +371,7 @@ const BecomeAdvisor = () => {
             location: formData.location.trim(),
             experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
             price_per_session: parseFloat(formData.price) || null,
+            languages: formData.languages,
             style_tags: formData.styleCategories,
             target_demographics: formData.clientFocus,
             use_cases: formData.useCases,
@@ -415,6 +420,7 @@ const BecomeAdvisor = () => {
           location: formData.location.trim(),
           experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
           price_per_session: parseFloat(formData.price) || null,
+          languages: formData.languages,
           style_tags: formData.styleCategories,
           target_demographics: formData.clientFocus,
           use_cases: formData.useCases,
@@ -590,6 +596,11 @@ const BecomeAdvisor = () => {
       if (!formData.phone || formData.phone.trim().length < 5) {
         stepErrors.phone = "Phone number is required";
       }
+      
+      // Validate languages - at least one required
+      if (!formData.languages || formData.languages.length === 0) {
+        stepErrors.languages = "Please select at least one language";
+      }
     } else if (currentStep === 2) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
@@ -638,9 +649,10 @@ const BecomeAdvisor = () => {
         return formData.firstName && formData.lastName && formData.email && formData.password && 
                formData.bio && formData.experience && formData.location &&
                formData.phone && formData.phone.trim().length >= 5 &&
+               formData.languages && formData.languages.length > 0 &&
                (formData.virtual || formData.inPerson) &&
                !errors.firstName && !errors.lastName && !errors.email && !errors.password && 
-               !errors.bio && !errors.experience && !errors.location && !errors.phone;
+               !errors.bio && !errors.experience && !errors.location && !errors.phone && !errors.languages;
       case 2:
         // Require profile photo AND instagram
         return formData.instagram && formData.profilePhotoPreview && !errors.instagram && !errors.portfolio;
@@ -981,6 +993,16 @@ const BecomeAdvisor = () => {
                         Select at least one. You can adjust your consultation types later from your dashboard.
                       </p>
                     </div>
+
+                    <LanguageSelect
+                      selected={formData.languages}
+                      onChange={(languages) => {
+                        setFormData({ ...formData, languages });
+                        setErrors((prev) => ({ ...prev, languages: undefined }));
+                      }}
+                      error={errors.languages}
+                      required
+                    />
                   </motion.div>
                 )}
 
