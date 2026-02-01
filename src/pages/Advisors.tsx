@@ -272,16 +272,21 @@ const Advisors = () => {
                     </p>
 
 
-                    <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground font-sans">
-                      {advisor.virtual_available && (
-                        <span className="flex items-center gap-0.5">
-                          <Video className="w-3 h-3" /> Virtual
-                        </span>
-                      )}
-                      {advisor.in_person_available && (
-                        <span className="flex items-center gap-0.5">
-                          <MapPin className="w-3 h-3" /> In-Person
-                        </span>
+                    <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground font-sans">
+                      <div className="flex flex-col gap-0.5">
+                        {advisor.virtual_available && (
+                          <span className="flex items-center gap-0.5">
+                            <Video className="w-3 h-3" /> Virtual
+                          </span>
+                        )}
+                        {advisor.in_person_available && (
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-3 h-3" /> In-Person
+                          </span>
+                        )}
+                      </div>
+                      {advisor.location && (
+                        <span className="text-right text-xs whitespace-nowrap">{advisor.location}</span>
                       )}
                     </div>
 
