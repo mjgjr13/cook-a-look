@@ -222,6 +222,7 @@ const Advisors = () => {
               const displayRating = advisor.rating || 0;
               const displayReviews = advisor.review_count || 0;
               const styleTags = advisor.style_tags || [];
+              const clientFocus = advisor.target_demographics || [];
 
               return (
                 <motion.article
@@ -267,7 +268,7 @@ const Advisors = () => {
                       {displayName}
                     </h3>
                     <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
-                      {advisor.specialty || "Style Consultant"}
+                      {clientFocus.length > 0 ? clientFocus.slice(0, 3).join(" · ") : "Style Consultant"}
                     </p>
 
                     {styleTags.length > 0 && (

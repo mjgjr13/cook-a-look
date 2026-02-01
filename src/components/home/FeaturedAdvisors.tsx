@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 interface FeaturedAdvisor {
   id: string;
   full_name: string | null;
-  specialty: string | null;
   rating: number | null;
   review_count: number | null;
   price_per_session: number | null;
@@ -16,6 +15,7 @@ interface FeaturedAdvisor {
   virtual_available: boolean | null;
   in_person_available: boolean | null;
   location: string | null;
+  target_demographics: string[] | null;
 }
 
 const useFeaturedAdvisors = () => {
@@ -102,8 +102,10 @@ const FeaturedAdvisors = () => {
                   <h3 className="font-serif text-xl font-medium mb-1">
                     {advisor.full_name}
                   </h3>
-                  <p className="font-sans text-sm text-muted-foreground mb-4">
-                    {advisor.specialty}
+                  <p className="font-sans text-sm text-gold mb-4">
+                    {advisor.target_demographics && advisor.target_demographics.length > 0 
+                      ? advisor.target_demographics.slice(0, 3).join(" · ") 
+                      : "Style Consultant"}
                   </p>
 
                   <div className="flex items-center gap-4 mb-4 text-sm text-muted-foreground font-sans">

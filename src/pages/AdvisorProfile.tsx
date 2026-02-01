@@ -20,7 +20,6 @@ const fallbackImages = [inspiration1, inspiration2, inspiration3, inspiration4];
 interface AdvisorData {
   id: string;
   full_name: string | null;
-  specialty: string | null;
   bio: string | null;
   personal_philosophy: string | null;
   rating: number | null;
@@ -33,6 +32,7 @@ interface AdvisorData {
   experience_years: number | null;
   languages: string[] | null;
   style_tags: string[] | null;
+  target_demographics: string[] | null;
   portfolio_images: string[] | null;
   instagram_url: string | null;
   portfolio_url: string | null;
@@ -239,7 +239,9 @@ const AdvisorProfile = () => {
                 {displayName}
               </h1>
               <p className="font-sans text-lg text-gold mb-6">
-                {advisor.specialty || "Style Consultant"}
+                {advisor.target_demographics && advisor.target_demographics.length > 0 
+                  ? advisor.target_demographics.slice(0, 3).join(" · ") 
+                  : "Style Consultant"}
               </p>
 
               <div className="prose prose-lg max-w-none mb-8">
