@@ -44,6 +44,7 @@ import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
 import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
+import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS } from "@/components/advisor/CategorySelect";
 
 const benefits = [
   {
@@ -93,6 +94,8 @@ interface FormErrors {
   experience?: string;
   location?: string;
   price?: string;
+  clientFocus?: string;
+  useCases?: string;
 }
 
 const BecomeAdvisor = () => {
@@ -120,6 +123,9 @@ const BecomeAdvisor = () => {
     linkedin: "",
     portfolio: "",
     price: "",
+    // Category selections
+    clientFocus: [] as string[],
+    useCases: [] as string[],
     // Profile photo for step 2
     profilePhotoFile: null as File | null,
     profilePhotoPreview: "",
@@ -369,6 +375,8 @@ const BecomeAdvisor = () => {
             location: formData.location.trim(),
             experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
             price_per_session: parseFloat(formData.price) || null,
+            target_demographics: formData.clientFocus,
+            use_cases: formData.useCases,
           };
 
           if (avatarUrl) {
@@ -415,6 +423,8 @@ const BecomeAdvisor = () => {
           location: formData.location.trim(),
           experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
           price_per_session: parseFloat(formData.price) || null,
+          target_demographics: formData.clientFocus,
+          use_cases: formData.useCases,
         };
 
         if (avatarUrl) {
@@ -588,6 +598,16 @@ const BecomeAdvisor = () => {
       if (!formData.phone || formData.phone.trim().length < 5) {
         stepErrors.phone = "Phone number is required";
       }
+      
+      // Validate client focus - at least one required
+      if (formData.clientFocus.length === 0) {
+        stepErrors.clientFocus = "Please select at least one client focus";
+      }
+      
+      // Validate use cases - at least one required
+      if (formData.useCases.length === 0) {
+        stepErrors.useCases = "Please select at least one use case";
+      }
     } else if (currentStep === 2) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
@@ -628,6 +648,7 @@ const BecomeAdvisor = () => {
                formData.specialty && formData.bio && formData.experience && formData.location &&
                formData.phone && formData.phone.trim().length >= 5 &&
                (formData.virtual || formData.inPerson) &&
+               formData.clientFocus.length > 0 && formData.useCases.length > 0 &&
                !errors.firstName && !errors.lastName && !errors.email && !errors.password && 
                !errors.specialty && !errors.bio && !errors.experience && !errors.location && !errors.phone;
       case 2:
@@ -987,6 +1008,34 @@ const BecomeAdvisor = () => {
                         Select at least one. You can adjust your consultation types later from your dashboard.
                       </p>
                     </div>
+
+                    {/* Client Focus Selection */}
+                    <CategorySelect
+                      label="Who Do You Style?"
+                      description="Select the client groups you specialize in"
+                      options={CLIENT_FOCUS_OPTIONS}
+                      selected={formData.clientFocus}
+                      onChange={(selected) => {
+                        setFormData({ ...formData, clientFocus: selected });
+                        setErrors((prev) => ({ ...prev, clientFocus: undefined }));
+                      }}
+                      error={errors.clientFocus}
+                      required
+                    />
+
+                    {/* Use Cases Selection */}
+                    <CategorySelect
+                      label="What Occasions Do You Style For?"
+                      description="Select the use cases you help clients with"
+                      options={USE_CASE_OPTIONS}
+                      selected={formData.useCases}
+                      onChange={(selected) => {
+                        setFormData({ ...formData, useCases: selected });
+                        setErrors((prev) => ({ ...prev, useCases: undefined }));
+                      }}
+                      error={errors.useCases}
+                      required
+                    />
                   </motion.div>
                 )}
 
