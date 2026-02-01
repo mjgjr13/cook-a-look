@@ -109,20 +109,20 @@ const FeaturedAdvisors = () => {
                   </p>
 
                   <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground font-sans">
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-col gap-0.5 min-w-fit">
                       {advisor.virtual_available && (
-                        <span className="flex items-center gap-1">
-                          <Video className="w-4 h-4" /> Virtual
+                        <span className="flex items-center gap-1.5">
+                          <Video className="w-4 h-4 flex-shrink-0" /> Virtual
                         </span>
                       )}
                       {advisor.in_person_available && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" /> In-Person
+                        <span className="flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4 flex-shrink-0" /> In-Person
                         </span>
                       )}
                     </div>
                     {advisor.location && (
-                      <span className="text-right">{advisor.location}</span>
+                      <span className="text-right text-xs whitespace-nowrap">{advisor.location}</span>
                     )}
                   </div>
 

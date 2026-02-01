@@ -1,5 +1,7 @@
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Check, X } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export const LANGUAGE_OPTIONS = [
   "English",
@@ -39,18 +41,40 @@ const LanguageSelect = ({
   error,
   required = true,
 }: LanguageSelectProps) => {
-  const toggleOption = (option: string) => {
-    if (selected.includes(option)) {
-      onChange(selected.filter((s) => s !== option));
-    } else {
-      onChange([...selected, option]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filteredOptions = LANGUAGE_OPTIONS.filter(
+    (option) =>
+      option.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !selected.includes(option)
+  );
+
+  const addLanguage = (language: string) => {
+    if (!selected.includes(language)) {
+      onChange([...selected, language]);
     }
+    setSearchTerm("");
+    inputRef.current?.focus();
   };
 
-  const removeLanguage = (option: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(selected.filter((s) => s !== option));
+  const removeLanguage = (language: string) => {
+    onChange(selected.filter((s) => s !== language));
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -64,47 +88,75 @@ const LanguageSelect = ({
         </p>
       </div>
 
-      {/* Selected languages display */}
+      {/* Selected languages (pinned) */}
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="flex flex-wrap gap-2">
           {selected.map((lang) => (
             <span
               key={lang}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-sm bg-primary text-primary-foreground rounded-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-full"
             >
               {lang}
               <button
                 type="button"
-                onClick={(e) => removeLanguage(lang, e)}
-                className="ml-1 hover:bg-primary-foreground/20 rounded-full p-0.5"
+                onClick={() => removeLanguage(lang)}
+                className="hover:bg-primary-foreground/20 rounded-full p-0.5 transition-colors"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </span>
           ))}
         </div>
       )}
-      
-      <div className="flex flex-wrap gap-2">
-        {LANGUAGE_OPTIONS.map((option) => {
-          const isSelected = selected.includes(option);
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => toggleOption(option)}
-              className={cn(
-                "px-3 py-2 text-sm font-sans border transition-all duration-200 flex items-center gap-2",
-                isSelected
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
-              )}
-            >
-              {isSelected && <Check className="w-3.5 h-3.5" />}
-              {option}
-            </button>
-          );
-        })}
+
+      {/* Search input with dropdown */}
+      <div ref={containerRef} className="relative">
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            type="text"
+            placeholder="Type to search languages..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setIsOpen(true);
+            }}
+            onFocus={() => setIsOpen(true)}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(!isOpen);
+              if (!isOpen) inputRef.current?.focus();
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+          </button>
+        </div>
+
+        {/* Dropdown */}
+        {isOpen && filteredOptions.length > 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+            {filteredOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => addLanguage(option)}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {isOpen && searchTerm && filteredOptions.length === 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg p-3">
+            <p className="text-sm text-muted-foreground">No languages found</p>
+          </div>
+        )}
       </div>
 
       {error && (

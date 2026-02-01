@@ -271,15 +271,6 @@ const Advisors = () => {
                       {clientFocus.length > 0 ? clientFocus.slice(0, 3).join(" · ") : "Style Consultant"}
                     </p>
 
-                    {styleTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2 hidden sm:flex">
-                        {styleTags.slice(0, 2).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
 
                     <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground font-sans">
                       {advisor.virtual_available && (
