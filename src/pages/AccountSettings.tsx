@@ -28,6 +28,8 @@ import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import { useProfile } from "@/hooks/useProfile";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
+import LanguageSelect from "@/components/advisor/LanguageSelect";
+
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
   userId: string | null;
@@ -199,6 +201,7 @@ interface Profile {
   instagram_url: string;
   portfolio_url: string;
   portfolio_images: string[];
+  languages: string[];
   style_tags: string[];
   target_demographics: string[];
   use_cases: string[];
@@ -284,6 +287,7 @@ const AccountSettings = () => {
         instagram_url: profile.instagram_url,
         portfolio_url: profile.portfolio_url,
         portfolio_images: profile.portfolio_images,
+        languages: profile.languages,
         style_tags: profile.style_tags,
         target_demographics: profile.target_demographics,
         use_cases: profile.use_cases,
@@ -524,6 +528,15 @@ const AccountSettings = () => {
                       />
                     </div>
                   </div>
+
+                  <Separator />
+
+                  {/* Languages */}
+                  <LanguageSelect
+                    selected={profile?.languages || []}
+                    onChange={(languages) => updateProfile("languages", languages)}
+                    required={false}
+                  />
 
                   <Separator />
 
