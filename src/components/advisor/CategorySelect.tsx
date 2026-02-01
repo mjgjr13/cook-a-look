@@ -24,8 +24,19 @@ export const USE_CASE_OPTIONS = [
   "Sustainable",
 ] as const;
 
+export const STYLE_CATEGORY_OPTIONS = [
+  "Casual",
+  "Athletic",
+  "Wedding",
+  "Business",
+  "Formal",
+  "Streetwear",
+  "Vintage",
+] as const;
+
 export type ClientFocusOption = typeof CLIENT_FOCUS_OPTIONS[number];
 export type UseCaseOption = typeof USE_CASE_OPTIONS[number];
+export type StyleCategoryOption = typeof STYLE_CATEGORY_OPTIONS[number];
 
 interface CategorySelectProps {
   label: string;

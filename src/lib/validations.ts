@@ -75,13 +75,13 @@ export const bioSchema = z
   .min(10, { message: "Please provide at least 10 characters" })
   .max(2000, { message: "Must be less than 2000 characters" });
 
-// Specialty validation
+// Specialty validation - now optional since we use client focus/use cases instead
 export const specialtySchema = z
   .string()
   .trim()
-  .min(2, { message: "Specialty is required" })
   .max(100, { message: "Specialty must be less than 100 characters" })
-  .regex(/^[a-zA-Z\s,&-]+$/, { message: "Specialty can only contain letters, spaces, commas, and hyphens" });
+  .optional()
+  .or(z.literal(""));
 
 // File validation helper
 export const validateFile = (file: File | null, maxSizeMB: number = 5): string | null => {
@@ -106,7 +106,6 @@ export const advisorApplicationSchema = z.object({
   lastName: nameSchema,
   email: emailSchema,
   phone: phoneSchema,
-  specialty: specialtySchema,
   experience: z.string().max(50, { message: "Experience must be less than 50 characters" }).optional(),
   bio: bioSchema,
   virtual: z.boolean(),

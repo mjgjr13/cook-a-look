@@ -31,7 +31,6 @@ import {
   validateFile,
   nameSchema,
   emailSchema,
-  specialtySchema,
   bioSchema,
   instagramSchema,
   passwordSchema
@@ -44,7 +43,7 @@ import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
 import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
-import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS } from "@/components/advisor/CategorySelect";
+import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 
 const benefits = [
   {
@@ -82,7 +81,6 @@ interface FormErrors {
   email?: string;
   password?: string;
   phone?: string;
-  specialty?: string;
   bio?: string;
   instagram?: string;
   portfolio?: string;
@@ -94,8 +92,6 @@ interface FormErrors {
   experience?: string;
   location?: string;
   price?: string;
-  clientFocus?: string;
-  useCases?: string;
 }
 
 const BecomeAdvisor = () => {
@@ -112,7 +108,6 @@ const BecomeAdvisor = () => {
     email: "",
     password: "",
     phone: "",
-    specialty: "",
     experience: "",
     location: "",
     bio: "",
@@ -123,7 +118,8 @@ const BecomeAdvisor = () => {
     linkedin: "",
     portfolio: "",
     price: "",
-    // Category selections
+    // Category selections (optional)
+    styleCategories: [] as string[],
     clientFocus: [] as string[],
     useCases: [] as string[],
     // Profile photo for step 2
@@ -150,9 +146,6 @@ const BecomeAdvisor = () => {
           break;
         case 'password':
           passwordSchema.parse(value);
-          break;
-        case 'specialty':
-          specialtySchema.parse(value);
           break;
         case 'bio':
           bioSchema.parse(value);
@@ -367,7 +360,6 @@ const BecomeAdvisor = () => {
             is_advisor: true,
             advisor_approved: false,
             advisor_status: "pending",
-            specialty: formData.specialty.trim(),
             bio: formData.bio.trim(),
             instagram_url: instagramHandle,
             virtual_available: formData.virtual,
@@ -375,6 +367,7 @@ const BecomeAdvisor = () => {
             location: formData.location.trim(),
             experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
             price_per_session: parseFloat(formData.price) || null,
+            style_tags: formData.styleCategories,
             target_demographics: formData.clientFocus,
             use_cases: formData.useCases,
           };
@@ -415,7 +408,6 @@ const BecomeAdvisor = () => {
           is_advisor: true,
           advisor_approved: false,
           advisor_status: "pending",
-          specialty: formData.specialty.trim(),
           bio: formData.bio.trim(),
           instagram_url: instagramHandle,
           virtual_available: formData.virtual,
@@ -423,6 +415,7 @@ const BecomeAdvisor = () => {
           location: formData.location.trim(),
           experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
           price_per_session: parseFloat(formData.price) || null,
+          style_tags: formData.styleCategories,
           target_demographics: formData.clientFocus,
           use_cases: formData.useCases,
         };
@@ -455,7 +448,7 @@ const BecomeAdvisor = () => {
           last_name: formData.lastName.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone || null,
-          specialty: formData.specialty.trim(),
+          specialty: formData.clientFocus.slice(0, 3).join(", ") || "Style Consultant",
           experience: formData.experience?.trim() || null,
           bio: formData.bio.trim(),
           virtual: formData.virtual,
@@ -497,7 +490,7 @@ const BecomeAdvisor = () => {
           body: {
             email: formData.email.trim().toLowerCase(),
             firstName: formData.firstName.trim(),
-            specialty: formData.specialty.trim(),
+            specialty: formData.clientFocus.slice(0, 3).join(", ") || "Style Consultant",
           },
         });
         console.log("Confirmation email sent");
@@ -576,7 +569,6 @@ const BecomeAdvisor = () => {
       stepErrors.lastName = validateField('lastName', formData.lastName);
       stepErrors.email = validateField('email', formData.email);
       stepErrors.password = validateField('password', formData.password);
-      stepErrors.specialty = validateField('specialty', formData.specialty);
       stepErrors.bio = validateField('bio', formData.bio);
       
       // Validate consultation type - at least one must be selected
@@ -598,17 +590,16 @@ const BecomeAdvisor = () => {
       if (!formData.phone || formData.phone.trim().length < 5) {
         stepErrors.phone = "Phone number is required";
       }
-      
-      // Validate client focus - at least one required
-      if (formData.clientFocus.length === 0) {
-        stepErrors.clientFocus = "Please select at least one client focus";
-      }
-      
-      // Validate use cases - at least one required
-      if (formData.useCases.length === 0) {
-        stepErrors.useCases = "Please select at least one use case";
-      }
     } else if (currentStep === 2) {
+      stepErrors.instagram = validateField('instagram', formData.instagram);
+      if (formData.portfolio) {
+        stepErrors.portfolio = validateField('portfolio', formData.portfolio);
+      }
+      // Require profile photo
+      if (!formData.profilePhotoPreview) {
+        stepErrors.profilePhotoFile = "Profile photo is required";
+      }
+    } else if (currentStep === 4) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
         stepErrors.portfolio = validateField('portfolio', formData.portfolio);
@@ -645,12 +636,11 @@ const BecomeAdvisor = () => {
     switch (currentStep) {
       case 1:
         return formData.firstName && formData.lastName && formData.email && formData.password && 
-               formData.specialty && formData.bio && formData.experience && formData.location &&
+               formData.bio && formData.experience && formData.location &&
                formData.phone && formData.phone.trim().length >= 5 &&
                (formData.virtual || formData.inPerson) &&
-               formData.clientFocus.length > 0 && formData.useCases.length > 0 &&
                !errors.firstName && !errors.lastName && !errors.email && !errors.password && 
-               !errors.specialty && !errors.bio && !errors.experience && !errors.location && !errors.phone;
+               !errors.bio && !errors.experience && !errors.location && !errors.phone;
       case 2:
         // Require profile photo AND instagram
         return formData.instagram && formData.profilePhotoPreview && !errors.instagram && !errors.portfolio;
@@ -906,31 +896,14 @@ const BecomeAdvisor = () => {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="specialty">Style Specialty *</Label>
-                        <Input
-                          id="specialty"
-                          name="specialty"
-                          placeholder="e.g., Menswear, Occasion Styling"
-                          value={formData.specialty}
-                          onChange={handleInputChange}
-                          className={errors.specialty ? "border-destructive" : ""}
-                          required
-                        />
-                        {errors.specialty && (
-                          <p className="text-xs text-destructive">{errors.specialty}</p>
-                        )}
-                      </div>
-                      <ExperienceSelect
-                        value={formData.experience}
-                        onChange={(value) => {
-                          setFormData({ ...formData, experience: value });
-                          setErrors((prev) => ({ ...prev, experience: undefined }));
-                        }}
-                        error={errors.experience}
-                      />
-                    </div>
+                    <ExperienceSelect
+                      value={formData.experience}
+                      onChange={(value) => {
+                        setFormData({ ...formData, experience: value });
+                        setErrors((prev) => ({ ...prev, experience: undefined }));
+                      }}
+                      error={errors.experience}
+                    />
 
                     <div className="space-y-2">
                       <Label htmlFor="location">Location *</Label>
@@ -1008,34 +981,6 @@ const BecomeAdvisor = () => {
                         Select at least one. You can adjust your consultation types later from your dashboard.
                       </p>
                     </div>
-
-                    {/* Client Focus Selection */}
-                    <CategorySelect
-                      label="Who Do You Style?"
-                      description="Select the client groups you specialize in"
-                      options={CLIENT_FOCUS_OPTIONS}
-                      selected={formData.clientFocus}
-                      onChange={(selected) => {
-                        setFormData({ ...formData, clientFocus: selected });
-                        setErrors((prev) => ({ ...prev, clientFocus: undefined }));
-                      }}
-                      error={errors.clientFocus}
-                      required
-                    />
-
-                    {/* Use Cases Selection */}
-                    <CategorySelect
-                      label="What Occasions Do You Style For?"
-                      description="Select the use cases you help clients with"
-                      options={USE_CASE_OPTIONS}
-                      selected={formData.useCases}
-                      onChange={(selected) => {
-                        setFormData({ ...formData, useCases: selected });
-                        setErrors((prev) => ({ ...prev, useCases: undefined }));
-                      }}
-                      error={errors.useCases}
-                      required
-                    />
                   </motion.div>
                 )}
 
@@ -1213,6 +1158,39 @@ const BecomeAdvisor = () => {
                         <p className="text-xs text-muted-foreground">Share a link to your portfolio, Behance, or personal website</p>
                       )}
                     </div>
+
+                    {/* Style Categories - Optional */}
+                    <CategorySelect
+                      label="Style Categories"
+                      description="What style categories best describe your expertise? (Optional)"
+                      options={STYLE_CATEGORY_OPTIONS}
+                      selected={formData.styleCategories}
+                      onChange={(selected) => {
+                        setFormData({ ...formData, styleCategories: selected });
+                      }}
+                    />
+
+                    {/* Client Focus Selection - Optional */}
+                    <CategorySelect
+                      label="Who Do You Style?"
+                      description="Select the client groups you specialize in (Optional)"
+                      options={CLIENT_FOCUS_OPTIONS}
+                      selected={formData.clientFocus}
+                      onChange={(selected) => {
+                        setFormData({ ...formData, clientFocus: selected });
+                      }}
+                    />
+
+                    {/* Use Cases Selection - Optional */}
+                    <CategorySelect
+                      label="What Occasions Do You Style For?"
+                      description="Select the use cases you help clients with (Optional)"
+                      options={USE_CASE_OPTIONS}
+                      selected={formData.useCases}
+                      onChange={(selected) => {
+                        setFormData({ ...formData, useCases: selected });
+                      }}
+                    />
                   </motion.div>
                 )}
 
@@ -1381,8 +1359,8 @@ const BecomeAdvisor = () => {
                           <p className="font-medium">{formData.email}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Specialty:</span>
-                          <p className="font-medium">{formData.specialty}</p>
+                          <span className="text-muted-foreground">Client Focus:</span>
+                          <p className="font-medium">{formData.clientFocus.length > 0 ? formData.clientFocus.slice(0, 3).join(", ") : "Not specified"}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Experience:</span>

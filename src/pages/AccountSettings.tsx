@@ -27,7 +27,7 @@ import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import { useProfile } from "@/hooks/useProfile";
-import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS } from "@/components/advisor/CategorySelect";
+import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
   userId: string | null;
@@ -191,7 +191,6 @@ interface Profile {
   is_advisor: boolean;
   avatar_url: string;
   // Advisor-specific fields
-  specialty: string;
   price_per_session: number;
   session_duration: number;
   virtual_available: boolean;
@@ -200,6 +199,7 @@ interface Profile {
   instagram_url: string;
   portfolio_url: string;
   portfolio_images: string[];
+  style_tags: string[];
   target_demographics: string[];
   use_cases: string[];
 }
@@ -276,7 +276,6 @@ const AccountSettings = () => {
         full_name: profile.full_name,
         bio: profile.bio,
         location: profile.location,
-        specialty: profile.specialty,
         price_per_session: profile.price_per_session,
         session_duration: profile.session_duration,
         virtual_available: profile.virtual_available,
@@ -285,6 +284,7 @@ const AccountSettings = () => {
         instagram_url: profile.instagram_url,
         portfolio_url: profile.portfolio_url,
         portfolio_images: profile.portfolio_images,
+        style_tags: profile.style_tags,
         target_demographics: profile.target_demographics,
         use_cases: profile.use_cases,
       })
@@ -476,14 +476,6 @@ const AccountSettings = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="specialty">Specialty</Label>
-                      <Input
-                        id="specialty"
-                        value={profile?.specialty || ""}
-                        onChange={(e) => updateProfile("specialty", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="price">Price per Session ($)</Label>
                       <Input
                         id="price"
@@ -535,8 +527,16 @@ const AccountSettings = () => {
 
                   <Separator />
 
-                  {/* Client Focus & Use Cases */}
+                  {/* Style Categories, Client Focus & Use Cases */}
                   <div className="space-y-6">
+                    <CategorySelect
+                      label="Style Categories"
+                      description="What style categories best describe your expertise?"
+                      options={STYLE_CATEGORY_OPTIONS}
+                      selected={profile?.style_tags || []}
+                      onChange={(selected) => updateProfile("style_tags", selected)}
+                    />
+
                     <CategorySelect
                       label="Who Do You Style?"
                       description="Select the client groups you specialize in"
