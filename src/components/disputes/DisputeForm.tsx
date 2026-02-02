@@ -82,6 +82,8 @@ const DisputeForm = ({
       }
 
       // Create the dispute
+      // Note: Payment escrow_status updates are handled server-side via database triggers
+      // The payments table has an immutable RLS policy preventing client-side updates
       const { error: disputeError } = await supabase
         .from("disputes")
         .insert({
@@ -94,16 +96,6 @@ const DisputeForm = ({
         });
 
       if (disputeError) throw disputeError;
-
-      // Update payment escrow status
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .update({ escrow_status: "disputed" })
-        .eq("id", paymentId);
-
-      if (paymentError) {
-        console.error("Failed to update payment status:", paymentError);
-      }
 
       toast({
         title: "Dispute submitted",
