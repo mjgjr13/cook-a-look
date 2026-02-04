@@ -9,6 +9,7 @@ export interface AdvisorProfile {
   onboarding_status: string;
   is_listed: boolean;
   is_published: boolean;
+  has_been_visible_before: boolean;
   price: number | null;
   bio: string | null;
   portfolio_images: string[] | null;
@@ -181,17 +182,30 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     }
 
     try {
-      // Update advisor_profiles is_listed
+      // Build update payload - set has_been_visible_before on first publish
+      const updatePayload: { is_listed: boolean; has_been_visible_before?: boolean } = {
+        is_listed: newValue,
+      };
+      
+      // If going visible for the first time, mark as having been visible
+      if (newValue && !advisorProfile.has_been_visible_before) {
+        updatePayload.has_been_visible_before = true;
+      }
+
       const { error: updateError } = await supabase
         .from("advisor_profiles")
-        .update({ is_listed: newValue })
+        .update(updatePayload)
         .eq("id", advisorProfile.id);
 
       if (updateError) throw updateError;
 
       // Update local state
       setAdvisorProfile((prev) =>
-        prev ? { ...prev, is_listed: newValue } : null
+        prev ? { 
+          ...prev, 
+          is_listed: newValue,
+          has_been_visible_before: prev.has_been_visible_before || newValue,
+        } : null
       );
 
       return { success: true };

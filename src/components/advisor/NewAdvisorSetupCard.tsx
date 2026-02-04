@@ -9,6 +9,7 @@ import type { ProfileCompletionStatus } from "@/hooks/useAdvisorProfile";
 interface NewAdvisorSetupCardProps {
   completionStatus: ProfileCompletionStatus;
   isListed: boolean;
+  hasBeenVisibleBefore: boolean;
   hasAvailability: boolean;
   portfolioCount: number;
   onToggleVisibility: () => void;
@@ -17,12 +18,13 @@ interface NewAdvisorSetupCardProps {
 const NewAdvisorSetupCard = ({
   completionStatus,
   isListed,
+  hasBeenVisibleBefore,
   hasAvailability,
   portfolioCount,
   onToggleVisibility,
 }: NewAdvisorSetupCardProps) => {
-  // If already visible, don't show the setup card
-  if (isListed) return null;
+  // Hide card if already visible OR if they've published before (use Settings toggle instead)
+  if (isListed || hasBeenVisibleBefore) return null;
 
   const steps = [
     {

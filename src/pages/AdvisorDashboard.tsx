@@ -316,11 +316,12 @@ const AdvisorDashboard = () => {
           )}
 
           {/* New Advisor Setup Card - prominent setup prompt when not visible */}
-          {isApproved && !advisorProfile?.is_listed && (
+          {isApproved && !advisorProfile?.is_listed && !advisorProfile?.has_been_visible_before && (
             <div className="mb-8">
               <NewAdvisorSetupCard
                 completionStatus={completionStatus}
                 isListed={advisorProfile?.is_listed ?? false}
+                hasBeenVisibleBefore={advisorProfile?.has_been_visible_before ?? false}
                 hasAvailability={completionStatus.hasAvailability}
                 portfolioCount={advisorProfile?.portfolio_images?.length || 0}
                 onToggleVisibility={async () => {
