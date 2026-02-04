@@ -322,6 +322,7 @@ export type Database = {
           availability_set: boolean | null
           bio: string | null
           created_at: string | null
+          has_been_visible_before: boolean | null
           id: string
           is_listed: boolean
           is_published: boolean
@@ -343,6 +344,7 @@ export type Database = {
           availability_set?: boolean | null
           bio?: string | null
           created_at?: string | null
+          has_been_visible_before?: boolean | null
           id?: string
           is_listed?: boolean
           is_published?: boolean
@@ -364,6 +366,7 @@ export type Database = {
           availability_set?: boolean | null
           bio?: string | null
           created_at?: string | null
+          has_been_visible_before?: boolean | null
           id?: string
           is_listed?: boolean
           is_published?: boolean
