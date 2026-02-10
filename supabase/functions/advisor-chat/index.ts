@@ -15,9 +15,13 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // Authenticate the user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -26,10 +30,25 @@ serve(async (req) => {
       throw new Error("Supabase credentials not configured");
     }
 
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
     const { messages } = await req.json() as { messages: ChatMessage[] };
 
     // Fetch available advisors for context
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: advisors, error: advisorError } = await supabase
       .from("profiles")
       .select("id, full_name, specialty, bio, price_per_session, rating, virtual_available, in_person_available, location")
