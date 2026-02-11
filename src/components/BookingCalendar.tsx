@@ -22,6 +22,8 @@ interface BookingCalendarProps {
   price: number;
   isOpen: boolean;
   onClose: () => void;
+  initialDate?: string | null;
+  initialSlot?: string | null;
 }
 
 interface TimeSlot {
@@ -41,9 +43,18 @@ const BookingCalendar = ({
   price,
   isOpen,
   onClose,
+  initialDate,
+  initialSlot,
 }: BookingCalendarProps) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    initialDate ? new Date(initialDate) : undefined
+  );
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(() => {
+    if (initialSlot) {
+      try { return JSON.parse(decodeURIComponent(initialSlot)); } catch { return null; }
+    }
+    return null;
+  });
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
@@ -150,12 +161,16 @@ const BookingCalendar = ({
 
   const handleBooking = async () => {
     if (!user) {
+      // Preserve booking state in the redirect URL
+      const bookingState = selectedDate && selectedSlot 
+        ? `&bookingDate=${selectedDate.toISOString()}&bookingSlot=${encodeURIComponent(JSON.stringify(selectedSlot))}`
+        : '';
       toast({
         title: "Sign in required",
         description: "Please sign in to book a consultation.",
       });
       onClose();
-      navigate(`/signin?redirect=/advisors/${encodeURIComponent(advisorId)}`);
+      navigate(`/signin?redirect=/advisors/${encodeURIComponent(advisorId)}${bookingState}`);
       return;
     }
 

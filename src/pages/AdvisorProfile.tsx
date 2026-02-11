@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,10 +41,15 @@ interface AdvisorData {
 
 const AdvisorProfile = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [advisor, setAdvisor] = useState<AdvisorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Auto-open calendar with preserved booking state after sign-in redirect
+  const initialBookingDate = searchParams.get("bookingDate");
+  const initialBookingSlot = searchParams.get("bookingSlot");
 
   useEffect(() => {
     const fetchAdvisor = async () => {
@@ -80,6 +85,15 @@ const AdvisorProfile = () => {
 
     fetchAdvisor();
   }, [id]);
+
+  // Auto-open booking calendar if redirected back from sign-in with booking state
+  useEffect(() => {
+    if (!loading && advisor && initialBookingDate) {
+      setCalendarOpen(true);
+      // Clean up URL params
+      setSearchParams({}, { replace: true });
+    }
+  }, [loading, advisor, initialBookingDate]);
 
   const handleBookConsultation = () => {
     setCalendarOpen(true);
@@ -363,6 +377,8 @@ const AdvisorProfile = () => {
         price={displayPrice}
         isOpen={calendarOpen}
         onClose={() => setCalendarOpen(false)}
+        initialDate={initialBookingDate}
+        initialSlot={initialBookingSlot}
       />
     </Layout>
   );
