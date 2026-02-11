@@ -22,7 +22,7 @@ export function getCorsHeaders(requestOrigin: string | null): Record<string, str
 
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-supabase-api-version",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Max-Age": "86400",
   };
