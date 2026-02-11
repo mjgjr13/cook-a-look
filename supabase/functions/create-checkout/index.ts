@@ -220,11 +220,9 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://cookalookcom.lovable.app";
 
-    // Create checkout session with Stripe Tax for dynamic tax calculation
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      billing_address_collection: "required", // Required for regional tax calculation
       line_items: [
         {
           price_data: {
@@ -232,16 +230,13 @@ serve(async (req) => {
             product_data: {
               name: `Style Consultation with ${advisorName}`,
               description: `${sessionDate} at ${sessionTime} - Virtual styling session`,
-              tax_code: "txcd_10000000", // General - Services
             },
             unit_amount: Math.round(amount * 100),
-            tax_behavior: "exclusive",
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      automatic_tax: { enabled: true }, // Enable Stripe Tax for dynamic calculation
       success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}&advisor_id=${advisorId}&slot_id=${finalSlotId}`,
       cancel_url: `${origin}/advisors/${advisorId}`,
       metadata: {
