@@ -26,14 +26,17 @@ const HeroSection = () => {
       {/* Content */}
       <div className="container mx-auto px-6 lg:px-8 relative z-10">
         <div className="max-w-2xl">
-          <motion.h1
+          <h1 className="sr-only">Cook A Look</h1>
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.1] mb-8"
+            aria-hidden="true"
           >
-            Cook A Look
-          </motion.h1>
+            Discover your{" "}
+            <span className="italic">personal style</span>
+          </motion.p>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
