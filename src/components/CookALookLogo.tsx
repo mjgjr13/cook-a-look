@@ -93,7 +93,7 @@ const CookALookLogo = ({
           textColorClass,
           sizeConfig[size].text
         )}>
-          Cook a Look
+          Cook A Look
         </span>
       </div>
     );
@@ -111,7 +111,7 @@ const CookALookLogo = ({
         textColorClass,
         sizeConfig[size].text
       )}>
-        Cook a Look
+        Cook A Look
       </span>
     </div>
   );

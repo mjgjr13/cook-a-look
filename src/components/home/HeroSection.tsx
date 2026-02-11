@@ -32,8 +32,7 @@ const HeroSection = () => {
             transition={{ duration: 0.6 }}
             className="font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.1] mb-8"
           >
-            Discover your{" "}
-            <span className="italic">personal style</span>
+            Cook A Look
           </motion.h1>
 
           <motion.p
