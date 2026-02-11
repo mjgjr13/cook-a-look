@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import heroImage from "@/assets/hero-fashion.jpg";
 
 const HeroSection = () => {
   return (
@@ -13,7 +12,7 @@ const HeroSection = () => {
       <div className="absolute inset-0">
         <div className="absolute right-0 top-0 bottom-0 w-[65%]">
           <img
-            src={heroImage}
+            src="/images/hero-fashion.jpg"
             alt="Elegant fashion consultant"
             className="h-full w-full object-cover object-top"
             fetchPriority="high"
