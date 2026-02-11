@@ -1,54 +1,37 @@
 
 
-## Add JSON-LD Structured Data to Homepage
+## Update Homepage SEO and Brand Name Consistency
 
-Add Organization and WebSite schema markup to help Google understand the Cook A Look brand and potentially show rich results (like sitelinks search box).
+### Changes Overview
 
-### What is JSON-LD?
-It's invisible metadata embedded in the page that tells Google exactly what your site is about -- your brand name, logo, social links, and that it's a searchable website.
+| File | Change |
+|------|--------|
+| `index.html` | Update `<title>` to "Cook A Look \| Personal Styling" |
+| `src/components/home/HeroSection.tsx` | Change H1 from "Discover your personal style" to "Cook A Look" |
+| `src/components/CookALookLogo.tsx` | Change logo text from "Cook a Look" to "Cook A Look" (capitalize the "A") |
+| `src/components/layout/Footer.tsx` | Copyright text already uses the logo component, so it will update automatically |
 
-### About the Sitemap Display
-The "This XML file does not appear to have any style information" message you see in your browser is **completely normal**. That's just how browsers display raw XML. Google's crawlers read and process it correctly -- no changes needed.
+### Details
 
-### Steps
+**1. Page title** (`index.html`, line 6)
+- From: `Cook A Look`
+- To: `Cook A Look | Personal Styling`
 
-1. **Add JSON-LD script to `index.html`** with two schemas:
-   - **Organization**: Brand name "Cook A Look", logo URL, website URL, description, and social media links
-   - **WebSite**: Site name, URL, and a potential search action for sitelinks
+**2. Homepage H1** (`HeroSection.tsx`, lines 34-37)
+- From: `Discover your personal style`
+- To: `Cook A Look` (styled consistently with the current serif font)
+- The subtitle paragraph below will remain unchanged, preserving context about what the site does
 
-### Technical Details
+**3. Logo text** (`CookALookLogo.tsx`, lines 96 and 114)
+- From: `Cook a Look` (lowercase "a")
+- To: `Cook A Look` (uppercase "A")
+- This affects the navbar, footer, and anywhere else the logo component is used
 
-Add the following inside the `<head>` of `index.html`:
+**4. Metadata and structured data**
+- Already correct: og:title, twitter:title, JSON-LD Organization name, and WebSite name all say "Cook A Look"
+- No og:image or twitter:image tags are present (already removed previously), so no hero image will appear in search results
 
-```html
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      "name": "Cook A Look",
-      "url": "https://www.cookalook.com",
-      "logo": "https://www.cookalook.com/images/cook-a-look-logo-full.png",
-      "description": "Connect with professional style advisors who will transform your wardrobe and elevate your personal style.",
-      "sameAs": [
-        "https://twitter.com/CookALook"
-      ]
-    },
-    {
-      "@type": "WebSite",
-      "name": "Cook A Look",
-      "url": "https://www.cookalook.com",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://www.cookalook.com/advisors?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
-  ]
-}
-</script>
-```
-
-**File changed:** `index.html` (1 addition in `<head>`)
+### Not Changed
+- Edge function email templates and legal pages (Terms, Privacy) use "Cook a Look" as a stylistic/legal choice -- these are not search-facing and won't affect Google results
+- Layout, design, and functionality remain untouched
 
