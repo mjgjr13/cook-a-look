@@ -68,19 +68,17 @@ serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) throw new Error("Missing authorization header");
     
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    const { data: userData, error: authError } = await supabaseClient.auth.getUser(token);
     
-    if (claimsError || !claimsData?.claims) {
+    if (authError || !userData?.user) {
+      console.error("Auth error:", authError);
       throw new Error("User not authenticated");
     }
     
-    const user = {
-      id: claimsData.claims.sub as string,
-      email: claimsData.claims.email as string,
-    };
+    const user = userData.user;
     
     if (!user.email) {
-      throw new Error("User not authenticated");
+      throw new Error("User email not available");
     }
 
     // SECURITY: Fetch the advisor's price from database instead of trusting client input
