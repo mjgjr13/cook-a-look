@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {/* Quick Links */}
           <div>
-            <h4 className="font-serif text-lg mb-4">Explore</h4>
+            <h2 className="font-serif text-lg mb-4">Explore</h2>
             <ul className="space-y-3 font-sans text-sm">
               <li>
                 <Link
@@ -56,7 +56,7 @@ const Footer = () => {
 
           {/* Contact */}
           <div className="md:text-right">
-            <h4 className="font-serif text-lg mb-4">Contact Us</h4>
+            <h2 className="font-serif text-lg mb-4">Contact Us</h2>
             <a
               href="mailto:info@cookalook.com"
               className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors font-sans text-sm mb-6 md:justify-end"
