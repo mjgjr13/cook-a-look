@@ -39,7 +39,8 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } }
   );
 
   try {
@@ -64,15 +65,23 @@ serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Missing authorization header");
     
     const token = authHeader.replace("Bearer ", "");
-    const { data, error: authError } = await supabaseClient.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
     
-    if (authError || !data.user?.email) {
+    if (claimsError || !claimsData?.claims) {
       throw new Error("User not authenticated");
     }
-    const user = data.user;
+    
+    const user = {
+      id: claimsData.claims.sub as string,
+      email: claimsData.claims.email as string,
+    };
+    
+    if (!user.email) {
+      throw new Error("User not authenticated");
+    }
 
     // SECURITY: Fetch the advisor's price from database instead of trusting client input
     const { data: advisor, error: advisorError } = await supabaseAdmin
