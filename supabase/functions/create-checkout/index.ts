@@ -225,7 +225,7 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin") || "https://cookalookcom.lovable.app";
+    const origin = req.headers.get("origin") || "https://cookalook.lovable.app";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
