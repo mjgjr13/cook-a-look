@@ -160,7 +160,12 @@ const BookingCalendar = ({
   }, [selectedDate, advisorId, clientTimezone]);
 
   const handleBooking = async () => {
-    if (!user) {
+    // Always re-check current auth session at click time (prevents stale user state)
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+
+    if (!currentUser) {
       // Preserve booking state in the redirect URL
       const bookingState = selectedDate && selectedSlot 
         ? `&bookingDate=${selectedDate.toISOString()}&bookingSlot=${encodeURIComponent(JSON.stringify(selectedSlot))}`
@@ -258,7 +263,7 @@ const BookingCalendar = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">
             Book Consultation
