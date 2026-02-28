@@ -16,7 +16,9 @@ import {
   ArrowRight,
   ChevronRight,
   CheckCircle,
-  Mail
+  Mail,
+  MapPin,
+  MessageCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,7 +238,13 @@ const AdvisorDashboard = () => {
     <Layout>
       {activeVideoBooking && (
         <VideoCall
-          bookingId={activeVideoBooking}
+          bookingId={typeof activeVideoBooking === 'string' ? activeVideoBooking : activeVideoBooking}
+          advisorId={profile?.id}
+          clientId={(() => {
+            const b = bookings.find(b => b.id === activeVideoBooking);
+            return b?.client?.user_id;
+          })()}
+          advisorName={profile?.full_name || undefined}
           onClose={() => setActiveVideoBooking(null)}
         />
       )}
@@ -508,11 +516,15 @@ const AdvisorDashboard = () => {
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
-                        <Video className="w-6 h-6 text-primary" />
+                        {booking.slot.is_virtual ? (
+                          <Video className="w-6 h-6 text-primary" />
+                        ) : (
+                          <MapPin className="w-6 h-6 text-primary" />
+                        )}
                       </div>
                       <div>
                         <p className="font-serif font-medium">
-                          Session with {booking.client?.full_name || "Client"}
+                          {booking.slot.is_virtual ? "Virtual" : "In-Person"} Session with {booking.client?.full_name || "Client"}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(booking.slot.start_time).toLocaleDateString("en-US", {
@@ -529,6 +541,25 @@ const AdvisorDashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-3">
+                      {booking.slot.is_virtual ? (
+                        <Button 
+                          variant="hero" 
+                          size="sm"
+                          onClick={() => setActiveVideoBooking(booking.id)}
+                        >
+                          <Video className="w-4 h-4 mr-1" />
+                          Start Call
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="hero" 
+                          size="sm"
+                          onClick={() => setSelectedBooking(booking)}
+                        >
+                          <MessageCircle className="w-4 h-4 mr-1" />
+                          Open Chat
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         size="sm"
