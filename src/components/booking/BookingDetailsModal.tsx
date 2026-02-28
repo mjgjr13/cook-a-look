@@ -247,11 +247,21 @@ const BookingDetailsModal = ({
 
           <TabsContent value="chat" className="py-4">
             {canChat && currentUserId && (
-              <BookingChat
-                bookingId={booking.id}
-                currentUserId={currentUserId}
-                otherParticipant={otherParticipant || null}
-              />
+              <>
+                {!booking.slot.is_virtual && (
+                  <div className="bg-accent/50 border border-accent rounded-lg p-3 mb-4 flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <p className="text-sm text-muted-foreground">
+                      This is an in-person session. Use this chat to arrange your meeting location and any details before the session.
+                    </p>
+                  </div>
+                )}
+                <BookingChat
+                  bookingId={booking.id}
+                  currentUserId={currentUserId}
+                  otherParticipant={otherParticipant || null}
+                />
+              </>
             )}
           </TabsContent>
         </Tabs>
