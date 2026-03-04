@@ -25,6 +25,7 @@ import AdvisorEarnings from "./pages/AdvisorEarnings";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
+import OgPreview from "./pages/OgPreview";
 import AdminLookbook from "./pages/admin/AdminLookbook";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminAdvisors from "./pages/admin/AdminAdvisors";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/terms" element={<TermsOfUse />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/og-preview" element={<OgPreview />} />
             
             {/* Client Dashboard - Protected */}
             <Route path="/dashboard" element={
