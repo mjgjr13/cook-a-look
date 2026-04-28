@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import type { Database } from "@/integrations/supabase/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +28,8 @@ import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import { useProfile } from "@/hooks/useProfile";
+
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
 
