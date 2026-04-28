@@ -88,7 +88,6 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
           bio: null,
           avatar_url: null,
           location: null,
-          phone: null,
           instagram_url: null,
           portfolio_url: null,
           portfolio_images: [],
