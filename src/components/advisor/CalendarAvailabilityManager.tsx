@@ -31,7 +31,7 @@ import BreakTimeManager, { BreakConfig } from "./BreakTimeManager";
 import { getBrowserTimezone, getTimezoneLabel } from "@/hooks/useTimezone";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-type AvailabilityTab = "quick" | "weekly" | "exceptions";
+type AvailabilityTab = "quick" | "weekly" | "calendar";
 
 // Generate time options
 const generateTimeOptions = () => {
