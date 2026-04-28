@@ -97,7 +97,7 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
           is_advisor: false,
           advisor_approved: false,
           demo_availability_enabled: false,
-        } as any)
+        } satisfies ProfileUpdate)
         .eq("id", profile.id);
 
       // 4. Sign out
