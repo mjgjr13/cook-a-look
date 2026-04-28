@@ -38,6 +38,7 @@ import {
 import { z } from "zod";
 import LivenessCamera from "@/components/LivenessCamera";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
@@ -45,6 +46,9 @@ import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
+
+type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 const benefits = [
   {
