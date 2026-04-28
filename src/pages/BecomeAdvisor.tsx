@@ -363,7 +363,7 @@ const BecomeAdvisor = () => {
             ? formData.instagram.slice(1) 
             : formData.instagram;
 
-          const updateData: Record<string, unknown> = {
+          const updateData: ProfileUpdate = {
             full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
             is_advisor: true,
             advisor_approved: false,
@@ -410,7 +410,7 @@ const BecomeAdvisor = () => {
           ? formData.instagram.slice(1) 
           : formData.instagram;
 
-        const insertData: Record<string, unknown> = {
+        const insertData: ProfileInsert = {
           user_id: userId,
           email: formData.email.trim().toLowerCase(),
           full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
