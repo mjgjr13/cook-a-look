@@ -307,16 +307,16 @@ const AdvisorProfile = () => {
       </section>
 
       {/* Inspiration Gallery */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-6 lg:px-8">
+      <section className="py-10 lg:py-16 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-8 lg:mb-12"
           >
-            <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+            <h2 className="font-serif text-3xl md:text-4xl font-medium mb-3 lg:mb-4">
               Style Inspiration
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
@@ -324,7 +324,7 @@ const AdvisorProfile = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
             {displayImages.slice(0, 4).map((image, index) => (
               <motion.div
                 key={index}
@@ -347,16 +347,16 @@ const AdvisorProfile = () => {
       </section>
 
       {/* Reviews Section */}
-      <section className="py-16 bg-card">
-        <div className="container mx-auto px-6 lg:px-8">
+      <section className="py-10 lg:py-16 bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-8 lg:mb-12"
           >
-            <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+            <h2 className="font-serif text-3xl md:text-4xl font-medium mb-3 lg:mb-4">
               Client Reviews
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
