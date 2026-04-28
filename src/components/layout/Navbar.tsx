@@ -49,10 +49,10 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
-      <div className="container mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 lg:h-20 min-w-0">
           {/* Logo */}
-          <Link to="/" className="flex items-center text-foreground">
+          <Link to="/" className="flex min-w-0 items-center text-foreground">
             <CookALookLogo size="md" />
           </Link>
 
@@ -146,7 +146,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile: Avatar or Sign In + Menu Button */}
-          <div className="lg:hidden flex items-center gap-2">
+          <div className="lg:hidden flex shrink-0 items-center gap-1.5">
             {!isLoading && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -174,11 +174,11 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : !isLoading ? (
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" className="px-2 text-sm" asChild>
                 <Link to="/signin">Sign In</Link>
               </Button>
             ) : null}
-            <button className="p-2" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
+            <button className="p-2 -mr-2" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -194,7 +194,7 @@ const Navbar = () => {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden bg-background border-b border-border overflow-hidden"
           >
-            <div className="container mx-auto px-6 py-6 space-y-4">
+            <div className="container mx-auto px-4 sm:px-6 py-5 space-y-3">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
