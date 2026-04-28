@@ -518,11 +518,12 @@ const BecomeAdvisor = () => {
       // Navigate to advisor dashboard immediately
       navigate("/advisor");
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error submitting application:", err);
+      const message = err instanceof Error ? err.message : "An unexpected error occurred. Please try again.";
       toast({
         title: "Submission Failed",
-        description: err.message || "An unexpected error occurred. Please try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -623,8 +624,6 @@ const BecomeAdvisor = () => {
       if (!formData.profilePhotoPreview) {
         stepErrors.profilePhotoFile = "Profile photo is required";
       }
-    } else if (currentStep === 4) {
-      // Validate price in review step
       const priceNum = parseFloat(formData.price);
       if (!formData.price || isNaN(priceNum) || priceNum < 25) {
         stepErrors.price = "Please set a session rate (minimum $25)";
@@ -663,9 +662,10 @@ const BecomeAdvisor = () => {
       case 3:
         // MVP: Verification is optional - always allow proceeding
         return true;
-      case 4:
+      case 4: {
         const priceNum = parseFloat(formData.price);
         return formData.agreeTerms && formData.price && !isNaN(priceNum) && priceNum >= 25;
+      }
       default:
         return false;
     }
