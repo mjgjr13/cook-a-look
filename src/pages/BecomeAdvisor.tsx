@@ -38,6 +38,7 @@ import {
 import { z } from "zod";
 import LivenessCamera from "@/components/LivenessCamera";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
@@ -45,6 +46,9 @@ import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
+
+type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 const benefits = [
   {
@@ -359,7 +363,7 @@ const BecomeAdvisor = () => {
             ? formData.instagram.slice(1) 
             : formData.instagram;
 
-          const updateData: Record<string, unknown> = {
+          const updateData: ProfileUpdate = {
             full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
             is_advisor: true,
             advisor_approved: false,
@@ -406,7 +410,7 @@ const BecomeAdvisor = () => {
           ? formData.instagram.slice(1) 
           : formData.instagram;
 
-        const insertData: Record<string, unknown> = {
+        const insertData: ProfileInsert = {
           user_id: userId,
           email: formData.email.trim().toLowerCase(),
           full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
@@ -514,11 +518,12 @@ const BecomeAdvisor = () => {
       // Navigate to advisor dashboard immediately
       navigate("/advisor");
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error submitting application:", err);
+      const message = err instanceof Error ? err.message : "An unexpected error occurred. Please try again.";
       toast({
         title: "Submission Failed",
-        description: err.message || "An unexpected error occurred. Please try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -619,8 +624,6 @@ const BecomeAdvisor = () => {
       if (!formData.profilePhotoPreview) {
         stepErrors.profilePhotoFile = "Profile photo is required";
       }
-    } else if (currentStep === 4) {
-      // Validate price in review step
       const priceNum = parseFloat(formData.price);
       if (!formData.price || isNaN(priceNum) || priceNum < 25) {
         stepErrors.price = "Please set a session rate (minimum $25)";
@@ -659,9 +662,10 @@ const BecomeAdvisor = () => {
       case 3:
         // MVP: Verification is optional - always allow proceeding
         return true;
-      case 4:
+      case 4: {
         const priceNum = parseFloat(formData.price);
         return formData.agreeTerms && formData.price && !isNaN(priceNum) && priceNum >= 25;
+      }
       default:
         return false;
     }

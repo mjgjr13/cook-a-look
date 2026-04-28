@@ -1,6 +1,6 @@
 import * as React from "react";
 import PhoneInputWithCountry from "react-phone-number-input";
-import { E164Number } from "libphonenumber-js/core";
+import type { Value } from "react-phone-number-input";
 import { cn } from "@/lib/utils";
 import "react-phone-number-input/style.css";
 
@@ -30,7 +30,7 @@ const InternationalPhoneInput = React.forwardRef<
     },
     ref
   ) => {
-    const handleChange = (newValue: E164Number | undefined) => {
+    const handleChange = (newValue: Value | undefined) => {
       onChange(newValue || "");
     };
 
@@ -40,7 +40,7 @@ const InternationalPhoneInput = React.forwardRef<
           international
           countryCallingCodeEditable={false}
           defaultCountry={defaultCountry}
-          value={value as E164Number}
+          value={value as Value}
           onChange={handleChange}
           placeholder={placeholder}
           disabled={disabled}

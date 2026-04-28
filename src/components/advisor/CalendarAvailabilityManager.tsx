@@ -31,6 +31,7 @@ import BreakTimeManager, { BreakConfig } from "./BreakTimeManager";
 import { getBrowserTimezone, getTimezoneLabel } from "@/hooks/useTimezone";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+type AvailabilityTab = "quick" | "weekly" | "calendar";
 
 // Generate time options
 const generateTimeOptions = () => {
@@ -276,7 +277,7 @@ const CalendarAvailabilityManager = ({
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AvailabilityTab)}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="quick" className="gap-2">
             <Settings2 className="w-4 h-4" />

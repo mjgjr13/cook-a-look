@@ -36,8 +36,11 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+
+type WithdrawalUpdate = Database["public"]["Tables"]["withdrawal_requests"]["Update"];
 
 interface Payment {
   id: string;
@@ -167,7 +170,7 @@ const AdminPayments = () => {
     setIsProcessing(true);
 
     try {
-      const updates: Record<string, unknown> = {};
+      const updates: WithdrawalUpdate = {};
       
       switch (actionType) {
         case "approve":
