@@ -155,7 +155,7 @@ const AdvisorProfile = () => {
 
   return (
     <Layout>
-      <section className="py-5 lg:py-8 bg-card">
+      <section className="py-5 pb-28 lg:py-8 lg:pb-8 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Link 
             to="/advisors" 
@@ -165,7 +165,7 @@ const AdvisorProfile = () => {
             Back to Advisors
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
             {/* Left Column - Photo & Quick Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -173,7 +173,7 @@ const AdvisorProfile = () => {
               transition={{ duration: 0.6 }}
               className="lg:col-span-1"
             >
-              <div className="relative aspect-[4/5] overflow-hidden mb-5 lg:mb-6 bg-muted">
+              <div className="relative mx-auto aspect-[5/6] max-h-[410px] w-full overflow-hidden mb-4 lg:mx-0 lg:aspect-[4/5] lg:max-h-none lg:mb-6 bg-muted">
                 {advisor.avatar_url ? (
                   <img
                     src={advisor.avatar_url}
@@ -192,15 +192,15 @@ const AdvisorProfile = () => {
                 )}
               </div>
 
-               <div className="space-y-3 lg:space-y-4">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground font-sans">
+               <div className="space-y-2.5 lg:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-x-4 text-sm text-muted-foreground font-sans">
                   {advisor.virtual_available && (
                     <span className="flex items-center gap-1">
                       <Video className="w-4 h-4" /> Virtual
                     </span>
                   )}
                   {advisor.in_person_available && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex min-w-0 items-center gap-1 break-words">
                       <MapPin className="w-4 h-4" /> In-Person{advisor.location && ` · ${advisor.location}`}
                     </span>
                   )}
@@ -241,7 +241,7 @@ const AdvisorProfile = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="lg:col-span-2"
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 text-sm sm:text-base">
                 <Star className="w-5 h-5 fill-gold text-gold" />
                 <span className="font-sans font-medium">{displayRating.toFixed(1)}</span>
                 <span className="font-sans text-muted-foreground">
@@ -249,7 +249,7 @@ const AdvisorProfile = () => {
                 </span>
               </div>
 
-              <h1 className="font-serif text-4xl md:text-5xl font-medium leading-tight mb-2">
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium leading-tight mb-2">
                 {displayName}
               </h1>
               <p className="font-sans text-base sm:text-lg text-gold mb-5 lg:mb-6">
@@ -258,7 +258,7 @@ const AdvisorProfile = () => {
                   : "Style Consultant"}
               </p>
 
-              <div className="prose prose-base sm:prose-lg max-w-none mb-6 lg:mb-8">
+              <div className="prose prose-sm sm:prose-lg max-w-none mb-6 lg:mb-8">
                 <p className="font-sans text-muted-foreground leading-relaxed">
                   {advisor.personal_philosophy || advisor.bio || "Passionate about helping clients discover their unique style."}
                 </p>
@@ -282,7 +282,7 @@ const AdvisorProfile = () => {
                     {displaySpecialties.map((specialty) => (
                       <span
                         key={specialty}
-                        className="px-4 py-2 bg-secondary text-sm font-sans"
+                        className="px-3 py-1.5 sm:px-4 sm:py-2 bg-secondary text-xs sm:text-sm font-sans"
                       >
                         {specialty}
                       </span>
@@ -291,7 +291,7 @@ const AdvisorProfile = () => {
                 </div>
               )}
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
+              <div className="hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
                 <div>
                   <span className="font-sans text-2xl font-medium">${displayPrice}</span>
                   <span className="font-sans text-muted-foreground">/session</span>
@@ -302,6 +302,19 @@ const AdvisorProfile = () => {
                 </Button>
               </div>
             </motion.div>
+          </div>
+        </div>
+
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 shadow-lg backdrop-blur sm:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Consultation</p>
+              <p className="font-sans text-lg font-medium leading-tight">${displayPrice}<span className="text-sm font-normal text-muted-foreground">/session</span></p>
+            </div>
+            <Button variant="hero" size="lg" className="shrink-0" onClick={handleBookConsultation}>
+              <Calendar className="w-4 h-4 mr-2" />
+              Book
+            </Button>
           </div>
         </div>
       </section>
