@@ -76,7 +76,7 @@ const Advisors = () => {
       const specialty = advisor.specialty || "";
       const styleTags = advisor.style_tags || [];
       const demographics = advisor.target_demographics || [];
-      const useCases = (advisor as any).use_cases || [];
+      const useCases = advisor.use_cases || [];
       const price = advisor.price_per_session || 0;
 
       // Search filter
