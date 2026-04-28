@@ -155,17 +155,17 @@ const AdvisorProfile = () => {
 
   return (
     <Layout>
-      <section className="py-8 bg-card">
-        <div className="container mx-auto px-6 lg:px-8">
+      <section className="py-5 lg:py-8 bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Link 
             to="/advisors" 
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
+            className="inline-flex items-center gap-2 text-sm sm:text-base text-muted-foreground hover:text-foreground transition-colors mb-5 lg:mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Advisors
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-7 lg:gap-12">
             {/* Left Column - Photo & Quick Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -173,7 +173,7 @@ const AdvisorProfile = () => {
               transition={{ duration: 0.6 }}
               className="lg:col-span-1"
             >
-              <div className="relative aspect-[4/5] overflow-hidden mb-6 bg-muted">
+              <div className="relative aspect-[4/5] overflow-hidden mb-5 lg:mb-6 bg-muted">
                 {advisor.avatar_url ? (
                   <img
                     src={advisor.avatar_url}
@@ -192,8 +192,8 @@ const AdvisorProfile = () => {
                 )}
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground font-sans">
+               <div className="space-y-3 lg:space-y-4">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground font-sans">
                   {advisor.virtual_available && (
                     <span className="flex items-center gap-1">
                       <Video className="w-4 h-4" /> Virtual
@@ -249,27 +249,27 @@ const AdvisorProfile = () => {
                 </span>
               </div>
 
-              <h1 className="font-serif text-4xl md:text-5xl font-medium mb-2">
+              <h1 className="font-serif text-4xl md:text-5xl font-medium leading-tight mb-2">
                 {displayName}
               </h1>
-              <p className="font-sans text-lg text-gold mb-6">
+              <p className="font-sans text-base sm:text-lg text-gold mb-5 lg:mb-6">
                 {advisor.target_demographics && advisor.target_demographics.length > 0 
                   ? advisor.target_demographics.slice(0, 3).join(" · ") 
                   : "Style Consultant"}
               </p>
 
-              <div className="prose prose-lg max-w-none mb-8">
+              <div className="prose prose-base sm:prose-lg max-w-none mb-6 lg:mb-8">
                 <p className="font-sans text-muted-foreground leading-relaxed">
                   {advisor.personal_philosophy || advisor.bio || "Passionate about helping clients discover their unique style."}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-background p-6 border border-border">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
+                <div className="bg-background p-5 lg:p-6 border border-border">
                   <h3 className="font-serif text-lg font-medium mb-3">Experience</h3>
                   <p className="font-sans text-muted-foreground">{displayExperience}</p>
                 </div>
-                <div className="bg-background p-6 border border-border">
+                <div className="bg-background p-5 lg:p-6 border border-border">
                   <h3 className="font-serif text-lg font-medium mb-3">Languages</h3>
                   <p className="font-sans text-muted-foreground">{displayLanguages.join(", ")}</p>
                 </div>
@@ -291,12 +291,12 @@ const AdvisorProfile = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-between p-6 bg-background border border-border">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
                 <div>
                   <span className="font-sans text-2xl font-medium">${displayPrice}</span>
                   <span className="font-sans text-muted-foreground">/session</span>
                 </div>
-                <Button variant="hero" size="lg" onClick={handleBookConsultation}>
+                <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={handleBookConsultation}>
                   <Calendar className="w-4 h-4 mr-2" />
                   Book Consultation
                 </Button>
