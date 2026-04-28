@@ -264,9 +264,9 @@ const BookingCalendar = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-[500px] max-h-[88svh] overflow-y-auto px-4 sm:px-6">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl">
+          <DialogTitle className="font-serif text-2xl leading-tight">
             Book Consultation
           </DialogTitle>
           <DialogDescription>
@@ -274,11 +274,11 @@ const BookingCalendar = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-3 sm:py-4">
           {/* Timezone indicator */}
-          <div className="flex items-center justify-center gap-2 mb-2 p-2 bg-secondary/50 rounded-lg">
-            <Globe className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-start sm:items-center justify-center gap-2 mb-2 p-2 bg-secondary/50 rounded-lg">
+            <Globe className="w-4 h-4 mt-0.5 sm:mt-0 text-muted-foreground shrink-0" />
+            <span className="text-xs sm:text-sm text-muted-foreground text-center">
               All times shown in your local time ({clientTzAbbr})
             </span>
           </div>
@@ -292,7 +292,7 @@ const BookingCalendar = ({
             selected={selectedDate}
             onSelect={setSelectedDate}
             disabled={disabledDays}
-            className={cn("p-3 pointer-events-auto mx-auto")}
+            className={cn("p-0 sm:p-3 pointer-events-auto mx-auto")}
             initialFocus
           />
 
@@ -314,7 +314,7 @@ const BookingCalendar = ({
                       key={slot.id}
                       onClick={() => setSelectedSlot(slot)}
                       className={cn(
-                        "px-4 py-2 text-sm font-sans border transition-colors",
+                        "min-h-11 px-2 sm:px-4 py-2 text-sm font-sans border transition-colors",
                         selectedSlot?.id === slot.id
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background border-border hover:border-primary"
@@ -338,9 +338,9 @@ const BookingCalendar = ({
 
           {selectedDate && selectedSlot && (
             <div className="mt-6 p-4 bg-secondary border border-border">
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-start gap-4 mb-2">
                 <span className="font-sans text-sm">Selected time</span>
-                <span className="font-sans font-medium">{selectedSlot.time} ({clientTzAbbr})</span>
+                <span className="font-sans font-medium text-right">{selectedSlot.time} ({clientTzAbbr})</span>
               </div>
               <div className="flex justify-between items-center mb-4">
                 <span className="font-sans text-sm">Consultation Fee</span>

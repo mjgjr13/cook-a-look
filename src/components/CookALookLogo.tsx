@@ -15,7 +15,7 @@ const CookALookLogo = ({
 }: CookALookLogoProps) => {
   const sizeConfig = {
     sm: { height: "h-4", text: "text-base", iconW: 28, iconH: 12, spacing: "gap-2" },
-    md: { height: "h-5", text: "text-lg lg:text-xl", iconW: 36, iconH: 14, spacing: "gap-2.5" },
+    md: { height: "h-5", text: "text-base sm:text-lg lg:text-xl", iconW: 34, iconH: 13, spacing: "gap-2 sm:gap-2.5" },
     lg: { height: "h-6", text: "text-xl lg:text-2xl", iconW: 48, iconH: 18, spacing: "gap-3" },
     xl: { height: "h-8", text: "text-2xl lg:text-3xl", iconW: 64, iconH: 24, spacing: "gap-3.5" },
   };
@@ -107,7 +107,7 @@ const CookALookLogo = ({
         height={sizeConfig[size].iconH} 
       />
       <span className={cn(
-        "font-serif font-semibold tracking-[0.2em] uppercase",
+        "font-serif font-semibold tracking-[0.16em] sm:tracking-[0.2em] uppercase whitespace-nowrap",
         textColorClass,
         sizeConfig[size].text
       )}>

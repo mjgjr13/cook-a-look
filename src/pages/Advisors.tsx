@@ -182,18 +182,18 @@ const Advisors = () => {
 
   return (
     <Layout>
-      <section className="py-16 bg-card">
-        <div className="container mx-auto px-6 lg:px-8">
+      <section className="py-10 lg:py-16 bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-8 lg:mb-12"
           >
-            <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">
+            <p className="text-gold font-sans text-xs sm:text-sm tracking-[0.24em] sm:tracking-[0.3em] uppercase mb-3 lg:mb-4">
               Expert Guidance
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-4">
+            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-3 lg:mb-4">
               Style Advisors
             </h1>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
@@ -215,7 +215,7 @@ const Advisors = () => {
           </motion.div>
 
           {/* Advisors Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {filteredAndSortedAdvisors.map((advisor, index) => {
               const displayName = advisor.full_name || "Style Advisor";
               const displayPrice = advisor.price_per_session || 100;
@@ -230,7 +230,7 @@ const Advisors = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.03 }}
-                  className="group bg-background border border-border overflow-hidden hover-lift cursor-pointer"
+                   className="group min-w-0 bg-background border border-border overflow-hidden hover-lift cursor-pointer"
                   onClick={() => handleCardClick(advisor.id)}
                 >
                   <div className="relative aspect-[3/4] overflow-hidden bg-muted">
@@ -253,7 +253,7 @@ const Advisors = () => {
                     )}
                   </div>
 
-                  <div className="p-3 lg:p-4">
+                  <div className="p-2.5 sm:p-3 lg:p-4 min-w-0">
                     <div className="flex items-center gap-1 mb-1">
                       <Star className="w-3 h-3 fill-gold text-gold" />
                       <span className="font-sans text-xs font-medium">
@@ -264,7 +264,7 @@ const Advisors = () => {
                       </span>
                     </div>
 
-                    <h3 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1">
+                    <h3 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1 leading-snug">
                       {displayName}
                     </h3>
                     <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
@@ -272,7 +272,7 @@ const Advisors = () => {
                     </p>
 
 
-                    <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground font-sans">
+                    <div className="flex items-start justify-between gap-2 mb-2 text-xs text-muted-foreground font-sans">
                       <div className="flex flex-col gap-0.5">
                         {advisor.virtual_available && (
                           <span className="flex items-center gap-0.5">
@@ -286,19 +286,19 @@ const Advisors = () => {
                         )}
                       </div>
                       {advisor.location && (
-                        <span className="text-right text-xs whitespace-nowrap">{advisor.location}</span>
+                        <span className="text-right text-xs truncate max-w-[4.75rem] sm:max-w-[6rem]">{advisor.location}</span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-border">
-                      <span className="font-sans">
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                      <span className="font-sans min-w-0">
                         <span className="text-sm font-medium">${displayPrice.toLocaleString()}</span>
-                        <span className="text-xs text-muted-foreground">/session</span>
+                        <span className="text-[11px] sm:text-xs text-muted-foreground">/session</span>
                       </span>
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-xs h-7 px-2"
+                        className="text-xs h-7 shrink-0 px-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/advisors/${advisor.id}`);
