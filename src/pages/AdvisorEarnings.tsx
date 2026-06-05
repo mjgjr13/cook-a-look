@@ -320,6 +320,17 @@ const AdvisorEarnings = () => {
             </div>
           </div>
 
+          {/* Manual payout banner */}
+          <div className="mb-8 border border-gold/30 bg-gold/5 px-4 py-3 rounded-md">
+            <p className="font-sans text-sm text-foreground">
+              <strong>Payouts are processed manually</strong> within 7 days of a completed session.
+              Submit a withdrawal request below (minimum $25) or email{" "}
+              <a href="mailto:support@cookalook.com" className="underline">support@cookalook.com</a>.
+            </p>
+          </div>
+
+
+
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <motion.div
