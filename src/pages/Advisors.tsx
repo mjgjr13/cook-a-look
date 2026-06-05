@@ -264,9 +264,9 @@ const Advisors = () => {
                       </span>
                     </div>
 
-                    <h3 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1 leading-snug">
+                    <h2 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1 leading-snug">
                       {displayName}
-                    </h3>
+                    </h2>
                     <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
                       {clientFocus.length > 0 ? clientFocus.slice(0, 3).join(" · ") : "Style Consultant"}
                     </p>

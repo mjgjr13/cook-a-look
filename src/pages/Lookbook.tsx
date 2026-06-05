@@ -215,7 +215,7 @@ const Lookbook = () => {
                   {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <div className="text-center text-primary-foreground p-6">
-                      <h3 className="font-serif text-xl mb-2">{item.title}</h3>
+                      <p className="font-serif text-xl mb-2">{item.title}</p>
                       <p className="font-sans text-sm text-primary-foreground/80">
                         {item.description}
                       </p>
@@ -227,7 +227,7 @@ const Lookbook = () => {
                   <Badge variant="secondary" className="mb-2 font-sans text-xs">
                     {item.category}
                   </Badge>
-                  <h3 className="font-serif text-lg font-medium">{item.title}</h3>
+                  <h2 className="font-serif text-lg font-medium">{item.title}</h2>
                   <p className="font-sans text-sm text-muted-foreground">
                     {item.description}
                   </p>

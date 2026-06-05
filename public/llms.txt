@@ -1,0 +1,19 @@
+# Cook A Look
+
+> Cook A Look connects clients with professional style advisors for virtual or in-person personal styling consultations.
+
+Cook A Look is a marketplace where vetted style advisors offer one-on-one fashion consultations. Clients browse advisors by specialty, focus, and price; book a 60-minute session; and meet via video or in person.
+
+## Pages
+
+- [Home](/): Overview of the Cook A Look styling marketplace.
+- [Style Advisors](/advisors): Browse and filter professional style advisors.
+- [Lookbook](/lookbook): Curated gallery of outfits and style inspiration.
+- [Become an Advisor](/become-advisor): Apply to join Cook A Look as a style advisor.
+- [Sign In](/signin): Sign in to your Cook A Look account.
+- [Sign Up](/signup): Create a Cook A Look client account.
+
+## Optional
+
+- [Terms of Use](/terms): Platform terms and conditions.
+- [Privacy Policy](/privacy): How we handle user data.
