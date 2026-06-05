@@ -170,6 +170,7 @@ export const AdvisorChatbot = () => {
       {/* Floating Chat Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Open style concierge chat"
         className={cn(
           "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg transition-all duration-300",
           "bg-primary hover:bg-primary/90",
@@ -177,7 +178,7 @@ export const AdvisorChatbot = () => {
         )}
         size="icon"
       >
-        <MessageCircle className="h-6 w-6" />
+        <MessageCircle className="h-6 w-6" aria-hidden="true" />
       </Button>
 
       {/* Chat Window */}
@@ -197,9 +198,10 @@ export const AdvisorChatbot = () => {
             variant="ghost"
             size="icon"
             onClick={() => setIsOpen(false)}
+            aria-label="Close style concierge chat"
             className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
 
@@ -247,10 +249,11 @@ export const AdvisorChatbot = () => {
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
+              aria-label="Send message"
               size="icon"
               className="shrink-0"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>

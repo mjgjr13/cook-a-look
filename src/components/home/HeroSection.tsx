@@ -25,7 +25,7 @@ const HeroSection = () => {
       {/* Content */}
       <div className="container mx-auto px-6 lg:px-8 relative z-10">
         <div className="max-w-2xl">
-          <h1 className="sr-only">Cook A Look</h1>
+          <h1 className="sr-only">Cook A Look — Discover your personal style with expert advisors</h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,6 +127,12 @@ const SignUp = () => {
 
   return (
     <Layout>
+      <Seo
+        title="Create Account | Cook A Look"
+        description="Create your Cook A Look client account to book personal styling consultations with professional advisors."
+        path="/signup"
+        noindex
+      />
       <section className="py-24 bg-background min-h-[80vh] flex items-center">
         <div className="container mx-auto px-6 lg:px-8">
           <motion.div

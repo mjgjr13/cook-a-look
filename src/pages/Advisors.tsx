@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilters";
 import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
+import Seo from "@/components/Seo";
 interface AdvisorData {
   id: string;
   full_name: string | null;
@@ -182,6 +183,11 @@ const Advisors = () => {
 
   return (
     <Layout>
+      <Seo
+        title="Style Advisors | Cook A Look"
+        description="Browse our curated selection of professional style advisors. Filter by specialty, client focus, price, and session type to find your perfect match."
+        path="/advisors"
+      />
       <section className="py-10 lg:py-16 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -264,9 +270,9 @@ const Advisors = () => {
                       </span>
                     </div>
 
-                    <h3 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1 leading-snug">
+                    <h2 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1 leading-snug">
                       {displayName}
-                    </h3>
+                    </h2>
                     <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
                       {clientFocus.length > 0 ? clientFocus.slice(0, 3).join(" · ") : "Style Consultant"}
                     </p>

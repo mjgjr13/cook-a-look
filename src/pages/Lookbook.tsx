@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLookbookItems, LookbookItem } from "@/hooks/useLookbookItems";
 import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
+import Seo from "@/components/Seo";
 
 // Fallback static data for when database is empty
 import lookbookBusiness1 from "@/assets/lookbook-business-1.jpg";
@@ -147,8 +148,23 @@ const Lookbook = () => {
     );
   }
 
+  const lookbookJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ImageGallery",
+    name: "Cook A Look Lookbook",
+    description: "Curated outfit inspiration from our top style advisors.",
+    url: "https://www.cookalook.com/lookbook",
+    image: filteredItems.slice(0, 12).map((i) => i.image_url),
+  };
+
   return (
     <Layout>
+      <Seo
+        title="Lookbook | Cook A Look"
+        description="Curated outfit inspiration from our top style advisors — business, casual, evening, and streetwear looks."
+        path="/lookbook"
+        jsonLd={lookbookJsonLd}
+      />
       <section className="py-16 bg-background">
         <div className="container mx-auto px-6 lg:px-8">
           <motion.div
@@ -215,7 +231,7 @@ const Lookbook = () => {
                   {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <div className="text-center text-primary-foreground p-6">
-                      <h3 className="font-serif text-xl mb-2">{item.title}</h3>
+                      <p className="font-serif text-xl mb-2">{item.title}</p>
                       <p className="font-sans text-sm text-primary-foreground/80">
                         {item.description}
                       </p>
@@ -227,7 +243,7 @@ const Lookbook = () => {
                   <Badge variant="secondary" className="mb-2 font-sans text-xs">
                     {item.category}
                   </Badge>
-                  <h3 className="font-serif text-lg font-medium">{item.title}</h3>
+                  <h2 className="font-serif text-lg font-medium">{item.title}</h2>
                   <p className="font-sans text-sm text-muted-foreground">
                     {item.description}
                   </p>

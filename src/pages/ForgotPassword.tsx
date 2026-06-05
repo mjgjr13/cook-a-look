@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,6 +127,12 @@ const ForgotPassword = () => {
 
   return (
     <Layout>
+      <Seo
+        title="Reset Password | Cook A Look"
+        description="Reset your Cook A Look account password to regain access to your bookings and messages."
+        path="/forgot-password"
+        noindex
+      />
       <section className="py-24 bg-background min-h-[80vh] flex items-center">
         <div className="container mx-auto px-6 lg:px-8 max-w-md">
           <motion.div
