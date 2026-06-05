@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { signUpSchema, type SignUpFormData } from "@/lib/validations";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 
 const SignUp = () => {
   const { toast } = useToast();
