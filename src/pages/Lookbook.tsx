@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLookbookItems, LookbookItem } from "@/hooks/useLookbookItems";
 import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
+import Seo from "@/components/Seo";
 
 // Fallback static data for when database is empty
 import lookbookBusiness1 from "@/assets/lookbook-business-1.jpg";

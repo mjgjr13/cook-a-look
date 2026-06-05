@@ -183,6 +183,11 @@ const Advisors = () => {
 
   return (
     <Layout>
+      <Seo
+        title="Style Advisors | Cook A Look"
+        description="Browse our curated selection of professional style advisors. Filter by specialty, client focus, price, and session type to find your perfect match."
+        path="/advisors"
+      />
       <section className="py-10 lg:py-16 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
