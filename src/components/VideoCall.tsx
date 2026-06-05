@@ -111,26 +111,11 @@ const VideoCall = ({
 
           <div className="p-4 border-t bg-background flex items-center justify-center gap-4">
             <Button
-              variant={isMuted ? "destructive" : "outline"}
-              size="icon"
-              className="w-12 h-12 rounded-full"
-              onClick={() => setIsMuted(!isMuted)}
-            >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </Button>
-            <Button
-              variant={isVideoOff ? "destructive" : "outline"}
-              size="icon"
-              className="w-12 h-12 rounded-full"
-              onClick={() => setIsVideoOff(!isVideoOff)}
-            >
-              {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-            </Button>
-            <Button
               variant="destructive"
               size="icon"
               className="w-14 h-14 rounded-full"
               onClick={handleEndCall}
+              aria-label="End call"
             >
               <Phone className="w-6 h-6 rotate-[135deg]" />
             </Button>
