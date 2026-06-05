@@ -26,8 +26,6 @@ const VideoCall = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
   useEffect(() => {
