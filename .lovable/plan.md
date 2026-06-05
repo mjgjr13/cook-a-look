@@ -1,95 +1,75 @@
-# Cook A Look — 7-Day MVP Build Plan (finalized)
+# Availability Page Rebuild
 
-Decisions locked from your answers:
-- **Payouts:** manual, but advisor earnings dashboard stays visible
-- **Verification:** keep liveness camera, but optional (manual review primary)
-- **Scope:** keep rewards, referrals, AI concierge, featured placement visible
-- **Auth:** add Google sign-in
+## Goal
+Make setting availability feel like 30 seconds of work, not a form-filling exercise. Single calendar. One-click presets. Inline editor. Live preview.
 
-Goal: first real paid consultation completed end-to-end in 7 days. No refactors. Critical path only.
+## Current pain
+- Three concepts (weekly windows, date overrides, date blocks, breaks) presented side-by-side → cognitive overload.
+- Timezone is mentioned in a help blurb, not surfaced where the advisor is picking times.
+- Advisor has no idea what a client will actually see.
+- AM/PM entry uses native time inputs with no validation feedback.
 
----
+## New page structure (replaces `/advisor/availability` content)
 
-## Day 1 — Booking atomicity (DB)
+```text
+┌──────────────────────────────────────────────────────────────┐
+│  Manage Availability         [Timezone: America/Los_Angeles ▼] │
+│                                                                │
+│  Quick start:  [ Weekdays 9–5 ] [ Evenings 6–9 ] [ Weekends ] │
+│                                                                │
+│  ┌── Calendar (next 4 weeks) ──┐  ┌── Selected day ─────────┐ │
+│  │  M  T  W  T  F  S  S        │  │  Mon, Jun 8             │ │
+│  │  ●  ●  ●  ●  ●  ·  ·        │  │  ◉ Available            │ │
+│  │  ●  ●  ●  ●  ●  ·  ·        │  │  ○ Blocked              │ │
+│  │  ●  ●  ✕  ●  ●  ·  ·        │  │                         │ │
+│  │  ●  ●  ●  ●  ●  ·  ·        │  │  From: [9:00 AM ▾]      │ │
+│  │                              │  │  To:   [5:00 PM ▾]      │ │
+│  │  Legend: ● open  ✕ blocked  │  │  [ Apply to this day ]  │ │
+│  │          · unset             │  │  [ Apply to every Mon ] │ │
+│  └──────────────────────────────┘  └─────────────────────────┘ │
+│                                                                │
+│  ▸ Client preview (collapsible)                                │
+│     Shows the exact bookable slots a client in their TZ sees. │
+└──────────────────────────────────────────────────────────────┘
+```
 
-Single migration:
-- Add unique partial index on `availability_slots (advisor_id, start_time) WHERE is_booked = true` to prevent double-book.
-- Create `book_slot(advisor_id, start_time, end_time, client_id, is_virtual)` SECURITY DEFINER function that:
-  1. Locks slot row, inserts `availability_slots` row with `is_booked=true` if free (or fails),
-  2. Inserts `bookings` row (`status='pending'`, returns booking_id),
-  3. Returns `{ booking_id, slot_id }`.
-- GRANT execute to `authenticated`.
+### Interactions
+- **Presets** write to `advisor_availability_windows` for every weekday they cover, replacing any existing window for that day. One toast: "Weekdays 9–5 saved".
+- **Click a day** → opens the right-hand editor pre-filled with whatever applies (override > weekly default).
+- **Apply to this day** → writes an `advisor_date_overrides` row (or block if "Blocked" is selected).
+- **Apply to every Mon** → writes the weekly default for `day_of_week = 1` and clears any override for past-applicable Mondays in the visible window.
+- **Timezone selector** in the header is the same control as today, but always visible and used to label every time picker.
+- **Time pickers**: 15-min increment dropdown (`Select` with `8:00 AM, 8:15 AM …`) — no native `<input type=time>`.
+- **Client preview**: calls existing `get_available_booking_slots` for each visible day and renders chips. Confirms "what clients see" matches what advisor set.
 
-UI/edge:
-- `create-checkout`: call `book_slot` first; pass `booking_id` into Stripe `metadata`. If slot taken, return 409 to frontend (toast "slot just got taken, pick another").
+## Files
 
-## Day 2 — verify-payment + Join Meeting CTA
+### New
+- `src/components/advisor/AvailabilityCalendar.tsx` — the calendar + dot rendering
+- `src/components/advisor/DayEditorPanel.tsx` — right-hand panel
+- `src/components/advisor/PresetButtons.tsx` — three presets
+- `src/components/advisor/ClientPreview.tsx` — collapsible preview
+- `src/components/advisor/TimeSelect.tsx` — 15-min increment select
 
-- `verify-payment`: on Stripe success, flip `payments.status='completed'`, `bookings.status='confirmed'`, set `escrow_release_at = now() + 48h`. Idempotent (re-runs safe).
-- Add `JoinConsultationButton` component, shown on `Dashboard` and `AdvisorDashboard` for any `confirmed` booking whose slot start is within `[T-15min, T+90min]`. Opens existing `VideoCall` modal.
-- Remove placebo Mic/Video buttons in `VideoCall.tsx` (Daily iframe owns its own controls).
+### Replaced
+- `src/pages/AdvisorAvailability.tsx` — composes the four components above; drops the old info-card layout
+- `src/components/advisor/CalendarAvailabilityManager.tsx` → deleted (no other consumers per grep)
 
-## Day 3 — Completion + reminders
+### Untouched
+- All hooks (`useAdvisorAvailability`, `useDateOverrides`) — same data model
+- DB schema — no migration needed
+- `BookingCalendar.tsx` (client side) — unaffected
 
-- New edge function `mark-completed-bookings` (scheduled hourly via Supabase scheduled function or a cron route + external pinger): flips `bookings.status='completed'` and `completed_at=now()` where slot end_time < now() and status='confirmed'. Existing triggers then fire rewards + monthly stats.
-- New edge function `send-session-reminders`: 1h before slot start, send Resend email to both parties with the Join link.
-- Verify post-call review modal still fires from `VideoCall` after session ends.
+## Out of scope
+- Recurring breaks (lunch etc.) — keep current behavior, surface in an "Advanced" disclosure later
+- Bulk multi-day select drag
+- Mobile-specific layout polish (will inherit responsive defaults)
 
-## Day 4 — Google sign-in
+## Risk
+Low. Data model unchanged; only the editing UI changes. Old hooks already power saves and realtime invalidation.
 
-- Call `supabase--configure_social_auth` to enable Google.
-- Replace `signInWithPassword` flow's social slot in `SignIn.tsx` and `SignUp.tsx` with `lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })`.
-- Keep email/password intact.
-
-## Day 5 — Payout honesty + verification toggle
-
-- Keep `AdvisorEarnings` page. Add prominent banner: "Payouts processed manually within 7 days of session completion. Email support@cookalook.com to request withdrawal." Wire `withdrawal_requests` insert from existing UI; admin processes via Stripe dashboard manually.
-- Liveness: ensure `liveness_verified` is optional everywhere; admin can approve advisor without it (already MVP-flagged per memory — just verify).
-- Admin: confirm `AdminAdvisors` shows pending list with one-click approve.
-
-## Day 6 — End-to-end dry run (test mode)
-
-- Self-book as a test client → Stripe test card → both devices join Daily room → end call → wait for completion cron → verify review prompt + advisor earnings line item + escrow release timestamp.
-- Fix any red.
-
-## Day 7 — Soft launch
-
-- Swap Stripe to live keys.
-- Invite 5 clients + 2 advisors.
-- Watch edge function logs hourly for 48h.
-
----
-
-## Order of implementation
-
-DB migration (Day 1) → edge functions (Days 1–3) → UI CTAs (Day 2) → auth (Day 4) → polish (Day 5) → test (Day 6) → ship (Day 7).
-
-## Non-goals (explicitly NOT doing)
-
-- Stripe Connect / automated payouts
-- Refactoring dual advisor tables
-- Hiding rewards/referrals/AI/featured (per your call)
-- Real-time Daily.co recording webhook ingestion (post-MVP)
-- Dispute UI improvements
-
-## Risk + rollback
-
-- All Day 1 DB changes additive (new index, new function). Rollback = drop them.
-- All new edge functions independent; rollback = unschedule cron or remove buttons.
-- Google sign-in additive; email/password remains.
-- Stripe stays in test mode until Day 6 passes.
-
-## Files I will touch (preview)
-
-- `supabase/migrations/<new>.sql` (book_slot, unique index)
-- `supabase/functions/create-checkout/index.ts`
-- `supabase/functions/verify-payment/index.ts`
-- `supabase/functions/mark-completed-bookings/index.ts` (new)
-- `supabase/functions/send-session-reminders/index.ts` (new)
-- `src/components/booking/JoinConsultationButton.tsx` (new)
-- `src/pages/Dashboard.tsx`, `src/pages/AdvisorDashboard.tsx`
-- `src/components/VideoCall.tsx` (strip placebo controls)
-- `src/pages/SignIn.tsx`, `src/pages/SignUp.tsx`
-- `src/pages/AdvisorEarnings.tsx` (manual-payout banner)
-
-Approve and I'll start with the Day 1 migration.
+## Verification
+1. Pick "Weekdays 9–5" → see dots Mon–Fri across all visible weeks.
+2. Click Wed → block it → dot turns ✕.
+3. Open Client preview → confirm Wed has no slots.
+4. Sign in as a test client → confirm BookingCalendar matches.
