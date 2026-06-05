@@ -713,6 +713,11 @@ const BecomeAdvisor = () => {
 
   return (
     <Layout>
+      <Seo
+        title="Become a Style Advisor | Cook A Look"
+        description="Apply to join Cook A Look as a professional style advisor. Set your own rates, choose your hours, and grow your client base."
+        path="/become-advisor"
+      />
       {/* Hero Section */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 lg:px-8">

@@ -1,9 +1,15 @@
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { motion } from "framer-motion";
 
 const TermsOfUse = () => {
   return (
     <Layout>
+      <Seo
+        title="Terms of Use | Cook A Look"
+        description="Terms and conditions for using the Cook A Look styling marketplace, including bookings, payments, and dispute policies."
+        path="/terms"
+      />
       <section className="py-16 bg-card">
         <div className="container mx-auto px-6 lg:px-8 max-w-4xl">
           <motion.div

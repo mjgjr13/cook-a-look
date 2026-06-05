@@ -1,9 +1,15 @@
 import Layout from "@/components/layout/Layout";
+import Seo from "@/components/Seo";
 import { motion } from "framer-motion";
 
 const PrivacyPolicy = () => {
   return (
     <Layout>
+      <Seo
+        title="Privacy Policy | Cook A Look"
+        description="How Cook A Look collects, stores, and protects your personal information across our styling marketplace."
+        path="/privacy"
+      />
       <section className="py-16 bg-card">
         <div className="container mx-auto px-6 lg:px-8 max-w-4xl">
           <motion.div

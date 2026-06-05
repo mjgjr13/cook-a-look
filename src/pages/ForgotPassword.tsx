@@ -126,6 +126,12 @@ const ForgotPassword = () => {
 
   return (
     <Layout>
+      <Seo
+        title="Reset Password | Cook A Look"
+        description="Reset your Cook A Look account password to regain access to your bookings and messages."
+        path="/forgot-password"
+        noindex
+      />
       <section className="py-24 bg-background min-h-[80vh] flex items-center">
         <div className="container mx-auto px-6 lg:px-8 max-w-md">
           <motion.div
