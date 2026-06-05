@@ -93,13 +93,13 @@ serve(async (req) => {
 
     const advisorId = session.metadata?.advisor_id;
     const slotId = session.metadata?.slot_id;
+    const bookingId = session.metadata?.booking_id;
     const clientUserId = session.metadata?.client_user_id;
 
-    if (!advisorId || !slotId || !clientUserId) {
+    if (!advisorId || !slotId || !clientUserId || !bookingId) {
       throw new Error("Missing metadata");
     }
 
-    // SECURITY: Verify the caller is the client who made this payment
     if (clientUserId !== authData.user.id) {
       console.error("User mismatch:", { clientUserId, callerId: authData.user.id });
       return new Response(JSON.stringify({ error: "Unauthorized access to this payment" }), {
@@ -108,46 +108,31 @@ serve(async (req) => {
       });
     }
 
-    // Get client's profile
     const { data: clientProfile } = await supabaseClient
       .from("profiles")
       .select("id")
       .eq("user_id", clientUserId)
       .single();
-
     if (!clientProfile) throw new Error("Client profile not found");
 
-    // Create the booking
-    const { data: booking, error: bookingError } = await supabaseClient
+    // Confirm the pending booking created at checkout time
+    const { error: confirmError } = await supabaseClient
       .from("bookings")
-      .insert({
-        advisor_id: advisorId,
-        client_id: clientProfile.id,
-        slot_id: slotId,
-        status: "confirmed",
-      })
-      .select()
-      .single();
+      .update({ status: "confirmed", updated_at: new Date().toISOString() })
+      .eq("id", bookingId)
+      .eq("client_id", clientProfile.id);
+    if (confirmError) throw confirmError;
 
-    if (bookingError) throw bookingError;
-
-    // Mark slot as booked
-    await supabaseClient
-      .from("availability_slots")
-      .update({ is_booked: true })
-      .eq("id", slotId);
-
-    // Record the payment with platform fee breakdown
+    // Record the payment with platform fee + 48h escrow
     const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
     const taxAmount = session.total_details?.amount_tax ? session.total_details.amount_tax / 100 : 0;
     const baseAmount = totalAmount - taxAmount;
-    
-    // Calculate 15% platform fee and 85% advisor payout
     const platformFee = Number((baseAmount * 0.15).toFixed(2));
     const advisorPayout = Number((baseAmount * 0.85).toFixed(2));
+    const escrowReleaseAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
     await supabaseClient.from("payments").insert({
-      booking_id: booking.id,
+      booking_id: bookingId,
       client_id: clientProfile.id,
       advisor_id: advisorId,
       amount: baseAmount,
@@ -156,15 +141,17 @@ serve(async (req) => {
       platform_fee: platformFee,
       advisor_payout: advisorPayout,
       stripe_checkout_session_id: sessionId,
-      stripe_payment_intent_id: typeof session.payment_intent === "string" 
-        ? session.payment_intent 
+      stripe_payment_intent_id: typeof session.payment_intent === "string"
+        ? session.payment_intent
         : session.payment_intent?.id,
       status: "completed",
+      escrow_status: "held",
+      escrow_release_at: escrowReleaseAt,
     });
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      bookingId: booking.id,
+    return new Response(JSON.stringify({
+      success: true,
+      bookingId,
       totalPaid: totalAmount,
       taxPaid: taxAmount,
     }), {
