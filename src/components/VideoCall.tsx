@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Video, VideoOff, Mic, MicOff, Phone } from "lucide-react";
+import { Loader2, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReviewModal from "@/components/reviews/ReviewModal";
@@ -26,8 +26,6 @@ const VideoCall = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
   useEffect(() => {
@@ -113,26 +111,11 @@ const VideoCall = ({
 
           <div className="p-4 border-t bg-background flex items-center justify-center gap-4">
             <Button
-              variant={isMuted ? "destructive" : "outline"}
-              size="icon"
-              className="w-12 h-12 rounded-full"
-              onClick={() => setIsMuted(!isMuted)}
-            >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </Button>
-            <Button
-              variant={isVideoOff ? "destructive" : "outline"}
-              size="icon"
-              className="w-12 h-12 rounded-full"
-              onClick={() => setIsVideoOff(!isVideoOff)}
-            >
-              {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-            </Button>
-            <Button
               variant="destructive"
               size="icon"
               className="w-14 h-14 rounded-full"
               onClick={handleEndCall}
+              aria-label="End call"
             >
               <Phone className="w-6 h-6 rotate-[135deg]" />
             </Button>

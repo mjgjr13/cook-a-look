@@ -1275,10 +1275,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      book_slot: {
+        Args: {
+          p_advisor_id: string
+          p_client_user_id: string
+          p_end_time: string
+          p_is_virtual?: boolean
+          p_start_time: string
+        }
+        Returns: {
+          booking_id: string
+          slot_id: string
+        }[]
+      }
       can_leave_review: {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
       }
+      complete_due_bookings: { Args: never; Returns: number }
       generate_referral_code: { Args: never; Returns: string }
       get_active_published_advisors: {
         Args: never
