@@ -1169,6 +1169,7 @@ export type Database = {
           duration_minutes: number | null
           ended_at: string | null
           id: string
+          provider: string
           recording_status: string | null
           recording_url: string | null
           room_name: string
@@ -1181,6 +1182,7 @@ export type Database = {
           duration_minutes?: number | null
           ended_at?: string | null
           id?: string
+          provider?: string
           recording_status?: string | null
           recording_url?: string | null
           room_name: string
@@ -1193,6 +1195,7 @@ export type Database = {
           duration_minutes?: number | null
           ended_at?: string | null
           id?: string
+          provider?: string
           recording_status?: string | null
           recording_url?: string | null
           room_name?: string

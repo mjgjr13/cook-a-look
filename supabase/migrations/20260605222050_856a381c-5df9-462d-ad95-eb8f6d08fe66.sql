@@ -1,0 +1,1 @@
+ALTER TABLE public.video_sessions ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT 'daily';
