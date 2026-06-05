@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilters";
 import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
+import Seo from "@/components/Seo";
 interface AdvisorData {
   id: string;
   full_name: string | null;
