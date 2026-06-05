@@ -148,8 +148,23 @@ const Lookbook = () => {
     );
   }
 
+  const lookbookJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ImageGallery",
+    name: "Cook A Look Lookbook",
+    description: "Curated outfit inspiration from our top style advisors.",
+    url: "https://www.cookalook.com/lookbook",
+    image: filteredItems.slice(0, 12).map((i) => i.image_url),
+  };
+
   return (
     <Layout>
+      <Seo
+        title="Lookbook | Cook A Look"
+        description="Curated outfit inspiration from our top style advisors — business, casual, evening, and streetwear looks."
+        path="/lookbook"
+        jsonLd={lookbookJsonLd}
+      />
       <section className="py-16 bg-background">
         <div className="container mx-auto px-6 lg:px-8">
           <motion.div

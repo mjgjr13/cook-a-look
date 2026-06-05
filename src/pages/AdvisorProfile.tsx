@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCalendar from "@/components/BookingCalendar";
 import AdvisorReviews from "@/components/reviews/AdvisorReviews";
+import Seo from "@/components/Seo";
 
 // Fallback images for when no portfolio images exist
 import inspiration1 from "@/assets/inspiration-1.jpg";
@@ -153,8 +154,43 @@ const AdvisorProfile = () => {
   const displaySpecialties = advisor.style_tags?.length ? advisor.style_tags : [];
   const displayImages = advisor.portfolio_images?.length ? advisor.portfolio_images : fallbackImages;
 
+  const personJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: displayName,
+    description: advisor.bio || `Professional style advisor on Cook A Look.`,
+    image: advisor.avatar_url || undefined,
+    url: `https://www.cookalook.com/advisors/${advisor.id}`,
+    jobTitle: "Style Advisor",
+    knowsLanguage: displayLanguages,
+    makesOffer: {
+      "@type": "Offer",
+      price: displayPrice,
+      priceCurrency: "USD",
+      itemOffered: {
+        "@type": "Service",
+        name: "Personal Styling Consultation",
+      },
+    },
+    ...(displayReviews > 0 && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: displayRating,
+        reviewCount: displayReviews,
+      },
+    }),
+  };
+
   return (
     <Layout>
+      <Seo
+        title={`${displayName} — Style Advisor | Cook A Look`}
+        description={(advisor.bio || `Book a personal styling consultation with ${displayName} on Cook A Look.`).slice(0, 158)}
+        path={`/advisors/${advisor.id}`}
+        ogImage={advisor.avatar_url || undefined}
+        ogType="profile"
+        jsonLd={personJsonLd}
+      />
       <section className="py-5 pb-28 lg:py-8 lg:pb-8 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Link 
