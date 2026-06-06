@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Phone, ExternalLink, Video } from "lucide-react";
+import { Loader2, Phone, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReviewModal from "@/components/reviews/ReviewModal";
@@ -26,7 +26,6 @@ const VideoCall = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
-  const [provider, setProvider] = useState<"daily" | "google_meet">("daily");
   const [showReviewModal, setShowReviewModal] = useState(false);
 
   useEffect(() => {
@@ -37,13 +36,6 @@ const VideoCall = ({
         });
         if (error) throw error;
         setRoomUrl(data.roomUrl);
-        setProvider(data.provider === "google_meet" ? "google_meet" : "daily");
-        if (data.fallback) {
-          toast({
-            title: "Using Google Meet",
-            description: "Our video service is unavailable, so this session is using Google Meet.",
-          });
-        }
       } catch (error) {
         console.error("Failed to create video room:", error);
         toast({
@@ -86,8 +78,6 @@ const VideoCall = ({
     );
   }
 
-  const isGoogleMeet = provider === "google_meet";
-
   return (
     <>
       <Dialog open={!showReviewModal} onOpenChange={onClose}>
@@ -96,46 +86,31 @@ const VideoCall = ({
             <DialogTitle className="font-serif">Style Consultation</DialogTitle>
           </DialogHeader>
 
-          {isGoogleMeet ? (
-            <div className="flex flex-col items-center justify-center text-center gap-4 p-10 min-h-[50vh]">
-              <Video className="w-12 h-12 text-primary" />
-              <div className="space-y-2 max-w-md">
-                <h3 className="font-serif text-2xl">Join via Google Meet</h3>
-                <p className="text-sm text-muted-foreground">
-                  This session uses Google Meet. Click below to open the meeting in a new tab.
-                  Share the generated meeting link with the other participant via the booking chat
-                  so you both join the same room.
-                </p>
+          <div className="relative w-full" style={{ height: "70vh" }}>
+            {roomUrl ? (
+              <iframe
+                src={roomUrl}
+                allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
+                className="w-full h-full border-0"
+                title="Video consultation"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-secondary">
+                <p className="text-muted-foreground">Unable to load video call</p>
               </div>
-              {roomUrl && (
-                <Button
-                  variant="hero"
-                  size="lg"
-                  onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Google Meet
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="relative w-full" style={{ height: "70vh" }}>
-              {roomUrl ? (
-                <iframe
-                  src={roomUrl}
-                  allow="camera; microphone; fullscreen; speaker; display-capture"
-                  className="w-full h-full border-0"
-                  title="Video consultation"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full bg-secondary">
-                  <p className="text-muted-foreground">Unable to load video call</p>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="p-4 border-t bg-background flex items-center justify-center gap-4">
+            {roomUrl && (
+              <Button
+                variant="outline"
+                onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open in new tab
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="icon"

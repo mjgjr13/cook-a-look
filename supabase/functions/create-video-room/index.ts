@@ -2,8 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
-const GOOGLE_MEET_URL = "https://meet.google.com/new";
-
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
   if (corsResponse) return corsResponse;
@@ -55,24 +53,27 @@ serve(async (req) => {
       return jsonResponse({
         roomUrl: existingSession.room_url,
         roomName: existingSession.room_name,
-        provider: "google_meet",
+        provider: existingSession.provider ?? "jitsi",
       });
     }
 
-    const roomName = `gmeet-${bookingId.slice(0, 8)}`;
+    // Deterministic shared room — both parties land in the SAME room
+    const roomName = `cookalook-${bookingId}`;
+    const roomUrl = `https://meet.jit.si/${roomName}`;
+
     await supabaseClient.from("video_sessions").insert({
       booking_id: bookingId,
       room_name: roomName,
-      room_url: GOOGLE_MEET_URL,
-      provider: "google_meet",
+      room_url: roomUrl,
+      provider: "jitsi",
     }).then(({ error }) => {
       if (error) console.error("Persist session failed:", error);
     });
 
     return jsonResponse({
-      roomUrl: GOOGLE_MEET_URL,
+      roomUrl,
       roomName,
-      provider: "google_meet",
+      provider: "jitsi",
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);

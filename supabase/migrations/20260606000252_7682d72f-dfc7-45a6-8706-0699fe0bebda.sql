@@ -1,0 +1,1 @@
+DELETE FROM public.video_sessions WHERE provider != 'jitsi' OR room_url LIKE '%meet.google.com%';
