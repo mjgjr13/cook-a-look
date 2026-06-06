@@ -57,9 +57,10 @@ serve(async (req) => {
       });
     }
 
-    // Deterministic shared room — both parties land in the SAME room
+    // Deterministic shared room — both parties land in the SAME room.
+    // Using meet.ffmuc.net (public Jitsi instance) — meet.jit.si now requires moderator login.
     const roomName = `cookalook-${bookingId}`;
-    const roomUrl = `https://meet.jit.si/${roomName}`;
+    const roomUrl = `https://meet.ffmuc.net/${roomName}#config.prejoinPageEnabled=false`;
 
     await supabaseClient.from("video_sessions").insert({
       booking_id: bookingId,
