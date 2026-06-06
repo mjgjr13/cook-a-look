@@ -1,0 +1,1 @@
+DELETE FROM public.video_sessions WHERE room_url LIKE '%meet.jit.si%' OR room_url LIKE '%meet.google.com%';
