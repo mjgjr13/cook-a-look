@@ -15,7 +15,10 @@ const HeroSection = () => {
             src="/images/hero-fashion.jpg"
             alt="Elegant fashion consultant"
             className="h-full w-full object-cover object-top"
+            width={1600}
+            height={1067}
             fetchPriority="high"
+            decoding="async"
           />
         </div>
         {/* Seamless gradient overlay - extends fully to the right */}
