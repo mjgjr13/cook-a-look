@@ -273,23 +273,8 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                 </div>
               </div>
 
-              {/* Sort */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Sort By</Label>
-                <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
-                  <SelectTrigger className="w-full gap-2">
-                    <ArrowUpDown className="w-4 h-4" />
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background">
-                    {sortOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
+
 
               {/* Apply/Clear buttons */}
               <div className="flex gap-2 pt-2 border-t border-border">
