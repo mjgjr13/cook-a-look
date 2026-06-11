@@ -3,7 +3,6 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
-// Input validation using simple regex and type checks
 const isValidUUID = (str: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
@@ -16,23 +15,24 @@ const isValidISO8601 = (str: string): boolean => {
 
 interface CheckoutRequest {
   advisorId: string;
-  slotId?: string; // Optional for dynamic slots
-  slotStartTime?: string; // For dynamic slot creation
-  slotEndTime?: string; // For dynamic slot creation
+  slotId?: string;
+  slotStartTime?: string;
+  slotEndTime?: string;
   sessionDate: string;
   sessionTime: string;
   isDynamicSlot?: boolean;
-  hours?: number; // 1, 2, or 3 — selected by client
+  hours?: number;
+  meetingType?: "virtual" | "in_person";
+  locationId?: string | null;
+  suggestedLocation?: { name?: string; address?: string; note?: string } | null;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   const corsResponse = handleCorsPreflightRequest(req);
   if (corsResponse) return corsResponse;
 
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
 
-  // Use service role to fetch advisor data securely
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -46,22 +46,16 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { advisorId, slotId, slotStartTime, slotEndTime, sessionDate, sessionTime, isDynamicSlot, hours: rawHours } = body as CheckoutRequest;
+    const {
+      advisorId, slotId, slotStartTime, slotEndTime, sessionDate, sessionTime, isDynamicSlot,
+      hours: rawHours, meetingType: rawMeetingType, locationId, suggestedLocation,
+    } = body as CheckoutRequest;
 
-    // Validate hours (1, 2, or 3). Default to 1 for backwards compatibility.
     const hours = Number.isInteger(rawHours) && rawHours! >= 1 && rawHours! <= 3 ? rawHours! : 1;
+    const meetingType: "virtual" | "in_person" = rawMeetingType === "in_person" ? "in_person" : "virtual";
 
-    // Validate advisor ID
-    if (!isValidUUID(advisorId)) {
-      throw new Error("Invalid advisor ID format");
-    }
-
-    // For legacy slots, validate slotId
-    if (!isDynamicSlot && slotId && !isValidUUID(slotId)) {
-      throw new Error("Invalid slot ID format");
-    }
-
-    // For dynamic slots, validate time strings
+    if (!isValidUUID(advisorId)) throw new Error("Invalid advisor ID format");
+    if (!isDynamicSlot && slotId && !isValidUUID(slotId)) throw new Error("Invalid slot ID format");
     if (isDynamicSlot) {
       if (!slotStartTime || !slotEndTime || !isValidISO8601(slotStartTime) || !isValidISO8601(slotEndTime)) {
         throw new Error("Invalid slot time format");
@@ -70,44 +64,58 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) throw new Error("Missing authorization header");
-    
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: authError } = await supabaseClient.auth.getUser(token);
-    
-    if (authError || !userData?.user) {
-      console.error("Auth error:", authError);
-      throw new Error("User not authenticated");
-    }
-    
+    if (authError || !userData?.user) throw new Error("User not authenticated");
     const user = userData.user;
-    
-    if (!user.email) {
-      throw new Error("User email not available");
-    }
+    if (!user.email) throw new Error("User email not available");
 
-    // SECURITY: Fetch the advisor's price from database instead of trusting client input
+    // Fetch advisor with capabilities + surcharge
     const { data: advisor, error: advisorError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, price_per_session, is_advisor, advisor_approved")
+      .select("id, full_name, price_per_session, is_advisor, advisor_approved, virtual_available, in_person_available, in_person_surcharge")
       .eq("id", advisorId)
       .single();
+    if (advisorError || !advisor) throw new Error("Advisor not found");
+    if (!advisor.is_advisor || !advisor.advisor_approved) throw new Error("Invalid advisor");
+    if (!advisor.price_per_session || advisor.price_per_session <= 0) throw new Error("Advisor has not set a valid price");
 
-    if (advisorError || !advisor) {
-      throw new Error("Advisor not found");
+    if (meetingType === "virtual" && !advisor.virtual_available) throw new Error("Advisor does not offer virtual sessions");
+    if (meetingType === "in_person" && !advisor.in_person_available) throw new Error("Advisor does not offer in-person sessions");
+
+    // Validate location for in-person
+    let validatedLocationId: string | null = null;
+    let validatedSuggested: { name: string; address: string; note?: string } | null = null;
+    if (meetingType === "in_person") {
+      if (locationId) {
+        const { data: loc } = await supabaseAdmin
+          .from("advisor_meeting_locations")
+          .select("id")
+          .eq("id", locationId)
+          .eq("advisor_id", advisorId)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!loc) throw new Error("Invalid meeting location");
+        validatedLocationId = loc.id;
+      } else if (suggestedLocation && suggestedLocation.name && suggestedLocation.address) {
+        validatedSuggested = {
+          name: String(suggestedLocation.name).slice(0, 200),
+          address: String(suggestedLocation.address).slice(0, 300),
+          note: suggestedLocation.note ? String(suggestedLocation.note).slice(0, 300) : undefined,
+        };
+      } else {
+        throw new Error("Meeting location required for in-person session");
+      }
     }
 
-    if (!advisor.is_advisor || !advisor.advisor_approved) {
-      throw new Error("Invalid advisor");
-    }
+    const surchargeDollars = meetingType === "in_person"
+      ? Math.max(0, Math.min(100, advisor.in_person_surcharge ?? 0))
+      : 0;
 
-    if (!advisor.price_per_session || advisor.price_per_session <= 0) {
-      throw new Error("Advisor has not set a valid price");
-    }
-
-    // Resolve start/end times (legacy slot rows still allowed)
+    // Resolve times
     let finalStartTime: string;
     let finalEndTime: string;
-    let finalIsVirtual = true;
+    let finalIsVirtual = meetingType === "virtual";
 
     if (isDynamicSlot && slotStartTime && slotEndTime) {
       finalStartTime = slotStartTime;
@@ -123,22 +131,24 @@ serve(async (req) => {
       if (slot.is_booked) throw new Error("This time slot is no longer available");
       finalStartTime = slot.start_time;
       finalEndTime = slot.end_time;
-      finalIsVirtual = slot.is_virtual ?? true;
     } else {
       throw new Error("No slot information provided");
     }
 
-    if (new Date(finalStartTime) <= new Date()) {
-      throw new Error("Cannot book a past time slot");
-    }
+    if (new Date(finalStartTime) <= new Date()) throw new Error("Cannot book a past time slot");
 
-    // Atomically lock the slot + create a pending booking
+    const surchargeCents = Math.round(surchargeDollars * 100);
+
     const { data: booked, error: bookError } = await supabaseAdmin.rpc("book_slot", {
       p_advisor_id: advisorId,
       p_client_user_id: user.id,
       p_start_time: finalStartTime,
       p_end_time: finalEndTime,
       p_is_virtual: finalIsVirtual,
+      p_meeting_type: meetingType,
+      p_location_id: validatedLocationId,
+      p_suggested_location: validatedSuggested,
+      p_surcharge_cents: surchargeCents,
     });
 
     if (bookError) {
@@ -156,45 +166,43 @@ serve(async (req) => {
     const pendingBookingId: string = row?.booking_id;
     if (!finalSlotId || !pendingBookingId) throw new Error("Booking creation failed");
 
-    // Persist the chosen duration on the booking row.
-    const { error: durationError } = await supabaseAdmin
+    await supabaseAdmin
       .from("bookings")
       .update({ duration_hours: hours })
       .eq("id", pendingBookingId);
-    if (durationError) {
-      console.error("Failed to set duration_hours:", durationError);
-    }
 
     const hourlyRate = advisor.price_per_session;
-    const amount = hourlyRate * hours;
+    const amount = hourlyRate * hours + surchargeDollars;
     const advisorName = advisor.full_name || "Style Advisor";
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
     if (customers.data.length > 0) customerId = customers.data[0].id;
 
     const origin = req.headers.get("origin") || "https://cookalook.lovable.app";
+    const sessionTypeLabel = meetingType === "in_person" ? "in-person" : "virtual";
+    const descriptionParts = [
+      `${sessionDate} at ${sessionTime}`,
+      `${hours}-hour ${sessionTypeLabel} styling session ($${hourlyRate}/hour)`,
+    ];
+    if (surchargeDollars > 0) descriptionParts.push(`+ $${surchargeDollars} in-person surcharge`);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `Style Consultation with ${advisorName}`,
-              description: `${sessionDate} at ${sessionTime} — ${hours}-hour styling session ($${hourlyRate}/hour)`,
-            },
-            unit_amount: Math.round(amount * 100),
+      line_items: [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Style Consultation with ${advisorName}`,
+            description: descriptionParts.join(" — "),
           },
-          quantity: 1,
+          unit_amount: Math.round(amount * 100),
         },
-      ],
+        quantity: 1,
+      }],
       mode: "payment",
       success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}&advisor_id=${advisorId}&slot_id=${finalSlotId}`,
       cancel_url: `${origin}/advisors/${advisorId}`,
@@ -204,6 +212,8 @@ serve(async (req) => {
         booking_id: pendingBookingId,
         client_user_id: user.id,
         hours: String(hours),
+        meeting_type: meetingType,
+        surcharge_cents: String(surchargeCents),
       },
     });
 
@@ -214,7 +224,6 @@ serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const isAuthError = /authorization|authenticated|auth|email not available/i.test(errorMessage);
-
     console.error("Checkout error:", error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
