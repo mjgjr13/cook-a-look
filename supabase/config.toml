@@ -9,6 +9,9 @@ verify_jwt = true
 [functions.create-video-room]
 verify_jwt = false
 
+[functions.send-signup-confirmation]
+verify_jwt = false
+
 [functions.send-booking-confirmation]
 verify_jwt = true
 
