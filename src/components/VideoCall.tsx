@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Phone, ExternalLink } from "lucide-react";
@@ -15,6 +15,8 @@ interface VideoCallProps {
   isClient?: boolean;
 }
 
+type Provider = "daily" | "jitsi_fallback";
+
 const VideoCall = ({
   bookingId,
   onClose,
@@ -26,16 +28,22 @@ const VideoCall = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [provider, setProvider] = useState<Provider>("daily");
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const dailyContainerRef = useRef<HTMLDivElement>(null);
+  const dailyFrameRef = useRef<{ destroy: () => void } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const createRoom = async () => {
       try {
         const { data, error } = await supabase.functions.invoke("create-video-room", {
           body: { bookingId },
         });
         if (error) throw error;
+        if (cancelled) return;
         setRoomUrl(data.roomUrl);
+        setProvider((data.provider as Provider) ?? "daily");
       } catch (error) {
         console.error("Failed to create video room:", error);
         toast({
@@ -45,13 +53,61 @@ const VideoCall = ({
         });
         onClose();
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
     createRoom();
+    return () => {
+      cancelled = true;
+    };
   }, [bookingId, onClose, toast]);
 
+  // Mount Daily.co prebuilt UI (supports mobile camera flip + cloud recording)
+  useEffect(() => {
+    if (!roomUrl || provider !== "daily" || !dailyContainerRef.current) return;
+
+    let destroyed = false;
+    (async () => {
+      try {
+        const mod = await import("@daily-co/daily-js");
+        if (destroyed || !dailyContainerRef.current) return;
+        const DailyIframe = mod.default;
+        const frame = DailyIframe.createFrame(dailyContainerRef.current, {
+          showLeaveButton: true,
+          showFullscreenButton: true,
+          iframeStyle: {
+            width: "100%",
+            height: "100%",
+            border: "0",
+          },
+        });
+        dailyFrameRef.current = frame;
+        frame.on("left-meeting", () => handleEndCall());
+        await frame.join({ url: roomUrl });
+      } catch (e) {
+        console.error("Failed to mount Daily frame:", e);
+      }
+    })();
+
+    return () => {
+      destroyed = true;
+      try {
+        dailyFrameRef.current?.destroy();
+      } catch (_e) {
+        // ignore
+      }
+      dailyFrameRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomUrl, provider]);
+
   const handleEndCall = () => {
+    try {
+      dailyFrameRef.current?.destroy();
+    } catch (_e) {
+      // ignore
+    }
+    dailyFrameRef.current = null;
     toast({ title: "Call ended", description: "Your consultation has ended." });
     if (isClient && advisorId && clientId) {
       setShowReviewModal(true);
@@ -86,18 +142,24 @@ const VideoCall = ({
             <DialogTitle className="font-serif">Style Consultation</DialogTitle>
           </DialogHeader>
 
-          <div className="relative w-full" style={{ height: "70vh" }}>
-            {roomUrl ? (
+          <div className="relative w-full bg-black" style={{ height: "70vh" }}>
+            {!roomUrl && (
+              <div className="flex items-center justify-center h-full bg-secondary">
+                <p className="text-muted-foreground">Unable to load video call</p>
+              </div>
+            )}
+
+            {roomUrl && provider === "daily" && (
+              <div ref={dailyContainerRef} className="w-full h-full" />
+            )}
+
+            {roomUrl && provider === "jitsi_fallback" && (
               <iframe
                 src={roomUrl}
                 allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
                 className="w-full h-full border-0"
                 title="Video consultation"
               />
-            ) : (
-              <div className="flex items-center justify-center h-full bg-secondary">
-                <p className="text-muted-foreground">Unable to load video call</p>
-              </div>
             )}
           </div>
 
