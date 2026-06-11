@@ -443,8 +443,12 @@ const BookingCalendar = ({
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
                 ) : user ? "Proceed to Payment" : "Sign in to Book"}
               </Button>
+              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+                Secure checkout via Stripe — Cook A Look never sees your card details.
+                Payment is held in escrow for 48 hours after your session.
+              </p>
               {!user && (
-                <p className="text-xs text-muted-foreground text-center mt-2">
+                <p className="text-xs text-muted-foreground text-center mt-1">
                   You'll need to sign in to complete your booking
                 </p>
               )}
