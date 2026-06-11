@@ -60,4 +60,28 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://www.cookalook.com/advisors/d5717c49-9c09-49d5-b2ee-34b138f6be04</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.cookalook.com/advisors/efab14d9-20c3-4b5e-bb7b-38c8c9a3d548</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.cookalook.com/advisors/e7087720-24b1-4a9d-a750-67da5dbeaceb</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.cookalook.com/advisors/50ed9a7f-d7f0-447c-9ec6-b55ec9b6d10f</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>

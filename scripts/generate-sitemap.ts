@@ -32,22 +32,25 @@ const staticEntries: Entry[] = [
 
 async function fetchAdvisorIds(): Promise<string[]> {
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/advisor_profiles?select=id&is_visible=eq.true&advisor_approved=eq.true&limit=1000`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-      }
-    );
+    // Use the public RPC that backs the advisors listing page so the sitemap
+    // mirrors what's actually browsable (approved + listed advisors with photos).
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_advisor_profiles`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
     if (!res.ok) return [];
     const rows = (await res.json()) as { id: string }[];
-    return rows.map((r) => r.id);
+    return rows.map((r) => r.id).filter(Boolean);
   } catch {
     return [];
   }
 }
+
 
 function render(entries: Entry[]): string {
   const urls = entries
