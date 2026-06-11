@@ -283,6 +283,53 @@ export type Database = {
           },
         ]
       }
+      advisor_meeting_locations: {
+        Row: {
+          address: string
+          advisor_id: string
+          city: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          advisor_id: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          advisor_id?: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_meeting_locations_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_monthly_stats: {
         Row: {
           advisor_id: string
@@ -559,9 +606,15 @@ export type Database = {
           created_at: string | null
           duration_hours: number
           id: string
+          in_person_surcharge_cents: number
+          location_id: string | null
+          location_snapshot: Json | null
+          location_status: string
+          meeting_type: string
           notes: string | null
           slot_id: string
           status: string | null
+          suggested_location: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -571,9 +624,15 @@ export type Database = {
           created_at?: string | null
           duration_hours?: number
           id?: string
+          in_person_surcharge_cents?: number
+          location_id?: string | null
+          location_snapshot?: Json | null
+          location_status?: string
+          meeting_type?: string
           notes?: string | null
           slot_id: string
           status?: string | null
+          suggested_location?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -583,9 +642,15 @@ export type Database = {
           created_at?: string | null
           duration_hours?: number
           id?: string
+          in_person_surcharge_cents?: number
+          location_id?: string | null
+          location_snapshot?: Json | null
+          location_status?: string
+          meeting_type?: string
           notes?: string | null
           slot_id?: string
           status?: string | null
+          suggested_location?: Json | null
           updated_at?: string | null
         }
         Relationships: [
@@ -601,6 +666,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_meeting_locations"
             referencedColumns: ["id"]
           },
           {
@@ -894,6 +966,7 @@ export type Database = {
           full_name: string | null
           id: string
           in_person_available: boolean | null
+          in_person_surcharge: number
           instagram_url: string | null
           is_advisor: boolean | null
           is_demo: boolean
@@ -935,6 +1008,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           in_person_available?: boolean | null
+          in_person_surcharge?: number
           instagram_url?: string | null
           is_advisor?: boolean | null
           is_demo?: boolean
@@ -976,6 +1050,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           in_person_available?: boolean | null
+          in_person_surcharge?: number
           instagram_url?: string | null
           is_advisor?: boolean | null
           is_demo?: boolean
@@ -1281,19 +1356,37 @@ export type Database = {
         }
         Returns: undefined
       }
-      book_slot: {
-        Args: {
-          p_advisor_id: string
-          p_client_user_id: string
-          p_end_time: string
-          p_is_virtual?: boolean
-          p_start_time: string
-        }
-        Returns: {
-          booking_id: string
-          slot_id: string
-        }[]
-      }
+      book_slot:
+        | {
+            Args: {
+              p_advisor_id: string
+              p_client_user_id: string
+              p_end_time: string
+              p_is_virtual?: boolean
+              p_start_time: string
+            }
+            Returns: {
+              booking_id: string
+              slot_id: string
+            }[]
+          }
+        | {
+            Args: {
+              p_advisor_id: string
+              p_client_user_id: string
+              p_end_time: string
+              p_is_virtual?: boolean
+              p_location_id?: string
+              p_meeting_type?: string
+              p_start_time: string
+              p_suggested_location?: Json
+              p_surcharge_cents?: number
+            }
+            Returns: {
+              booking_id: string
+              slot_id: string
+            }[]
+          }
       can_leave_review: {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
