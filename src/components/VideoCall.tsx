@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Phone, ExternalLink } from "lucide-react";
+import { Loader2, Phone, ExternalLink, Video as VideoIcon, ShieldCheck } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReviewModal from "@/components/reviews/ReviewModal";
@@ -26,15 +27,19 @@ const VideoCall = ({
   isClient = false,
 }: VideoCallProps) => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [provider, setProvider] = useState<Provider>("daily");
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const dailyContainerRef = useRef<HTMLDivElement>(null);
   const dailyFrameRef = useRef<{ destroy: () => void } | null>(null);
 
   useEffect(() => {
+    if (!consentGiven) return;
     let cancelled = false;
+    setIsLoading(true);
     const createRoom = async () => {
       try {
         const { data, error } = await supabase.functions.invoke("create-video-room", {
@@ -60,7 +65,7 @@ const VideoCall = ({
     return () => {
       cancelled = true;
     };
-  }, [bookingId, onClose, toast]);
+  }, [bookingId, onClose, toast, consentGiven]);
 
   // Mount Daily.co prebuilt UI (supports mobile camera flip + cloud recording)
   useEffect(() => {
@@ -121,6 +126,57 @@ const VideoCall = ({
     onClose();
   };
 
+  if (!consentGiven) {
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              Recording Consent Required
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-md border bg-secondary/40 p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <VideoIcon className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                <p className="text-sm">
+                  <strong>This session will be recorded.</strong> Cook A Look records video, audio,
+                  and shared screens during consultations.
+                </p>
+              </div>
+              <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                <li>Recordings are stored securely and used only for safety, support, and dispute resolution.</li>
+                <li>Recordings are retained for up to 90 days unless required for an open dispute.</li>
+                <li>You may request deletion at any time, subject to active disputes.</li>
+                <li>Do not share sensitive personal or financial information on the call.</li>
+              </ul>
+            </div>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={consentChecked}
+                onCheckedChange={(v) => setConsentChecked(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm">
+                I acknowledge and consent to the recording of this video consultation, and confirm
+                that any other participants visible or audible on my side also consent.
+              </span>
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button disabled={!consentChecked} onClick={() => setConsentGiven(true)}>
+              Agree & Join Call
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   if (isLoading) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
@@ -139,7 +195,13 @@ const VideoCall = ({
       <Dialog open={!showReviewModal} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[95vw] sm:max-h-[95vh] p-0">
           <DialogHeader className="p-4 border-b">
-            <DialogTitle className="font-serif">Style Consultation</DialogTitle>
+            <DialogTitle className="font-serif flex items-center justify-between gap-3">
+              <span>Style Consultation</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-sans font-normal text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" aria-hidden />
+                Recording in progress
+              </span>
+            </DialogTitle>
           </DialogHeader>
 
           <div className="relative w-full bg-black" style={{ height: "70vh" }}>
