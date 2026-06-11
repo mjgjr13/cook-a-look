@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import PortfolioUpload from "@/components/advisor/PortfolioUpload";
 import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
+import MeetingLocationsManager from "@/components/advisor/MeetingLocationsManager";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import { useProfile } from "@/hooks/useProfile";
@@ -531,6 +532,30 @@ const AccountSettings = () => {
                         onCheckedChange={(checked) => updateProfile("in_person_available", checked)}
                       />
                     </div>
+
+                    {profile?.in_person_available && (
+                      <div className="space-y-4 pl-2 border-l-2 border-border">
+                        <div className="space-y-2">
+                          <Label htmlFor="surcharge">In-Person Surcharge ($)</Label>
+                          <Input
+                            id="surcharge"
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={5}
+                            value={profile?.in_person_surcharge ?? 0}
+                            onChange={(e) => {
+                              const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                              updateProfile("in_person_surcharge", v);
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Flat fee added to in-person bookings on top of your hourly rate (max $100).
+                          </p>
+                        </div>
+                        <MeetingLocationsManager advisorProfileId={profile?.id ?? null} />
+                      </div>
+                    )}
                   </div>
 
                   <Separator />
