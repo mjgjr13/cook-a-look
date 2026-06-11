@@ -126,6 +126,57 @@ const VideoCall = ({
     onClose();
   };
 
+  if (!consentGiven) {
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              Recording Consent Required
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-md border bg-secondary/40 p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <VideoIcon className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                <p className="text-sm">
+                  <strong>This session will be recorded.</strong> Cook A Look records video, audio,
+                  and shared screens during consultations.
+                </p>
+              </div>
+              <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                <li>Recordings are stored securely and used only for safety, support, and dispute resolution.</li>
+                <li>Recordings are retained for up to 90 days unless required for an open dispute.</li>
+                <li>You may request deletion at any time, subject to active disputes.</li>
+                <li>Do not share sensitive personal or financial information on the call.</li>
+              </ul>
+            </div>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={consentChecked}
+                onCheckedChange={(v) => setConsentChecked(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm">
+                I acknowledge and consent to the recording of this video consultation, and confirm
+                that any other participants visible or audible on my side also consent.
+              </span>
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button disabled={!consentChecked} onClick={() => setConsentGiven(true)}>
+              Agree & Join Call
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   if (isLoading) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
