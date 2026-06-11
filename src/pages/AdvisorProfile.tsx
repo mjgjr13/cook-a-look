@@ -330,7 +330,7 @@ const AdvisorProfile = () => {
               <div className="hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
                 <div>
                   <span className="font-sans text-2xl font-medium">${displayPrice}</span>
-                  <span className="font-sans text-muted-foreground">/session</span>
+                  <span className="font-sans text-muted-foreground">/hour</span>
                 </div>
                 <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={handleBookConsultation}>
                   <Calendar className="w-4 h-4 mr-2" />
@@ -344,8 +344,8 @@ const AdvisorProfile = () => {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 shadow-lg backdrop-blur sm:hidden">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Consultation</p>
-              <p className="font-sans text-lg font-medium leading-tight">${displayPrice}<span className="text-sm font-normal text-muted-foreground">/session</span></p>
+              <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Hourly Rate</p>
+              <p className="font-sans text-lg font-medium leading-tight">${displayPrice}<span className="text-sm font-normal text-muted-foreground">/hour</span></p>
             </div>
             <Button variant="hero" size="lg" className="shrink-0" onClick={handleBookConsultation}>
               <Calendar className="w-4 h-4 mr-2" />

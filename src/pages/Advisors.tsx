@@ -299,7 +299,7 @@ const Advisors = () => {
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
                       <span className="font-sans min-w-0">
                         <span className="text-sm font-medium">${displayPrice.toLocaleString()}</span>
-                        <span className="text-[11px] sm:text-xs text-muted-foreground">/session</span>
+                        <span className="text-[11px] sm:text-xs text-muted-foreground">/hour</span>
                       </span>
                       <Button 
                         variant="outline" 

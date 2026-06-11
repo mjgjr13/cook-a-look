@@ -482,7 +482,7 @@ const AccountSettings = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="price">Price per Session ($)</Label>
+                      <Label htmlFor="price">Hourly Rate ($)</Label>
                       <Input
                         id="price"
                         type="number"
@@ -491,7 +491,7 @@ const AccountSettings = () => {
                       />
                       {profile?.price_per_session && profile.price_per_session > 0 && (
                         <p className="text-sm text-muted-foreground">
-                          Your payout: <span className="font-semibold text-green-600">${(profile.price_per_session * 0.85).toFixed(2)}</span> per session
+                          Your payout: <span className="font-semibold text-green-600">${(profile.price_per_session * 0.85).toFixed(2)}</span> per hour (clients book 1–3 hours per session)
                         </p>
                       )}
                     </div>

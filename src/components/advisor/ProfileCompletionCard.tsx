@@ -25,7 +25,7 @@ const ProfileCompletionCard = ({ completionStatus, isApproved }: ProfileCompleti
     {
       id: "price",
       label: "Set Your Price",
-      description: "Define your session rate",
+      description: "Define your hourly rate",
       completed: completionStatus.hasPrice,
       icon: DollarSign,
       link: "/settings",

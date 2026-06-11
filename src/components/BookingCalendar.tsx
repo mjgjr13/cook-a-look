@@ -61,6 +61,7 @@ const BookingCalendar = ({
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [clientTimezone] = useState<string>(getBrowserTimezone());
+  const [hours, setHours] = useState<1 | 2 | 3>(1);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -219,16 +220,22 @@ const BookingCalendar = ({
         day: "numeric",
       });
 
+      // Compute end time based on selected duration (hours). Buffer/contiguity
+      // enforced server-side by book_slot via the 15-minute overlap check.
+      const startDate = new Date(selectedSlot.startTime);
+      const computedEnd = new Date(startDate.getTime() + hours * 60 * 60 * 1000).toISOString();
+
       // Note: Amount is fetched server-side for security - not sent from client
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           advisorId,
           slotId: isDynamicSlot ? null : selectedSlot.id, // Only send slotId for legacy slots
-          slotStartTime: selectedSlot.startTime, // Always send start time
-          slotEndTime: selectedSlot.endTime, // Always send end time
+          slotStartTime: selectedSlot.startTime,
+          slotEndTime: computedEnd,
           sessionDate,
           sessionTime: selectedSlot.time,
-          isDynamicSlot,
+          isDynamicSlot: true, // always treat as dynamic so end_time reflects hours
+          hours,
         },
       });
 
@@ -338,17 +345,42 @@ const BookingCalendar = ({
 
           {selectedDate && selectedSlot && (
             <div className="mt-6 p-4 bg-secondary border border-border">
-              <div className="flex justify-between items-start gap-4 mb-2">
+              <div className="flex justify-between items-start gap-4 mb-3">
                 <span className="font-sans text-sm">Selected time</span>
                 <span className="font-sans font-medium text-right">{selectedSlot.time} ({clientTzAbbr})</span>
               </div>
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-sans text-sm">Consultation Fee</span>
-                <span className="font-sans font-medium">${price}</span>
+
+              <div className="mb-3">
+                <p className="font-sans text-sm mb-2">Session length</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3].map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setHours(h as 1 | 2 | 3)}
+                      className={cn(
+                        "min-h-11 px-2 py-2 text-sm font-sans border transition-colors",
+                        hours === h
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border hover:border-primary"
+                      )}
+                    >
+                      {h} {h === 1 ? "hour" : "hours"}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  ${price}/hour × {hours} = ${price * hours}. Maximum 3 hours per booking.
+                </p>
               </div>
-              <Button 
-                variant="hero" 
-                className="w-full" 
+
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-sans text-sm">Total</span>
+                <span className="font-sans font-medium">${price * hours}</span>
+              </div>
+              <Button
+                variant="hero"
+                className="w-full"
                 onClick={handleBooking}
                 disabled={isLoading}
               >

@@ -17,7 +17,7 @@ interface MonthlyStats {
 const AdvisorFeeProgressCard = ({ advisorProfileId }: AdvisorFeeProgressCardProps) => {
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const threshold = 9; // Bookings needed for reduced fee
+  const threshold = 9; // Bookings needed before reduced fee kicks in
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -74,16 +74,16 @@ const AdvisorFeeProgressCard = ({ advisorProfileId }: AdvisorFeeProgressCardProp
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-medium text-primary">5% Platform Fee Unlocked!</p>
+                <p className="font-medium text-primary">10% Platform Fee Unlocked!</p>
                 <TrendingDown className="w-4 h-4 text-primary" />
               </div>
               <p className="text-sm text-muted-foreground">
-                {completedBookings} bookings completed in {currentMonth} — all remaining bookings this month use reduced fees
+                {completedBookings} bookings completed in {currentMonth} — every additional booking this month is charged 10% instead of 15%
               </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-primary">5%</p>
+            <p className="text-2xl font-bold text-primary">10%</p>
             <p className="text-xs text-muted-foreground">Platform fee</p>
           </div>
         </div>
@@ -113,14 +113,14 @@ const AdvisorFeeProgressCard = ({ advisorProfileId }: AdvisorFeeProgressCardProp
         </div>
         <div className="text-right">
           <p className="text-sm font-medium text-gold">{bookingsUntilReduced} to go</p>
-          <p className="text-xs text-muted-foreground">for 5% fee</p>
+          <p className="text-xs text-muted-foreground">for 10% fee</p>
         </div>
       </div>
 
       <Progress value={progressPercentage} className="h-2 mb-2" />
       
       <p className="text-xs text-muted-foreground">
-        Complete {bookingsUntilReduced} more booking{bookingsUntilReduced !== 1 ? "s" : ""} this month to unlock <span className="font-medium text-primary">5% platform fees</span> on all remaining bookings
+        Complete {bookingsUntilReduced} more booking{bookingsUntilReduced !== 1 ? "s" : ""} this month — after that, every additional booking is charged a reduced <span className="font-medium text-primary">10% platform fee</span> instead of 15%.
       </p>
     </motion.div>
   );

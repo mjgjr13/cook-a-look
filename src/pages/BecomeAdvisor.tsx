@@ -70,7 +70,7 @@ const benefits = [
   {
     icon: Trophy,
     title: "Loyalty Rewards",
-    description: "Reduced fees after 10 bookings. Grow and save.",
+    description: "After 9 bookings in a month, additional bookings drop to a 10% fee.",
   },
 ];
 
@@ -627,7 +627,7 @@ const BecomeAdvisor = () => {
       }
       const priceNum = parseFloat(formData.price);
       if (!formData.price || isNaN(priceNum) || priceNum < 25) {
-        stepErrors.price = "Please set a session rate (minimum $25)";
+        stepErrors.price = "Please set an hourly rate (minimum $25/hour)";
       }
     }
 

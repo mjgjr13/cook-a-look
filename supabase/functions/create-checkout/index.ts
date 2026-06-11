@@ -22,6 +22,7 @@ interface CheckoutRequest {
   sessionDate: string;
   sessionTime: string;
   isDynamicSlot?: boolean;
+  hours?: number; // 1, 2, or 3 — selected by client
 }
 
 serve(async (req) => {
@@ -45,7 +46,10 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { advisorId, slotId, slotStartTime, slotEndTime, sessionDate, sessionTime, isDynamicSlot } = body as CheckoutRequest;
+    const { advisorId, slotId, slotStartTime, slotEndTime, sessionDate, sessionTime, isDynamicSlot, hours: rawHours } = body as CheckoutRequest;
+
+    // Validate hours (1, 2, or 3). Default to 1 for backwards compatibility.
+    const hours = Number.isInteger(rawHours) && rawHours! >= 1 && rawHours! <= 3 ? rawHours! : 1;
 
     // Validate advisor ID
     if (!isValidUUID(advisorId)) {
@@ -152,7 +156,17 @@ serve(async (req) => {
     const pendingBookingId: string = row?.booking_id;
     if (!finalSlotId || !pendingBookingId) throw new Error("Booking creation failed");
 
-    const amount = advisor.price_per_session;
+    // Persist the chosen duration on the booking row.
+    const { error: durationError } = await supabaseAdmin
+      .from("bookings")
+      .update({ duration_hours: hours })
+      .eq("id", pendingBookingId);
+    if (durationError) {
+      console.error("Failed to set duration_hours:", durationError);
+    }
+
+    const hourlyRate = advisor.price_per_session;
+    const amount = hourlyRate * hours;
     const advisorName = advisor.full_name || "Style Advisor";
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -174,7 +188,7 @@ serve(async (req) => {
             currency: "usd",
             product_data: {
               name: `Style Consultation with ${advisorName}`,
-              description: `${sessionDate} at ${sessionTime} - Virtual styling session`,
+              description: `${sessionDate} at ${sessionTime} — ${hours}-hour styling session ($${hourlyRate}/hour)`,
             },
             unit_amount: Math.round(amount * 100),
           },
@@ -189,6 +203,7 @@ serve(async (req) => {
         slot_id: finalSlotId,
         booking_id: pendingBookingId,
         client_user_id: user.id,
+        hours: String(hours),
       },
     });
 
