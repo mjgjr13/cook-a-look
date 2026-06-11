@@ -30,7 +30,7 @@ const OgPreview = () => {
         <path
           d="M23 6.5 C23 3 25.5 1.5 29 1.5 L32 1.5 C35.5 1.5 38 3 38 6.5 L38 9.5 C38 13 35.5 14.5 32 14.5 L29 14.5 C25.5 14.5 23 13 23 9.5 Z"
           fill="#1A1A1A"
-          transform="rotate(-2 30.5 8)"
+          transform="rotate(2 30.5 8)"
         />
         <path
           d="M17 7 Q20 4 23 7"
