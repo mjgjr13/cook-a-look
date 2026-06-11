@@ -195,7 +195,13 @@ const VideoCall = ({
       <Dialog open={!showReviewModal} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[95vw] sm:max-h-[95vh] p-0">
           <DialogHeader className="p-4 border-b">
-            <DialogTitle className="font-serif">Style Consultation</DialogTitle>
+            <DialogTitle className="font-serif flex items-center justify-between gap-3">
+              <span>Style Consultation</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-sans font-normal text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" aria-hidden />
+                Recording in progress
+              </span>
+            </DialogTitle>
           </DialogHeader>
 
           <div className="relative w-full bg-black" style={{ height: "70vh" }}>
