@@ -557,6 +557,7 @@ export type Database = {
           client_id: string
           completed_at: string | null
           created_at: string | null
+          duration_hours: number
           id: string
           notes: string | null
           slot_id: string
@@ -568,6 +569,7 @@ export type Database = {
           client_id: string
           completed_at?: string | null
           created_at?: string | null
+          duration_hours?: number
           id?: string
           notes?: string | null
           slot_id: string
@@ -579,6 +581,7 @@ export type Database = {
           client_id?: string
           completed_at?: string | null
           created_at?: string | null
+          duration_hours?: number
           id?: string
           notes?: string | null
           slot_id?: string
