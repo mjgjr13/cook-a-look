@@ -192,12 +192,16 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
+      ...(customerId ? { customer_update: { address: "auto", name: "auto" } } : {}),
+      billing_address_collection: "required",
+      automatic_tax: { enabled: true },
       line_items: [{
         price_data: {
           currency: "usd",
           product_data: {
             name: `Style Consultation with ${advisorName}`,
             description: descriptionParts.join(" — "),
+            tax_code: "txcd_20030000",
           },
           unit_amount: Math.round(amount * 100),
         },
@@ -216,6 +220,7 @@ serve(async (req) => {
         surcharge_cents: String(surchargeCents),
       },
     });
+
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
