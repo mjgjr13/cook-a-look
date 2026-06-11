@@ -203,6 +203,7 @@ serve(async (req) => {
         slot_id: finalSlotId,
         booking_id: pendingBookingId,
         client_user_id: user.id,
+        hours: String(hours),
       },
     });
 
