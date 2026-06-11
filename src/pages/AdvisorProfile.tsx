@@ -239,6 +239,7 @@ const AdvisorProfile = () => {
                   {advisor.in_person_available && (
                     <span className="flex min-w-0 items-center gap-1 break-words">
                       <MapPin className="w-4 h-4" /> In-Person{advisor.location && ` · ${advisor.location}`}
+                      {advisor.in_person_surcharge && advisor.in_person_surcharge > 0 ? ` (+$${advisor.in_person_surcharge})` : ""}
                     </span>
                   )}
                 </div>

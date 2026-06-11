@@ -199,6 +199,7 @@ interface Profile {
   session_duration: number;
   virtual_available: boolean;
   in_person_available: boolean;
+  in_person_surcharge: number;
   personal_philosophy: string;
   instagram_url: string;
   portfolio_url: string;
@@ -285,6 +286,7 @@ const AccountSettings = () => {
         session_duration: profile.session_duration,
         virtual_available: profile.virtual_available,
         in_person_available: profile.in_person_available,
+        in_person_surcharge: profile.in_person_surcharge ?? 0,
         personal_philosophy: profile.personal_philosophy,
         instagram_url: profile.instagram_url,
         portfolio_url: profile.portfolio_url,
