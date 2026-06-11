@@ -25,29 +25,27 @@ const OgPreview = () => {
         <path
           d="M2 6.5 C2 3 4.5 1.5 8 1.5 L11 1.5 C14.5 1.5 17 3 17 6.5 L17 9.5 C17 13 14.5 14.5 11 14.5 L8 14.5 C4.5 14.5 2 13 2 9.5 Z"
           fill="#1A1A1A"
-          transform="rotate(-2 9.5 8)"
         />
         <path
           d="M23 6.5 C23 3 25.5 1.5 29 1.5 L32 1.5 C35.5 1.5 38 3 38 6.5 L38 9.5 C38 13 35.5 14.5 32 14.5 L29 14.5 C25.5 14.5 23 13 23 9.5 Z"
           fill="#1A1A1A"
-          transform="rotate(2 30.5 8)"
         />
         <path
-          d="M17 7 Q20 4 23 7"
-          fill="none"
-          stroke="#1A1A1A"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M2 5 L-1 3"
+          d="M17 6.5 Q20 5.25 23 6.5"
           fill="none"
           stroke="#1A1A1A"
           strokeWidth="2"
           strokeLinecap="round"
         />
         <path
-          d="M38 5 L41 3"
+          d="M2 5 L-1 3.5"
+          fill="none"
+          stroke="#1A1A1A"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M38 5 L41 3.5"
           fill="none"
           stroke="#1A1A1A"
           strokeWidth="2"
