@@ -61,6 +61,7 @@ const BookingCalendar = ({
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [clientTimezone] = useState<string>(getBrowserTimezone());
+  const [hours, setHours] = useState<1 | 2 | 3>(1);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -219,16 +220,22 @@ const BookingCalendar = ({
         day: "numeric",
       });
 
+      // Compute end time based on selected duration (hours). Buffer/contiguity
+      // enforced server-side by book_slot via the 15-minute overlap check.
+      const startDate = new Date(selectedSlot.startTime);
+      const computedEnd = new Date(startDate.getTime() + hours * 60 * 60 * 1000).toISOString();
+
       // Note: Amount is fetched server-side for security - not sent from client
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           advisorId,
           slotId: isDynamicSlot ? null : selectedSlot.id, // Only send slotId for legacy slots
-          slotStartTime: selectedSlot.startTime, // Always send start time
-          slotEndTime: selectedSlot.endTime, // Always send end time
+          slotStartTime: selectedSlot.startTime,
+          slotEndTime: computedEnd,
           sessionDate,
           sessionTime: selectedSlot.time,
-          isDynamicSlot,
+          isDynamicSlot: true, // always treat as dynamic so end_time reflects hours
+          hours,
         },
       });
 
