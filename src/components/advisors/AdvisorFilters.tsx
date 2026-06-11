@@ -130,6 +130,24 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
           </PopoverTrigger>
           <PopoverContent className="w-80 p-4 bg-background" align="end">
             <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+              {/* Sort */}
+              <div>
+                <Label className="text-sm font-medium mb-3 block">Sort By</Label>
+                <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
+                  <SelectTrigger className="w-full gap-2">
+                    <ArrowUpDown className="w-4 h-4" />
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background">
+                    {sortOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Session Type */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Session Type</Label>
@@ -160,6 +178,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                   </button>
                 </div>
               </div>
+
 
               {/* Style Categories */}
               <div>
