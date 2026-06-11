@@ -294,6 +294,23 @@ const AdminDashboard = () => {
               </Button>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5" />
+                Dispute Resolution
+              </CardTitle>
+              <CardDescription>
+                Review disputes and access Daily.co session recordings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link to="/admin/disputes">Manage Disputes</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>
