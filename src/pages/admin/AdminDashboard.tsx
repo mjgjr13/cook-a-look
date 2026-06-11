@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin, Gift } from "lucide-react";
+import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin, Gift, ShieldAlert } from "lucide-react";
 import AdminInbox from "@/components/admin/AdminInbox";
 
 interface DemoAdvisor {
@@ -291,6 +291,23 @@ const AdminDashboard = () => {
             <CardContent>
               <Button asChild className="w-full">
                 <Link to="/admin/rewards">Manage Rewards</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5" />
+                Dispute Resolution
+              </CardTitle>
+              <CardDescription>
+                Review disputes and access Daily.co session recordings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link to="/admin/disputes">Manage Disputes</Link>
               </Button>
             </CardContent>
           </Card>
