@@ -43,6 +43,14 @@ const Footer = () => {
                   Terms of Use
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/brand"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+                >
+                  Press Kit
+                </Link>
+              </li>
             </ul>
           </div>
 
