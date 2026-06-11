@@ -7,113 +7,137 @@ interface CookALookLogoProps {
   type?: "full" | "text" | "icon";
 }
 
-const CookALookLogo = ({ 
-  className, 
-  size = "md", 
+/**
+ * Cook A Look wordmark.
+ * The two O's in "LOOK" are rendered as a perfectly symmetric pair of
+ * glasses (inline SVG, sized in em so it scales with the surrounding text).
+ */
+const CookALookLogo = ({
+  className,
+  size = "md",
   variant = "dark",
-  type = "full"
+  type = "full",
 }: CookALookLogoProps) => {
   const sizeConfig = {
-    sm: { height: "h-4", text: "text-base", iconW: 28, iconH: 12, spacing: "gap-2" },
-    md: { height: "h-5", text: "text-base sm:text-lg lg:text-xl", iconW: 34, iconH: 13, spacing: "gap-2 sm:gap-2.5" },
-    lg: { height: "h-6", text: "text-xl lg:text-2xl", iconW: 48, iconH: 18, spacing: "gap-3" },
-    xl: { height: "h-8", text: "text-2xl lg:text-3xl", iconW: 64, iconH: 24, spacing: "gap-3.5" },
+    sm: { text: "text-base", icon: 18 },
+    md: { text: "text-base sm:text-lg lg:text-xl", icon: 22 },
+    lg: { text: "text-xl lg:text-2xl", icon: 28 },
+    xl: { text: "text-2xl lg:text-3xl", icon: 36 },
   };
 
-  const fillColor = variant === "light" ? "#ffffff" : "#000000";
-  const textColorClass = variant === "light" ? "text-white" : "text-foreground";
+  const color = variant === "light" ? "#ffffff" : "currentColor";
+  const textColorClass =
+    variant === "light" ? "text-white" : "text-foreground";
 
-  // Sunglasses SVG - refined Wayfarer style, slightly angled left
-  const SunglassesIcon = ({ width = 40, height = 16 }: { width?: number; height?: number }) => (
-    <svg
-      viewBox="0 0 40 16"
-      width={width}
-      height={height}
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      className="flex-shrink-0"
-    >
-      {/* Left lens - rounder Wayfarer shape, slightly angled */}
-      <path
-        d="M2 6.5 C2 3 4.5 1.5 8 1.5 L11 1.5 C14.5 1.5 17 3 17 6.5 L17 9.5 C17 13 14.5 14.5 11 14.5 L8 14.5 C4.5 14.5 2 13 2 9.5 Z"
-        fill={fillColor}
-        transform="rotate(-2 9.5 8)"
-      />
-      {/* Right lens - rounder Wayfarer shape, slightly angled */}
-      <path
-        d="M23 6.5 C23 3 25.5 1.5 29 1.5 L32 1.5 C35.5 1.5 38 3 38 6.5 L38 9.5 C38 13 35.5 14.5 32 14.5 L29 14.5 C25.5 14.5 23 13 23 9.5 Z"
-        fill={fillColor}
-        transform="rotate(-2 30.5 8)"
-      />
-      {/* Bridge - thick, curved */}
-      <path
-        d="M17 7 Q20 4 23 7"
-        fill="none"
-        stroke={fillColor}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-      {/* Left temple hint */}
-      <path
-        d="M2 5 L-1 3"
-        fill="none"
-        stroke={fillColor}
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      {/* Right temple hint */}
-      <path
-        d="M38 5 L41 3"
-        fill="none"
-        stroke={fillColor}
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-
-  // Icon only version
-  if (type === "icon") {
+  /**
+   * Glasses mark — replaces the "oo" in LOOK.
+   * Two mirrored circular lenses, centered bridge, mirrored temple tips.
+   * widthEm controls horizontal size (≈ width of two O glyphs).
+   */
+  const GlassesOO = ({ widthEm = 1.45 }: { widthEm?: number }) => {
+    // viewBox: 40 wide × 20 tall. Lenses mirrored around x=20.
+    // Lens centers at x=8 and x=32, radius 6.5 → identical geometry.
     return (
-      <div className={cn("flex items-center justify-center", className)}>
-        <SunglassesIcon 
-          width={sizeConfig[size].iconW} 
-          height={sizeConfig[size].iconH} 
+      <svg
+        viewBox="0 0 40 20"
+        aria-hidden="true"
+        style={{
+          width: `${widthEm}em`,
+          height: "auto",
+          display: "inline-block",
+          verticalAlign: "-0.18em",
+          marginInline: "0.04em",
+        }}
+      >
+        {/* Left lens */}
+        <circle
+          cx="8"
+          cy="11"
+          r="6.5"
+          fill="none"
+          stroke={color}
+          strokeWidth="1.8"
         />
-      </div>
+        {/* Right lens — mirror of left around x=20 */}
+        <circle
+          cx="32"
+          cy="11"
+          r="6.5"
+          fill="none"
+          stroke={color}
+          strokeWidth="1.8"
+        />
+        {/* Bridge — centered on x=20 */}
+        <path
+          d="M14.5 10 Q20 6.5 25.5 10"
+          fill="none"
+          stroke={color}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        {/* Temple tips — mirrored */}
+        <path
+          d="M1.5 9 L-1 7"
+          fill="none"
+          stroke={color}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M38.5 9 L41 7"
+          fill="none"
+          stroke={color}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
     );
-  }
+  };
 
-  // Text only version
-  if (type === "text") {
+  // Icon-only: just the glasses unit, sized by px.
+  if (type === "icon") {
+    const px = sizeConfig[size].icon;
     return (
-      <div className={cn("flex items-center", className)}>
-        <span className={cn(
-          "font-serif font-semibold tracking-[0.2em] uppercase",
+      <span
+        className={cn(
+          "inline-flex items-center justify-center",
           textColorClass,
-          sizeConfig[size].text
-        )}>
-          Cook A Look
-        </span>
-      </div>
+          className,
+        )}
+        aria-label="Cook A Look"
+      >
+        <svg
+          viewBox="0 0 40 20"
+          width={px * 2}
+          height={px}
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="11" r="6.5" fill="none" stroke={color} strokeWidth="1.8" />
+          <circle cx="32" cy="11" r="6.5" fill="none" stroke={color} strokeWidth="1.8" />
+          <path d="M14.5 10 Q20 6.5 25.5 10" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M1.5 9 L-1 7" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M38.5 9 L41 7" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      </span>
     );
   }
 
-  // Full wordmark: sunglasses icon + text
+  // Full wordmark / text — both render the same: COOK A L[oo]K
+  // where [oo] is the glasses mark.
   return (
-    <div className={cn("flex items-center", sizeConfig[size].spacing, className)}>
-      <SunglassesIcon 
-        width={sizeConfig[size].iconW} 
-        height={sizeConfig[size].iconH} 
-      />
-      <span className={cn(
-        "font-serif font-semibold tracking-[0.16em] sm:tracking-[0.2em] uppercase whitespace-nowrap",
+    <span
+      className={cn(
+        "font-serif font-semibold tracking-[0.16em] sm:tracking-[0.2em] uppercase whitespace-nowrap inline-flex items-center",
         textColorClass,
-        sizeConfig[size].text
-      )}>
-        Cook A Look
-      </span>
-    </div>
+        sizeConfig[size].text,
+        className,
+      )}
+      aria-label="Cook A Look"
+    >
+      <span aria-hidden="true">Cook&nbsp;A&nbsp;L</span>
+      <GlassesOO />
+      <span aria-hidden="true">k</span>
+    </span>
   );
 };
 
