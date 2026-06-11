@@ -209,7 +209,40 @@ const BookingCalendar = ({
         },
       });
 
-      if (error) throw new Error(error.message || "Failed to create checkout session");
+      if (error) {
+        // Extract structured error from the edge function response body
+        let serverMessage = error.message || "Failed to create checkout session";
+        let status: number | undefined;
+        const ctx = (error as unknown as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          status = ctx.status;
+          try {
+            const body = await ctx.clone().json();
+            if (body?.error) serverMessage = body.error;
+          } catch {
+            // ignore parse errors
+          }
+        }
+
+        if (status === 409) {
+          // Slot was just taken — refresh available slots and let user pick again
+          toast({
+            title: "Time slot unavailable",
+            description: "That slot was just booked. Please pick another time.",
+            variant: "destructive",
+          });
+          setSelectedSlot(null);
+          if (selectedDate) {
+            // Trigger a refetch by nudging the date dependency
+            const d = new Date(selectedDate);
+            setSelectedDate(new Date(d));
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        throw new Error(serverMessage);
+      }
       if (data?.url) {
         window.location.href = data.url;
       } else {
@@ -220,6 +253,7 @@ const BookingCalendar = ({
       setIsLoading(false);
     }
   };
+
 
   const maxDate = addMonths(new Date(), 1);
   const disabledDays = [{ before: new Date() }, { after: maxDate }];
