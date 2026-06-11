@@ -32,6 +32,7 @@ import AdminAdvisors from "./pages/admin/AdminAdvisors";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminRewards from "./pages/admin/AdminRewards";
+import AdminDisputes from "./pages/admin/AdminDisputes";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -124,6 +125,11 @@ const App = () => (
             <Route path="/admin/rewards" element={
               <AdminRoute>
                 <AdminRewards />
+              </AdminRoute>
+            } />
+            <Route path="/admin/disputes" element={
+              <AdminRoute>
+                <AdminDisputes />
               </AdminRoute>
             } />
             
