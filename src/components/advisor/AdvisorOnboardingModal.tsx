@@ -66,11 +66,11 @@ const AdvisorOnboardingModal = ({
       icon: DollarSign,
       title: "Payout Schedule",
       content: [
-        "You set your own session rates - clients see your full price",
-        "A platform fee is deducted from each booking",
+        "You set your own hourly rate - clients see your full price and choose 1, 2, or 3 hours per booking",
+        "Standard platform fee is 15% per booking",
+        "After your 9th completed booking in a calendar month, every additional booking that month is charged a reduced 10% fee",
         "Your net payout is automatically calculated and shown in your dashboard",
-        "Funds are released 48 hours after successful sessions (no disputes)",
-        "You can request withdrawals once funds are available",
+        "Funds are released 48 hours after successful sessions (no disputes), and you can request withdrawals once funds are available",
       ],
     },
   ];

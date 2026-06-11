@@ -8,7 +8,7 @@ interface PricingInputProps {
   error?: string;
 }
 
-const PLATFORM_FEE_PERCENTAGE = 0.15; // 15% platform fee
+const PLATFORM_FEE_PERCENTAGE = 0.15; // 15% standard platform fee
 
 const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
   const numericValue = parseFloat(value) || 0;
@@ -18,9 +18,9 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="price">Your Session Rate *</Label>
+        <Label htmlFor="price">Your Hourly Rate *</Label>
         <p className="text-sm text-muted-foreground">
-          Set the total price clients will pay per session. You can adjust this anytime.
+          Set the hourly rate clients will pay. Clients can book 1, 2, or 3 hours per session. You can adjust this anytime.
         </p>
         <div className="relative">
           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -43,12 +43,12 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
         <div className="bg-card border border-border rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Info className="w-4 h-4" />
-            <span>Earnings breakdown</span>
+            <span>Hourly earnings breakdown</span>
           </div>
           
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Client pays:</span>
+              <span className="text-muted-foreground">Client pays / hour:</span>
               <span className="font-medium">${numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
@@ -58,14 +58,14 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
             <div className="border-t border-border pt-2 flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-primary" />
-                <span className="font-medium">Your earnings:</span>
+                <span className="font-medium">Your earnings / hour:</span>
               </div>
               <span className="font-bold text-lg text-primary">${yourPayout.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
           
           <p className="text-xs text-muted-foreground italic">
-            Payouts are released 48 hours after successful sessions. Complete 10+ bookings monthly to unlock reduced 5% fee!
+            Payouts release 48 hours after each session. After 9 completed bookings in a calendar month, every additional booking that month is charged a reduced 10% fee instead of 15%.
           </p>
         </div>
       )}

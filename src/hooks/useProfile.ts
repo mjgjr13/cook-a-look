@@ -136,7 +136,7 @@ export const useProfile = (): UseProfileResult => {
 
 /**
  * Calculate platform fee based on completed bookings this month.
- * 15% base fee, reduced to 10% after 10 bookings in a calendar month.
+ * Bookings 1–9: 15% fee. Booking 10+ in the same calendar month: 10% fee.
  */
 export const calculatePlatformFee = async (advisorProfileId: string): Promise<{ feePercent: number; bookingsThisMonth: number }> => {
   try {
@@ -156,7 +156,8 @@ export const calculatePlatformFee = async (advisorProfileId: string): Promise<{ 
     }
 
     const bookingsThisMonth = data?.length || 0;
-    const feePercent = bookingsThisMonth >= 10 ? 10 : 15;
+    // 10% fee applies once the advisor has already completed 9 bookings this month.
+    const feePercent = bookingsThisMonth >= 9 ? 10 : 15;
 
     return { feePercent, bookingsThisMonth };
   } catch (err) {
