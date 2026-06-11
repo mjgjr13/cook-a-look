@@ -1430,6 +1430,7 @@ export type Database = {
           full_name: string
           id: string
           in_person_available: boolean
+          in_person_surcharge: number
           instagram_url: string
           languages: string[]
           location: string
