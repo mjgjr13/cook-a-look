@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { getOrCreateVideoRoomForBooking } from "../_shared/daily.ts";
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -8,9 +9,9 @@ serve(async (req) => {
 
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
 
-  const supabaseClient = createClient(
+  const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
 
   const jsonResponse = (body: unknown, status = 200) =>
@@ -24,58 +25,29 @@ serve(async (req) => {
     if (!authHeader) return jsonResponse({ error: "Authorization required" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: authError } = await supabaseClient.auth.getUser(token);
+    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !userData.user) return jsonResponse({ error: "Unauthorized" }, 401);
     const user = userData.user;
 
     const { bookingId } = await req.json();
     if (!bookingId) return jsonResponse({ error: "Booking ID is required" }, 400);
 
-    const { data: booking, error: bookingError } = await supabaseClient
+    // Authorize: only client or advisor of the booking can fetch the room
+    const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
-      .select(`*, client:profiles!bookings_client_id_fkey(id, user_id, full_name), advisor:profiles!bookings_advisor_id_fkey(id, user_id, full_name)`)
+      .select(`id, client:profiles!bookings_client_id_fkey(user_id), advisor:profiles!bookings_advisor_id_fkey(user_id)`)
       .eq("id", bookingId)
       .single();
-
     if (bookingError || !booking) return jsonResponse({ error: "Booking not found" }, 404);
 
-    const isClient = booking.client?.user_id === user.id;
-    const isAdvisor = booking.advisor?.user_id === user.id;
-    if (!isClient && !isAdvisor) return jsonResponse({ error: "Not authorized for this booking" }, 403);
-
-    const { data: existingSession } = await supabaseClient
-      .from("video_sessions")
-      .select("*")
-      .eq("booking_id", bookingId)
-      .maybeSingle();
-
-    if (existingSession) {
-      return jsonResponse({
-        roomUrl: existingSession.room_url,
-        roomName: existingSession.room_name,
-        provider: existingSession.provider ?? "jitsi",
-      });
+    const clientUserId = (booking.client as { user_id?: string } | null)?.user_id;
+    const advisorUserId = (booking.advisor as { user_id?: string } | null)?.user_id;
+    if (user.id !== clientUserId && user.id !== advisorUserId) {
+      return jsonResponse({ error: "Not authorized for this booking" }, 403);
     }
 
-    // Deterministic shared room — both parties land in the SAME room.
-    // Using meet.ffmuc.net (public Jitsi instance) — meet.jit.si now requires moderator login.
-    const roomName = `cookalook-${bookingId}`;
-    const roomUrl = `https://meet.ffmuc.net/${roomName}#config.prejoinPageEnabled=false`;
-
-    await supabaseClient.from("video_sessions").insert({
-      booking_id: bookingId,
-      room_name: roomName,
-      room_url: roomUrl,
-      provider: "jitsi",
-    }).then(({ error }) => {
-      if (error) console.error("Persist session failed:", error);
-    });
-
-    return jsonResponse({
-      roomUrl,
-      roomName,
-      provider: "jitsi",
-    });
+    const room = await getOrCreateVideoRoomForBooking(supabaseAdmin, bookingId);
+    return jsonResponse(room);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Create video room error:", error);

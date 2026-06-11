@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { getOrCreateVideoRoomForBooking } from "../_shared/daily.ts";
 
 interface BookingConfirmationRequest {
   bookingId: string;
@@ -156,6 +157,17 @@ serve(async (req) => {
       timeZoneName: "short",
     });
 
+    // Pre-create the video room so both parties get a join link in their email
+    let videoJoinUrl: string | null = null;
+    if (booking.slot.is_virtual) {
+      try {
+        const room = await getOrCreateVideoRoomForBooking(supabaseAdmin, bookingId);
+        videoJoinUrl = room.roomUrl;
+      } catch (e) {
+        console.error("Pre-create video room failed:", e);
+      }
+    }
+
     // Generate ICS calendar invite content
     const icsContent = generateICS({
       title: `Style Consultation with ${booking.advisor.full_name}`,
@@ -163,6 +175,7 @@ serve(async (req) => {
       startTime: booking.slot.start_time,
       endTime: booking.slot.end_time,
       isVirtual: booking.slot.is_virtual,
+      joinUrl: videoJoinUrl,
     });
 
     // Send email to client
@@ -217,7 +230,9 @@ serve(async (req) => {
               </div>
             </div>
             
-            <p>A calendar invite is attached. You'll receive a video call link before your session.</p>
+            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">JOIN VIDEO CALL</a></p><p style="text-align:center;font-size:12px;color:#666;word-break:break-all;">Fallback link: <a href="${videoJoinUrl}">${videoJoinUrl}</a></p>` : ""}
+
+            <p>A calendar invite is attached. ${videoJoinUrl ? "The video call link is also included in the calendar event." : "You'll receive a video call link before your session."}</p>
             
             <div class="footer">
               <p>Questions? Reply to this email or visit our help center.</p>
@@ -276,6 +291,8 @@ serve(async (req) => {
               </div>
             </div>
             
+            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">JOIN VIDEO CALL</a></p><p style="text-align:center;font-size:12px;color:#666;word-break:break-all;">Fallback link: <a href="${videoJoinUrl}">${videoJoinUrl}</a></p>` : ""}
+
             <p>A calendar invite is attached. Please ensure you're available and prepared for the session.</p>
             
             <div class="footer">
@@ -310,16 +327,24 @@ serve(async (req) => {
   }
 });
 
-function generateICS({ title, description, startTime, endTime, isVirtual }: {
+function generateICS({ title, description, startTime, endTime, isVirtual, joinUrl }: {
   title: string;
   description: string;
   startTime: string;
   endTime: string;
   isVirtual: boolean;
+  joinUrl?: string | null;
 }) {
   const formatDate = (date: string) => {
     return new Date(date).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   };
+
+  const location = isVirtual
+    ? (joinUrl ?? "Virtual - Video link will be provided")
+    : "In-Person";
+  const fullDescription = joinUrl
+    ? `${description}\\n\\nJoin: ${joinUrl}`
+    : description;
 
   return `BEGIN:VCALENDAR
 VERSION:2.0
@@ -329,8 +354,8 @@ UID:${Date.now()}@cookalook.com
 DTSTART:${formatDate(startTime)}
 DTEND:${formatDate(endTime)}
 SUMMARY:${title}
-DESCRIPTION:${description}
-LOCATION:${isVirtual ? "Virtual - Video link will be provided" : "In-Person"}
+DESCRIPTION:${fullDescription}
+LOCATION:${location}
 STATUS:CONFIRMED
 END:VEVENT
 END:VCALENDAR`;
