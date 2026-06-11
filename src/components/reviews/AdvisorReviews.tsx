@@ -105,16 +105,16 @@ const AdvisorReviews = ({ advisorId }: AdvisorReviewsProps) => {
           <div key={review.id} className="border-b pb-4 last:border-0">
             <div className="flex items-start gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={review.client?.avatar_url || undefined} />
+                <AvatarImage src={review.reviewer_avatar_url || undefined} />
                 <AvatarFallback>
-                  {review.client?.full_name?.charAt(0) || <User className="w-4 h-4" />}
+                  {review.reviewer_first_name?.charAt(0) || <User className="w-4 h-4" />}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <p className="font-medium">
-                    {review.client?.full_name || "Anonymous"}
+                    {review.reviewer_first_name || "Anonymous"}
                   </p>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(review.created_at), "MMM d, yyyy")}
