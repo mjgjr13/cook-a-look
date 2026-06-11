@@ -291,6 +291,8 @@ serve(async (req) => {
               </div>
             </div>
             
+            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">JOIN VIDEO CALL</a></p><p style="text-align:center;font-size:12px;color:#666;word-break:break-all;">Fallback link: <a href="${videoJoinUrl}">${videoJoinUrl}</a></p>` : ""}
+
             <p>A calendar invite is attached. Please ensure you're available and prepared for the session.</p>
             
             <div class="footer">
