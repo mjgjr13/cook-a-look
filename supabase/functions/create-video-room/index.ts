@@ -35,10 +35,14 @@ serve(async (req) => {
     // Authorize: only client or advisor of the booking can fetch the room
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
-      .select(`id, client:profiles!bookings_client_id_fkey(user_id), advisor:profiles!bookings_advisor_id_fkey(user_id)`)
+      .select(`id, meeting_type, client:profiles!bookings_client_id_fkey(user_id), advisor:profiles!bookings_advisor_id_fkey(user_id)`)
       .eq("id", bookingId)
       .single();
     if (bookingError || !booking) return jsonResponse({ error: "Booking not found" }, 404);
+
+    if ((booking as { meeting_type?: string }).meeting_type === "in_person") {
+      return jsonResponse({ error: "This is an in-person booking — no video room available." }, 400);
+    }
 
     const clientUserId = (booking.client as { user_id?: string } | null)?.user_id;
     const advisorUserId = (booking.advisor as { user_id?: string } | null)?.user_id;

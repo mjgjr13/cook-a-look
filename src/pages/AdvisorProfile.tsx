@@ -38,6 +38,7 @@ interface AdvisorData {
   instagram_url: string | null;
   portfolio_url: string | null;
   verified: boolean | null;
+  in_person_surcharge: number | null;
 }
 
 const AdvisorProfile = () => {
@@ -238,6 +239,7 @@ const AdvisorProfile = () => {
                   {advisor.in_person_available && (
                     <span className="flex min-w-0 items-center gap-1 break-words">
                       <MapPin className="w-4 h-4" /> In-Person{advisor.location && ` · ${advisor.location}`}
+                      {advisor.in_person_surcharge && advisor.in_person_surcharge > 0 ? ` (+$${advisor.in_person_surcharge})` : ""}
                     </span>
                   )}
                 </div>
@@ -428,6 +430,9 @@ const AdvisorProfile = () => {
         onClose={() => setCalendarOpen(false)}
         initialDate={initialBookingDate}
         initialSlot={initialBookingSlot}
+        virtualAvailable={advisor.virtual_available ?? true}
+        inPersonAvailable={advisor.in_person_available ?? false}
+        inPersonSurcharge={advisor.in_person_surcharge ?? 0}
       />
     </Layout>
   );

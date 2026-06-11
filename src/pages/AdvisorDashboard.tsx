@@ -28,6 +28,7 @@ import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal"
 import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
+import PendingLocationApprovals from "@/components/advisor/PendingLocationApprovals";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
@@ -368,6 +369,13 @@ const AdvisorDashboard = () => {
               <AdvisorFeeProgressCard advisorProfileId={profile.id} />
             </div>
           )}
+
+          {isApproved && profile && (
+            <div className="mb-8">
+              <PendingLocationApprovals advisorProfileId={profile.id} />
+            </div>
+          )}
+
 
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
