@@ -22,6 +22,7 @@ interface CheckoutRequest {
   sessionDate: string;
   sessionTime: string;
   isDynamicSlot?: boolean;
+  hours?: number; // 1, 2, or 3 — selected by client
 }
 
 serve(async (req) => {
