@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Calendar, Video, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle, Calendar, Video, ArrowRight, Loader2, ShieldCheck, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -142,6 +142,14 @@ const BookingSuccess = () => {
                 <li className="flex items-start gap-3">
                   <Video className="w-5 h-5 mt-0.5 text-primary" />
                   <span>Join the video call at your scheduled time from your dashboard</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 mt-0.5 text-primary" />
+                  <span>Your payment is held in escrow for 48 hours after the session</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <RefreshCw className="w-5 h-5 mt-0.5 text-primary" />
+                  <span>If something goes wrong, open a dispute within 48 hours for a full refund review</span>
                 </li>
               </ul>
             </div>

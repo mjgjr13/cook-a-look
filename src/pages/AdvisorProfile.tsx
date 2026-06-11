@@ -3,7 +3,7 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft } from "lucide-react";
+import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCalendar from "@/components/BookingCalendar";
@@ -328,6 +328,17 @@ const AdvisorProfile = () => {
                   </div>
                 </div>
               )}
+
+              <div className="hidden sm:block mb-4 p-4 bg-secondary/40 border border-border">
+                <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3">Booking with Cook A Look is protected</p>
+                <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-sans text-muted-foreground">
+                  <li className="flex items-start gap-2"><ShieldCheck className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Identity-verified advisor</span></li>
+                  <li className="flex items-start gap-2"><Lock className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Payment held in escrow 48h</span></li>
+                  <li className="flex items-start gap-2"><Camera className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Sessions recorded for disputes</span></li>
+                  <li className="flex items-start gap-2"><RefreshCw className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Refund if the advisor no-shows</span></li>
+                </ul>
+                <Link to="/terms-of-use" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
+              </div>
 
               <div className="hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
                 <div>

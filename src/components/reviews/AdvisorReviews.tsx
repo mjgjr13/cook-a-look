@@ -11,10 +11,8 @@ interface Review {
   rating: number;
   review_text: string | null;
   created_at: string;
-  client: {
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
+  reviewer_first_name: string | null;
+  reviewer_avatar_url: string | null;
 }
 
 interface AdvisorReviewsProps {
@@ -30,28 +28,19 @@ const AdvisorReviews = ({ advisorId }: AdvisorReviewsProps) => {
     const fetchReviews = async () => {
       setIsLoading(true);
 
-      const { data, error } = await supabase
-        .from("advisor_reviews")
-        .select(`
-          id,
-          rating,
-          review_text,
-          created_at,
-          client:profiles!advisor_reviews_client_id_fkey(full_name, avatar_url)
-        `)
-        .eq("advisor_id", advisorId)
-        .order("created_at", { ascending: false })
-        .limit(10);
+      const { data, error } = await supabase.rpc("get_advisor_reviews", {
+        p_advisor_id: advisorId,
+        p_limit: 20,
+      });
 
       if (error) {
         console.error("Error fetching reviews:", error);
       } else {
-        setReviews(data || []);
-
-        // Calculate stats
-        if (data && data.length > 0) {
-          const total = data.length;
-          const avg = data.reduce((sum, r) => sum + r.rating, 0) / total;
+        const list = (data || []) as Review[];
+        setReviews(list);
+        if (list.length > 0) {
+          const total = list.length;
+          const avg = list.reduce((sum, r) => sum + r.rating, 0) / total;
           setStats({ avgRating: Math.round(avg * 10) / 10, totalReviews: total });
         }
       }
@@ -116,16 +105,16 @@ const AdvisorReviews = ({ advisorId }: AdvisorReviewsProps) => {
           <div key={review.id} className="border-b pb-4 last:border-0">
             <div className="flex items-start gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={review.client?.avatar_url || undefined} />
+                <AvatarImage src={review.reviewer_avatar_url || undefined} />
                 <AvatarFallback>
-                  {review.client?.full_name?.charAt(0) || <User className="w-4 h-4" />}
+                  {review.reviewer_first_name?.charAt(0) || <User className="w-4 h-4" />}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <p className="font-medium">
-                    {review.client?.full_name || "Anonymous"}
+                    {review.reviewer_first_name || "Anonymous"}
                   </p>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(review.created_at), "MMM d, yyyy")}

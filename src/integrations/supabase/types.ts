@@ -1448,6 +1448,17 @@ export type Database = {
           virtual_available: boolean
         }[]
       }
+      get_advisor_reviews: {
+        Args: { p_advisor_id: string; p_limit?: number }
+        Returns: {
+          created_at: string
+          id: string
+          rating: number
+          review_text: string
+          reviewer_avatar_url: string
+          reviewer_first_name: string
+        }[]
+      }
       get_all_advisor_profiles_including_demo: {
         Args: never
         Returns: {

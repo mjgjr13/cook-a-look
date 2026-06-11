@@ -98,9 +98,9 @@ const BookingCalendar = ({
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load advisor's preset meeting locations (public-readable for active ones)
+  // Load advisor's preset meeting locations (auth-gated via RPC)
   useEffect(() => {
-    if (!advisorId || !UUID_REGEX.test(advisorId) || !inPersonAvailable) return;
+    if (!advisorId || !UUID_REGEX.test(advisorId) || !inPersonAvailable || !user) return;
     supabase
       .from("advisor_meeting_locations")
       .select("id, name, address, city")
@@ -113,7 +113,7 @@ const BookingCalendar = ({
         if (list.length > 0 && !locationChoice) setLocationChoice(list[0].id);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [advisorId, inPersonAvailable]);
+  }, [advisorId, inPersonAvailable, user]);
 
   useEffect(() => {
     const fetchSlots = async () => {
@@ -443,8 +443,12 @@ const BookingCalendar = ({
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
                 ) : user ? "Proceed to Payment" : "Sign in to Book"}
               </Button>
+              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+                Secure checkout via Stripe — Cook A Look never sees your card details.
+                Payment is held in escrow for 48 hours after your session.
+              </p>
               {!user && (
-                <p className="text-xs text-muted-foreground text-center mt-2">
+                <p className="text-xs text-muted-foreground text-center mt-1">
                   You'll need to sign in to complete your booking
                 </p>
               )}

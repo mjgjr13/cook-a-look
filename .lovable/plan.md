@@ -1,66 +1,64 @@
 ## Goal
 
-Make in-person bookings actually in-person. Today, even when an advisor offers in-person, the booking flow treats every session as virtual. Advisors who offer in-person (or hybrid) should be able to (1) list a few preset meeting spots (e.g. local malls), (2) charge an optional in-person surcharge up to $100, and clients should pick one of those spots — or propose a nearby alternative for the advisor to approve/decline. Pure virtual advisors are unchanged.
+Tighten the backend so nothing leaks beyond what's intentional, and add the visible trust signals clients expect on the path that moves money: browse → advisor profile → book → pay. No visual redesign, no business-logic changes.
 
-## Changes
+Findings come from the Supabase linter + security scanner (1 error, 70 warnings) plus a read of the booking flow.
 
-### 1. Advisor setup: meeting locations + surcharge
+---
 
-- New table `advisor_meeting_locations` (one row per spot) with `advisor_id`, `name` (e.g. "Westfield Valley Fair"), `address`, `city`, `notes`, `is_active`, `sort_order`.
-- New column `profiles.in_person_surcharge` (integer cents/dollars, default 0, max 100) — flat fee added per in-person booking (not per hour).
-- Onboarding + Account Settings (`BecomeAdvisor.tsx`, `AccountSettings.tsx`):
-  - Only show the locations + surcharge UI when the advisor has `in_person_available = true`.
-  - "Where you meet clients" section: add/remove up to ~5 preset spots (name + address required). At least 1 required to turn in-person on / go live.
-  - "In-person surcharge" input ($0–$100, helper text: "Flat fee added to in-person bookings on top of your hourly rate").
-- Profile completion / listing visibility checklist: in-person advisors aren't "ready to go live" until they have ≥1 active location.
+## 1. Backend hardening (migrations)
 
-### 2. Booking flow: meeting type + location picker
+### Critical
+- **Realtime channel authorization (scanner ERROR).** Today, any signed-in user can subscribe to any Realtime topic and receive booking, message, slot, and profile change events for other people. Add RLS policies on `realtime.messages` that restrict topic subscriptions to channels the user owns (their `auth.uid()`, their bookings, their advisor profile). Keep the same set of tables published; only the subscription gate changes.
 
-- `BookingCalendar.tsx`: after date/slot/duration, show a **Meeting type** selector based on advisor's offerings:
-  - Virtual-only advisor → no selector, behaves like today.
-  - In-person-only → forced to in-person; show location picker.
-  - Hybrid → radio toggle (Virtual / In-person); in-person reveals the picker.
-- **Location picker** for in-person:
-  - Radio list of the advisor's active preset locations (name + address).
-  - "Suggest another location" option → text input for venue name + address + optional note.
-- Pricing summary updates live: `hourly_rate × hours` + (`in_person_surcharge` if in-person).
-- `create-checkout` edge function: accept `meetingType` ("virtual" | "in_person"), `locationId` (preset) or `suggestedLocation` (free-text), validate against advisor's offerings, recompute price server-side including surcharge, store on the booking.
+### High
+- **`profiles` email/PII exposure via joins.** `profiles` contains email, `verification_status`, `role`, `referral_code`, `referred_by`, `terms_accepted_at`. Public advisor reads currently go through SECURITY DEFINER functions that select an explicit safe column list — keep those. The fix: drop or scope any RLS policy on `profiles` that lets `authenticated` read rows other than their own, so direct table reads from the client can only return the caller's own row. All public/advisor-facing reads continue through the existing `get_public_advisor_profiles` / `get_advisor_public_profile` / `get_active_published_advisors` RPCs (which already omit email and privileged fields).
+- **`advisor_reviews` leaks `client_id`.** Replace the "Anyone can view reviews" policy with a SECURITY DEFINER RPC `get_advisor_reviews(advisor_id)` that returns only `rating`, `review_text`, `created_at`, and a derived reviewer initial/first-name — never `client_id`. Restrict direct table SELECT to the review author and the reviewed advisor.
+- **`advisor_meeting_locations` public address dump.** Restrict the "Public can read active locations" policy to `authenticated`, and only return locations whose advisor is approved + listed. Expose via a new SECURITY DEFINER RPC `get_advisor_meeting_locations(advisor_id)` called from the booking calendar so anonymous browsers don't see exact addresses; addresses become visible to logged-in users on the booking step.
+- **Leaked-password protection.** Enable HIBP password check on auth so signups/password resets reject known-breached passwords.
 
-### 3. Bookings record + approval for client-suggested locations
+### Medium
+- **SECURITY DEFINER execute grants (66 warnings).** Audit every `public.*` SECURITY DEFINER function:
+  - Keep `EXECUTE TO anon, authenticated` only on functions designed for public reads (the `get_*_advisor*`, `get_available_booking_slots`, `is_slot_available`, `get_public_featured_advisors`).
+  - `REVOKE EXECUTE FROM anon, authenticated` and grant to `service_role` only on the rest (internal triggers, `award_client_points`, `redeem_site_credits`, `complete_due_bookings`, `archive_verification_documents`, all `prevent_*` and `validate_*` triggers, `handle_new_user`, `update_*`, `enforce_meeting_location_cap`).
+- **Storage bucket listing.** `avatars`, `lookbook`, and `portfolios` are public AND allow `LIST`. Files served by direct URL still work; tighten the `storage.objects` SELECT policy on these three buckets so unauthenticated requests can `getPublicUrl` (read by key) but cannot enumerate the bucket.
+- **`pg_trgm` / other extension in public.** Move to the `extensions` schema (cosmetic but flagged).
 
-- Add to `bookings`: `meeting_type` ('virtual' | 'in_person'), `location_id` (FK, nullable), `suggested_location` (jsonb: {name, address, note}, nullable), `location_status` ('confirmed' | 'pending_advisor_approval' | 'declined'), `in_person_surcharge_cents`.
-- Preset location → `location_status = 'confirmed'` immediately, booking proceeds as normal.
-- Suggested location → `location_status = 'pending_advisor_approval'`. Booking is still paid + reserved (slot held), but advisor gets a notification + an action card on their dashboard to **Accept** or **Decline**:
-  - Accept → status becomes `confirmed`, suggested location is saved as the official meeting place.
-  - Decline → advisor picks one of their preset locations as a counter, status becomes `confirmed` with that preset (client is notified via email + in-app). Optional follow-up: full cancel/refund path if client rejects the counter — out of scope for v1, just leave a note in the booking chat.
-- Client booking confirmation + reminder emails (`send-booking-confirmation`, `send-session-reminders`): show meeting type, address (or "Pending advisor confirmation"), and surcharge line item. Skip Daily.co video room creation for in-person bookings.
+### Edge functions
+- Add Zod input validation + size caps to `create-checkout`, `submit-advisor-application`, `advisor-chat`, `send-*` functions (whatever isn't already validated).
+- Confirm every function re-validates the JWT via `supabase.auth.getUser(token)` before trusting `client_id`/`advisor_id` from the body.
+- Standardize CORS to an allow-list (preview, custom domain, localhost) instead of `*` where money/PII is involved (`create-checkout`, `verify-payment`, `admin-get-recordings`, `submit-advisor-application`).
 
-### 4. UI surfaces to update
+---
 
-- Advisor profile page (`AdvisorProfile.tsx`) + cards (`Advisors.tsx`, `FeaturedAdvisors.tsx`): if in-person is offered, show "Meets at: <city list>" and surcharge note ("+ $X for in-person").
-- Booking details modal (`BookingDetailsModal.tsx`), dashboards (`Dashboard.tsx`, `AdvisorDashboard.tsx`), admin views (`AdminBookings.tsx`): display meeting type, address, and surcharge.
-- Today's call buttons: only show "Join video" for virtual bookings; in-person bookings show "View location" instead.
+## 2. Trust signals on browse → profile → book
 
-### 5. Validation + edge cases
+Read-only additions, no business logic change:
 
-- If an advisor turns off in-person, existing in-person bookings stay valid (use stored snapshot of address); new bookings can't pick in-person.
-- Surcharge is enforced server-side in `create-checkout` (never trusted from client).
-- Suggested-location text fields capped (e.g. 200 chars each) and sanitized.
+- **Advisor cards (Advisors.tsx, FeaturedAdvisors).** Add a small "Verified" pill next to the name when `verified = true`, and a discreet "Escrowed payment" line in the card footer.
+- **Advisor profile (AdvisorProfile.tsx).** Add a "Why booking here is safe" strip above the booking CTA:
+  - Identity-verified advisor
+  - Payment held in escrow for 48 hours after the session
+  - Session is recorded for dispute resolution
+  - Refund if the advisor no-shows
+  Each item links to the relevant Terms section.
+- **BookingCalendar.tsx — pre-checkout summary.** Restate before "Continue to payment": session length, total price (breakdown: hourly × hours [+ in-person surcharge]), meeting type + location/virtual, cancellation window, and a line "You'll be redirected to Stripe — Cook A Look never sees your card details."
+- **BookingSuccess.tsx.** Add a "What happens next" panel (confirmation email, calendar invite, how to join, refund/dispute window) so the post-payment moment feels handled.
+- **Global footer + sign-in/up.** Surface a "Secure payments by Stripe" + "Privacy & Terms" line; add it under the Stripe redirect button too.
 
-## Technical notes
+---
 
-- Migration: create `advisor_meeting_locations` with grants + RLS (public read for active locations of approved+listed advisors; advisor manage own; admin all). Add the `bookings` and `profiles` columns. Backfill existing bookings to `meeting_type = 'virtual'`, `location_status = 'confirmed'`.
-- `book_slot` RPC: extend to accept `p_meeting_type`, `p_location_id`, `p_suggested_location`, `p_surcharge_cents`, write them onto the booking row atomically.
-- `create-video-room` / video session triggers: gate on `meeting_type = 'virtual'`.
+## 3. Verification
 
-## Out of scope
+After migrations apply:
+1. Re-run `security--run_security_scan` and `supabase--linter`; the realtime ERROR and the three PII warnings should clear, definer-function warnings should drop sharply.
+2. Manual: sign in as user A, try to subscribe to user B's booking channel — expect rejection. Sign out, hit `advisor_meeting_locations` directly — expect empty. Hit `advisor_reviews` directly — expect empty/own only. Read `profiles` as authenticated user for someone else's id — expect empty.
+3. Walk browse → profile → book → pay end-to-end and confirm the trust strip, breakdown, and success panel render.
 
-- Map/geocoding for suggested locations (free-text only for v1).
-- Full cancel/refund flow if client rejects advisor's counter-location.
-- Per-location pricing (single surcharge applies to all in-person spots).
-- Travel-distance validation.
+---
 
-## Questions
+## Out of scope (per your answer)
 
-1. **Max preset locations per advisor?** I suggested 5 — sound right, or different cap?
-2. **When advisor declines a client-suggested location**, is "advisor picks a preset as counter, booking auto-confirms at that preset, client notified" acceptable for v1, or should the client get a chance to accept/reject the counter (with refund if they reject)?
+- UX polish beyond the trust strip on the booking path.
+- Visual / typography refinement.
+- Onboarding, dashboard, payout, dispute, and admin surfaces (we can do those in a follow-up sweep).
