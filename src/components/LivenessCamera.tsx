@@ -368,11 +368,26 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
     );
   }
 
+  const showVideo = step !== "ready" && step !== "initializing";
+
   return (
     <div className="space-y-4">
       <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden">
-        {step === "ready" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+        {/* Video element is ALWAYS mounted so videoRef is available the moment the stream is acquired */}
+        <video
+          ref={videoRef}
+          className={cn(
+            "w-full h-full object-cover transform scale-x-[-1]",
+            showVideo ? "opacity-100" : "opacity-0"
+          )}
+          playsInline
+          muted
+          autoPlay
+        />
+
+        {/* Ready state overlay */}
+        {step === "ready" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 bg-black">
             <Camera className="w-16 h-16 mb-4 opacity-50" />
             <p className="text-sm text-center mb-4">
               We'll guide you through a quick liveness check to verify your identity
@@ -402,16 +417,19 @@ const LivenessCamera = ({ onCapture, onCancel }: LivenessCameraProps) => {
               </div>
             )}
           </div>
-        ) : step === "initializing" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+        )}
+
+        {/* Initializing overlay (video still mounted underneath) */}
+        {step === "initializing" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black">
             <Loader2 className="w-12 h-12 animate-spin mb-4" />
             <p className="text-sm">Starting camera...</p>
             <p className="text-xs text-white/60 mt-2">Please allow camera access when prompted</p>
           </div>
-        ) : (
-          <>
-            <video ref={videoRef} className="w-full h-full object-cover transform scale-x-[-1]" playsInline muted autoPlay />
+        )}
 
+        {showVideo && (
+          <>
             {/* Face guide overlay */}
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute inset-0 flex items-center justify-center">
