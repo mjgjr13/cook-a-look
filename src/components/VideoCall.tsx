@@ -27,10 +27,12 @@ const VideoCall = ({
   isClient = false,
 }: VideoCallProps) => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [provider, setProvider] = useState<Provider>("daily");
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const dailyContainerRef = useRef<HTMLDivElement>(null);
   const dailyFrameRef = useRef<{ destroy: () => void } | null>(null);
 
