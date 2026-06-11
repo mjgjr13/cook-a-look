@@ -37,7 +37,9 @@ const VideoCall = ({
   const dailyFrameRef = useRef<{ destroy: () => void } | null>(null);
 
   useEffect(() => {
+    if (!consentGiven) return;
     let cancelled = false;
+    setIsLoading(true);
     const createRoom = async () => {
       try {
         const { data, error } = await supabase.functions.invoke("create-video-room", {
@@ -63,7 +65,7 @@ const VideoCall = ({
     return () => {
       cancelled = true;
     };
-  }, [bookingId, onClose, toast]);
+  }, [bookingId, onClose, toast, consentGiven]);
 
   // Mount Daily.co prebuilt UI (supports mobile camera flip + cloud recording)
   useEffect(() => {
