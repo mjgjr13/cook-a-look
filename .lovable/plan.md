@@ -1,60 +1,66 @@
 ## Goal
 
-Switch advisor pricing from per-session to per-hour, let clients book 1–3 hours per booking, and rewrite the platform-fee messaging so it's clear the fee drops from 15% to 10% (not 5%) after 9 bookings in a month.
+Make in-person bookings actually in-person. Today, even when an advisor offers in-person, the booking flow treats every session as virtual. Advisors who offer in-person (or hybrid) should be able to (1) list a few preset meeting spots (e.g. local malls), (2) charge an optional in-person surcharge up to $100, and clients should pick one of those spots — or propose a nearby alternative for the advisor to approve/decline. Pure virtual advisors are unchanged.
 
 ## Changes
 
-### 1. Pricing model: hourly + duration selector
+### 1. Advisor setup: meeting locations + surcharge
 
-- Reframe `profiles.price_per_session` as the advisor's **hourly rate** throughout the UI (labels, helper text, breakdown). No DB column rename — just relabel and treat the stored number as $/hour.
-- `PricingInput.tsx`: change label to "Your Hourly Rate", update helper copy, change the breakdown to show "Hourly rate", and remove the stale "10+ bookings → 5%" footnote (replaced by corrected copy in #3).
-- Booking flow: add a **duration picker (1, 2, or 3 hours)** on the advisor's booking page / `BookingCalendar`, defaulting to 1 hour.
-  - Client total = `hourly_rate × hours`.
-  - Slot selection must reserve `hours × 60` minutes of contiguous availability (still on the 60-min slot grid with the existing 15-min buffer between bookings).
-- `create-checkout` edge function:
-  - Accept a new `hours` field (validate 1–3, integer).
-  - Compute `finalEndTime = finalStartTime + hours*60min` for dynamic slots; for legacy single-slot bookings, require the contiguous slots to be free.
-  - Charge `price_per_session × hours` (kept variable name; it now represents hourly rate).
-  - Pass `hours` and `total_amount` into booking metadata + Stripe line item description ("X-hour styling session").
-- `bookings` table: store the chosen duration. Add a `duration_hours` integer column (default 1, check 1–3) so dashboards, reminders, and the video room know the session length.
-- Availability/`book_slot` RPC: extend to accept `p_hours` and atomically lock all contiguous slots (or reject if any are taken). Update `availability_slots` booking logic accordingly.
-- Surfaces that display price (advisor cards, advisor profile, dashboards, earnings, admin views): show "$X / hour" instead of "$X / session". Earnings calculations multiply by `duration_hours` where the booking total isn't already stored.
+- New table `advisor_meeting_locations` (one row per spot) with `advisor_id`, `name` (e.g. "Westfield Valley Fair"), `address`, `city`, `notes`, `is_active`, `sort_order`.
+- New column `profiles.in_person_surcharge` (integer cents/dollars, default 0, max 100) — flat fee added per in-person booking (not per hour).
+- Onboarding + Account Settings (`BecomeAdvisor.tsx`, `AccountSettings.tsx`):
+  - Only show the locations + surcharge UI when the advisor has `in_person_available = true`.
+  - "Where you meet clients" section: add/remove up to ~5 preset spots (name + address required). At least 1 required to turn in-person on / go live.
+  - "In-person surcharge" input ($0–$100, helper text: "Flat fee added to in-person bookings on top of your hourly rate").
+- Profile completion / listing visibility checklist: in-person advisors aren't "ready to go live" until they have ≥1 active location.
 
-### 2. Session length / video room
+### 2. Booking flow: meeting type + location picker
 
-- `VideoCall` + `create-video-room`: use `duration_hours` to set room expiry and the displayed session length.
-- Reminder + confirmation emails: include the duration ("2-hour session at 3:00 PM").
+- `BookingCalendar.tsx`: after date/slot/duration, show a **Meeting type** selector based on advisor's offerings:
+  - Virtual-only advisor → no selector, behaves like today.
+  - In-person-only → forced to in-person; show location picker.
+  - Hybrid → radio toggle (Virtual / In-person); in-person reveals the picker.
+- **Location picker** for in-person:
+  - Radio list of the advisor's active preset locations (name + address).
+  - "Suggest another location" option → text input for venue name + address + optional note.
+- Pricing summary updates live: `hourly_rate × hours` + (`in_person_surcharge` if in-person).
+- `create-checkout` edge function: accept `meetingType` ("virtual" | "in_person"), `locationId` (preset) or `suggestedLocation` (free-text), validate against advisor's offerings, recompute price server-side including surcharge, store on the booking.
 
-### 3. Fee-tier copy fix
+### 3. Bookings record + approval for client-suggested locations
 
-Current copy implies the fee drops to 5%. Correct rule: **first 9 bookings in a calendar month → 15% fee; from the 10th booking onward in that month → 10% fee.** Update everywhere this is mentioned:
+- Add to `bookings`: `meeting_type` ('virtual' | 'in_person'), `location_id` (FK, nullable), `suggested_location` (jsonb: {name, address, note}, nullable), `location_status` ('confirmed' | 'pending_advisor_approval' | 'declined'), `in_person_surcharge_cents`.
+- Preset location → `location_status = 'confirmed'` immediately, booking proceeds as normal.
+- Suggested location → `location_status = 'pending_advisor_approval'`. Booking is still paid + reserved (slot held), but advisor gets a notification + an action card on their dashboard to **Accept** or **Decline**:
+  - Accept → status becomes `confirmed`, suggested location is saved as the official meeting place.
+  - Decline → advisor picks one of their preset locations as a counter, status becomes `confirmed` with that preset (client is notified via email + in-app). Optional follow-up: full cancel/refund path if client rejects the counter — out of scope for v1, just leave a note in the booking chat.
+- Client booking confirmation + reminder emails (`send-booking-confirmation`, `send-session-reminders`): show meeting type, address (or "Pending advisor confirmation"), and surcharge line item. Skip Daily.co video room creation for in-person bookings.
 
-- `PricingInput.tsx` footnote.
-- `AdvisorOnboardingModal.tsx` "Payout Schedule" section.
-- `AdvisorFeeProgressCard.tsx` (progress + headline copy).
-- Any tooltip/help text on advisor earnings page.
+### 4. UI surfaces to update
 
-Suggested wording: *"Standard fee is 15%. After your 9th completed booking in a calendar month, every additional booking that month is charged a reduced 10% fee."*
+- Advisor profile page (`AdvisorProfile.tsx`) + cards (`Advisors.tsx`, `FeaturedAdvisors.tsx`): if in-person is offered, show "Meets at: <city list>" and surcharge note ("+ $X for in-person").
+- Booking details modal (`BookingDetailsModal.tsx`), dashboards (`Dashboard.tsx`, `AdvisorDashboard.tsx`), admin views (`AdminBookings.tsx`): display meeting type, address, and surcharge.
+- Today's call buttons: only show "Join video" for virtual bookings; in-person bookings show "View location" instead.
 
-### 4. Fee calculation logic
+### 5. Validation + edge cases
 
-- `calculatePlatformFee` in `useProfile.ts`: keep the 9-booking threshold but change the reduced rate from the current value to **10%** (not 5%). Apply per-booking: bookings 1–9 = 15%, booking 10+ = 10%.
-- Confirm the server-side equivalent (any edge function or DB function computing payouts) uses the same 15% / 10% split. Update `mark-completed-bookings` / payout logic if needed.
-- Update memory file `mem://features/payments/platform-fee-structure` to reflect 15% → 10% (not 5%).
+- If an advisor turns off in-person, existing in-person bookings stay valid (use stored snapshot of address); new bookings can't pick in-person.
+- Surcharge is enforced server-side in `create-checkout` (never trusted from client).
+- Suggested-location text fields capped (e.g. 200 chars each) and sanitized.
 
 ## Technical notes
 
-- DB migration: `ALTER TABLE bookings ADD COLUMN duration_hours int NOT NULL DEFAULT 1 CHECK (duration_hours BETWEEN 1 AND 3);` plus an updated `book_slot` function signature.
-- Backfill: existing bookings get `duration_hours = 1`.
-- No rename of `price_per_session` to avoid a wide-blast-radius refactor; add a code comment that it now represents hourly rate. (Optional follow-up: rename in a later pass.)
-- Keep the 15-minute buffer rule between consecutive bookings regardless of duration.
+- Migration: create `advisor_meeting_locations` with grants + RLS (public read for active locations of approved+listed advisors; advisor manage own; admin all). Add the `bookings` and `profiles` columns. Backfill existing bookings to `meeting_type = 'virtual'`, `location_status = 'confirmed'`.
+- `book_slot` RPC: extend to accept `p_meeting_type`, `p_location_id`, `p_suggested_location`, `p_surcharge_cents`, write them onto the booking row atomically.
+- `create-video-room` / video session triggers: gate on `meeting_type = 'virtual'`.
 
 ## Out of scope
 
-- Renaming the `price_per_session` column.
-- Changing the 48-hour escrow window or dispute flow.
-- Sub-hour bookings or durations > 3 hours.
+- Map/geocoding for suggested locations (free-text only for v1).
+- Full cancel/refund flow if client rejects advisor's counter-location.
+- Per-location pricing (single surcharge applies to all in-person spots).
+- Travel-distance validation.
 
-## Question
+## Questions
 
-Memory currently says the reduced fee is **5%** after 9 bookings, and that's wired into the app. Your message says it should be **10%**. I'll change it to 10% across UI + logic + memory — confirm that's the intended rate (not 5%) before I build.
+1. **Max preset locations per advisor?** I suggested 5 — sound right, or different cap?
+2. **When advisor declines a client-suggested location**, is "advisor picks a preset as counter, booking auto-confirms at that preset, client notified" acceptable for v1, or should the client get a chance to accept/reject the counter (with refund if they reject)?
