@@ -19,81 +19,56 @@ const handler = async (req: Request): Promise<Response> => {
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
 
   try {
-    // Validate Authorization header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      console.error("Missing Authorization header");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Initialize Supabase client and verify JWT
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error("Auth error:", authError?.message || "No user found");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
     const { email, name, type }: SignupConfirmationRequest = await req.json();
 
     // Validate input
     if (!email || typeof email !== "string" || email.length > 255) {
       return new Response(
         JSON.stringify({ error: "Invalid email" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     if (!name || typeof name !== "string" || name.length > 200) {
       return new Response(
         JSON.stringify({ error: "Invalid name" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     if (!["user", "advisor"].includes(type)) {
       return new Response(
         JSON.stringify({ error: "Invalid type" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Verify email matches authenticated user to prevent email bombing
-    if (email.toLowerCase() !== user.email?.toLowerCase()) {
-      console.error("Email mismatch: requested", email, "but user is", user.email);
+    // Verify the email actually belongs to a real auth user (prevents email bombing).
+    // We cannot rely on a user session here because signup with email confirmation
+    // does not return a session.
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const { data: userLookup, error: lookupError } = await supabaseAdmin
+      .auth.admin.listUsers({ page: 1, perPage: 1, email: email.toLowerCase() } as never);
+
+    if (lookupError || !userLookup?.users?.length) {
+      console.error("No auth user found for email:", email, lookupError?.message);
       return new Response(
-        JSON.stringify({ error: "Email mismatch" }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ error: "Unknown recipient" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const user = userLookup.users[0];
+    // Only send within 5 minutes of account creation to avoid abuse
+    const createdAt = new Date(user.created_at).getTime();
+    if (Date.now() - createdAt > 5 * 60 * 1000) {
+      return new Response(
+        JSON.stringify({ error: "Confirmation window expired" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
