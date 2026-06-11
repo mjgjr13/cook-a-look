@@ -157,6 +157,17 @@ serve(async (req) => {
       timeZoneName: "short",
     });
 
+    // Pre-create the video room so both parties get a join link in their email
+    let videoJoinUrl: string | null = null;
+    if (booking.slot.is_virtual) {
+      try {
+        const room = await getOrCreateVideoRoomForBooking(supabaseAdmin, bookingId);
+        videoJoinUrl = room.roomUrl;
+      } catch (e) {
+        console.error("Pre-create video room failed:", e);
+      }
+    }
+
     // Generate ICS calendar invite content
     const icsContent = generateICS({
       title: `Style Consultation with ${booking.advisor.full_name}`,
@@ -164,6 +175,7 @@ serve(async (req) => {
       startTime: booking.slot.start_time,
       endTime: booking.slot.end_time,
       isVirtual: booking.slot.is_virtual,
+      joinUrl: videoJoinUrl,
     });
 
     // Send email to client
