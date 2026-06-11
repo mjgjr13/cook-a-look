@@ -327,16 +327,24 @@ serve(async (req) => {
   }
 });
 
-function generateICS({ title, description, startTime, endTime, isVirtual }: {
+function generateICS({ title, description, startTime, endTime, isVirtual, joinUrl }: {
   title: string;
   description: string;
   startTime: string;
   endTime: string;
   isVirtual: boolean;
+  joinUrl?: string | null;
 }) {
   const formatDate = (date: string) => {
     return new Date(date).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   };
+
+  const location = isVirtual
+    ? (joinUrl ?? "Virtual - Video link will be provided")
+    : "In-Person";
+  const fullDescription = joinUrl
+    ? `${description}\\n\\nJoin: ${joinUrl}`
+    : description;
 
   return `BEGIN:VCALENDAR
 VERSION:2.0
@@ -346,8 +354,8 @@ UID:${Date.now()}@cookalook.com
 DTSTART:${formatDate(startTime)}
 DTEND:${formatDate(endTime)}
 SUMMARY:${title}
-DESCRIPTION:${description}
-LOCATION:${isVirtual ? "Virtual - Video link will be provided" : "In-Person"}
+DESCRIPTION:${fullDescription}
+LOCATION:${location}
 STATUS:CONFIRMED
 END:VEVENT
 END:VCALENDAR`;
