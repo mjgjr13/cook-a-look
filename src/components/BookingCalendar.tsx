@@ -98,9 +98,9 @@ const BookingCalendar = ({
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load advisor's preset meeting locations (public-readable for active ones)
+  // Load advisor's preset meeting locations (auth-gated via RPC)
   useEffect(() => {
-    if (!advisorId || !UUID_REGEX.test(advisorId) || !inPersonAvailable) return;
+    if (!advisorId || !UUID_REGEX.test(advisorId) || !inPersonAvailable || !user) return;
     supabase
       .from("advisor_meeting_locations")
       .select("id, name, address, city")
@@ -113,7 +113,7 @@ const BookingCalendar = ({
         if (list.length > 0 && !locationChoice) setLocationChoice(list[0].id);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [advisorId, inPersonAvailable]);
+  }, [advisorId, inPersonAvailable, user]);
 
   useEffect(() => {
     const fetchSlots = async () => {
