@@ -290,10 +290,10 @@ export const AdvisorDetailModal = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                        Session Price
+                        Hourly Rate
                       </h3>
                       <p className="font-semibold">
-                        ${advisor.price_per_session || 0} / session
+                        ${advisor.price_per_session || 0} / hour
                       </p>
                     </div>
                     <div>

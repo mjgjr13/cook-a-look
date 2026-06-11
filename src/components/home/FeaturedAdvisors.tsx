@@ -131,7 +131,7 @@ const FeaturedAdvisors = () => {
                       <span className="text-lg font-medium">
                         ${advisor.price_per_session || 0}
                       </span>
-                      <span className="text-sm text-muted-foreground">/session</span>
+                      <span className="text-sm text-muted-foreground">/hour</span>
                     </span>
                     <Button 
                       variant="outline" 
