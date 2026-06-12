@@ -84,7 +84,14 @@ const BookingCalendar = ({
   );
   const [locations, setLocations] = useState<MeetingLocation[]>([]);
   const [locationChoice, setLocationChoice] = useState<string>(""); // location id or "suggest"
-  const [suggested, setSuggested] = useState({ name: "", address: "", note: "" });
+  const [suggested, setSuggested] = useState<{
+    name: string;
+    address: string;
+    note: string;
+    placeId?: string;
+    lat?: number;
+    lng?: number;
+  }>({ name: "", address: "", note: "" });
 
   const navigate = useNavigate();
   const { toast } = useToast();
