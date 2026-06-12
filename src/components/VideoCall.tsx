@@ -34,8 +34,17 @@ const VideoCall = ({
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [flipping, setFlipping] = useState(false);
+  const isMobile = useIsMobile();
   const dailyContainerRef = useRef<HTMLDivElement>(null);
-  const dailyFrameRef = useRef<{ destroy: () => void } | null>(null);
+  // Daily-js frame; methods we use: destroy, on, join, setInputDevicesAsync
+  const dailyFrameRef = useRef<{
+    destroy: () => void;
+    on: (event: string, cb: (...args: unknown[]) => void) => unknown;
+    join: (opts: { url: string }) => Promise<unknown>;
+    setInputDevicesAsync?: (opts: { videoSource?: MediaStreamTrack | boolean | string }) => Promise<unknown>;
+  } | null>(null);
 
   useEffect(() => {
     if (!consentGiven) return;
