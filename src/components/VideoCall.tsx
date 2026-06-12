@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Phone, ExternalLink, Video as VideoIcon, ShieldCheck } from "lucide-react";
+import { Loader2, Phone, ExternalLink, Video as VideoIcon, ShieldCheck, SwitchCamera } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ReviewModal from "@/components/reviews/ReviewModal";
 
 interface VideoCallProps {
