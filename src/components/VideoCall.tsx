@@ -261,10 +261,26 @@ const VideoCall = ({
             )}
           </div>
 
-          <div className="p-4 border-t bg-background flex items-center justify-center gap-4">
-            {roomUrl && (
+          <div className="p-4 border-t bg-background flex items-center justify-center gap-3 flex-wrap">
+            {roomUrl && isMobile && provider === "daily" && (
               <Button
                 variant="outline"
+                onClick={handleFlipCamera}
+                disabled={flipping}
+                aria-label="Flip camera"
+              >
+                {flipping ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <SwitchCamera className="w-4 h-4 mr-2" />
+                )}
+                Flip camera
+              </Button>
+            )}
+            {roomUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
