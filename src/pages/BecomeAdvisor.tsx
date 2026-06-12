@@ -1302,43 +1302,13 @@ const BecomeAdvisor = () => {
                             }}
                             onCancel={() => {}}
                           />
-                          
-                          {/* Test Mode Bypass - Remove in production */}
-                          <div className="border-2 border-dashed border-amber-500/50 rounded-lg p-4 bg-amber-500/5">
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-2">
-                              <span className="font-semibold">⚠️ TEST MODE</span>
-                              Skip camera verification for testing purposes only
-                            </p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="w-full border-amber-500 text-amber-600 hover:bg-amber-500/10"
-                              onClick={() => {
-                                // Create a placeholder file for test mode
-                                const placeholderBlob = new Blob(['test-mode-placeholder'], { type: 'image/jpeg' });
-                                const testFile = new File([placeholderBlob], "test-selfie.jpg", { type: "image/jpeg" });
-                                
-                                setFormData({
-                                  ...formData,
-                                  selfieFile: testFile,
-                                  selfiePreview: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjOTk5Ij5UZXN0IE1vZGU8L3RleHQ+PC9zdmc+",
-                                  livenessVerified: true, // Mark as verified for test mode
-                                });
-                                
-                                toast({
-                                  title: "Test Mode Activated",
-                                  description: "Camera verification skipped. This will be flagged for manual review.",
-                                  variant: "default",
-                                });
-                              }}
-                            >
-                              Skip for now (test mode)
-                            </Button>
-                          </div>
                         </div>
                       )}
                     </div>
+
+                    {/* spacer */}
+                    <div className="hidden" />
+
 
 
                     {/* ID Upload with Camera Option */}
