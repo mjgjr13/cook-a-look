@@ -215,26 +215,16 @@ const BecomeAdvisor = () => {
       }
     }
 
-    // MVP: Skip file validation - files are optional for testing
-    // In production, uncomment this validation
-    /*
-    const selfieError = validateFile(formData.selfieFile);
-    const idError = validateFile(formData.idFile);
-    
-    if (selfieError || idError) {
-      setErrors({
-        ...errors,
-        selfieFile: selfieError || undefined,
-        idFile: idError || undefined,
-      });
+    // Require liveness-verified selfie (no skip allowed)
+    if (!formData.selfieFile || !formData.livenessVerified) {
       toast({
-        title: "File Validation Error",
-        description: selfieError || idError,
+        title: "Liveness verification required",
+        description: "Please complete the camera liveness check before submitting.",
         variant: "destructive",
       });
       return;
     }
-    */
+
 
     setIsSubmitting(true);
     
