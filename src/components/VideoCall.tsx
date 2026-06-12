@@ -136,6 +136,32 @@ const VideoCall = ({
     onClose();
   };
 
+  const handleFlipCamera = useCallback(async () => {
+    if (!dailyFrameRef.current?.setInputDevicesAsync) return;
+    const next = facingMode === "user" ? "environment" : "user";
+    setFlipping(true);
+    try {
+      // Request a fresh track from the OS with the desired facingMode, then hand it to Daily.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: next } },
+        audio: false,
+      });
+      const track = stream.getVideoTracks()[0];
+      if (!track) throw new Error("No video track");
+      await dailyFrameRef.current.setInputDevicesAsync({ videoSource: track });
+      setFacingMode(next);
+    } catch (e) {
+      console.error("Camera flip failed:", e);
+      toast({
+        title: "Couldn't flip camera",
+        description: "Your device may not have a second camera, or it's in use by another app.",
+        variant: "destructive",
+      });
+    } finally {
+      setFlipping(false);
+    }
+  }, [facingMode, toast]);
+
   if (!consentGiven) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
