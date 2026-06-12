@@ -447,17 +447,35 @@ const BookingCalendar = ({
                   </label>
                   {locationChoice === "suggest" && (
                     <div className="space-y-2 pl-6">
+                      <GooglePlacesAutocomplete
+                        value={suggested.address}
+                        onChange={(text) =>
+                          setSuggested({
+                            ...suggested,
+                            address: text,
+                            // free-typing invalidates the place reference
+                            placeId: undefined,
+                            lat: undefined,
+                            lng: undefined,
+                          })
+                        }
+                        onSelect={(place: SelectedPlace) =>
+                          setSuggested({
+                            ...suggested,
+                            name: place.name || suggested.name || place.formattedAddress,
+                            address: place.formattedAddress,
+                            placeId: place.placeId,
+                            lat: place.lat,
+                            lng: place.lng,
+                          })
+                        }
+                        placeholder="Search for a venue or address"
+                      />
                       <Input
-                        placeholder="Venue name"
+                        placeholder="Venue name (optional)"
                         value={suggested.name}
                         maxLength={200}
                         onChange={(e) => setSuggested({ ...suggested, name: e.target.value })}
-                      />
-                      <Input
-                        placeholder="Address"
-                        value={suggested.address}
-                        maxLength={300}
-                        onChange={(e) => setSuggested({ ...suggested, address: e.target.value })}
                       />
                       <Textarea
                         placeholder="Note for the advisor (optional)"
