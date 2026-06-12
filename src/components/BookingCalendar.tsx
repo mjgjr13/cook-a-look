@@ -213,6 +213,9 @@ const BookingCalendar = ({
             name: suggested.name.trim().slice(0, 200),
             address: suggested.address.trim().slice(0, 300),
             note: suggested.note.trim().slice(0, 300) || undefined,
+            place_id: suggested.placeId,
+            lat: suggested.lat,
+            lng: suggested.lng,
           } : null,
         },
       });
