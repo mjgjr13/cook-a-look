@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Globe, Info, Video, MapPin } from "lucide-react";
 import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
+import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/google-places-autocomplete";
 
 interface BookingCalendarProps {
   advisorId: string;
