@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Globe, Info, Video, MapPin } from "lucide-react";
 import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
+import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/google-places-autocomplete";
 
 interface BookingCalendarProps {
   advisorId: string;
@@ -83,7 +84,14 @@ const BookingCalendar = ({
   );
   const [locations, setLocations] = useState<MeetingLocation[]>([]);
   const [locationChoice, setLocationChoice] = useState<string>(""); // location id or "suggest"
-  const [suggested, setSuggested] = useState({ name: "", address: "", note: "" });
+  const [suggested, setSuggested] = useState<{
+    name: string;
+    address: string;
+    note: string;
+    placeId?: string;
+    lat?: number;
+    lng?: number;
+  }>({ name: "", address: "", note: "" });
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -205,6 +213,9 @@ const BookingCalendar = ({
             name: suggested.name.trim().slice(0, 200),
             address: suggested.address.trim().slice(0, 300),
             note: suggested.note.trim().slice(0, 300) || undefined,
+            place_id: suggested.placeId,
+            lat: suggested.lat,
+            lng: suggested.lng,
           } : null,
         },
       });
@@ -436,17 +447,35 @@ const BookingCalendar = ({
                   </label>
                   {locationChoice === "suggest" && (
                     <div className="space-y-2 pl-6">
+                      <GooglePlacesAutocomplete
+                        value={suggested.address}
+                        onChange={(text) =>
+                          setSuggested({
+                            ...suggested,
+                            address: text,
+                            // free-typing invalidates the place reference
+                            placeId: undefined,
+                            lat: undefined,
+                            lng: undefined,
+                          })
+                        }
+                        onSelect={(place: SelectedPlace) =>
+                          setSuggested({
+                            ...suggested,
+                            name: place.name || suggested.name || place.formattedAddress,
+                            address: place.formattedAddress,
+                            placeId: place.placeId,
+                            lat: place.lat,
+                            lng: place.lng,
+                          })
+                        }
+                        placeholder="Search for a venue or address"
+                      />
                       <Input
-                        placeholder="Venue name"
+                        placeholder="Venue name (optional)"
                         value={suggested.name}
                         maxLength={200}
                         onChange={(e) => setSuggested({ ...suggested, name: e.target.value })}
-                      />
-                      <Input
-                        placeholder="Address"
-                        value={suggested.address}
-                        maxLength={300}
-                        onChange={(e) => setSuggested({ ...suggested, address: e.target.value })}
                       />
                       <Textarea
                         placeholder="Note for the advisor (optional)"

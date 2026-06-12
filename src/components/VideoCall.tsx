@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Phone, ExternalLink, Video as VideoIcon, ShieldCheck } from "lucide-react";
+import { Loader2, Phone, ExternalLink, Video as VideoIcon, ShieldCheck, SwitchCamera } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ReviewModal from "@/components/reviews/ReviewModal";
 
 interface VideoCallProps {
@@ -33,8 +34,17 @@ const VideoCall = ({
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [flipping, setFlipping] = useState(false);
+  const isMobile = useIsMobile();
   const dailyContainerRef = useRef<HTMLDivElement>(null);
-  const dailyFrameRef = useRef<{ destroy: () => void } | null>(null);
+  // Daily-js frame; methods we use: destroy, on, join, setInputDevicesAsync
+  const dailyFrameRef = useRef<{
+    destroy: () => void;
+    on: (event: string, cb: (...args: unknown[]) => void) => unknown;
+    join: (opts: { url: string }) => Promise<unknown>;
+    setInputDevicesAsync?: (opts: { videoSource?: MediaStreamTrack | boolean | string }) => Promise<unknown>;
+  } | null>(null);
 
   useEffect(() => {
     if (!consentGiven) return;
@@ -125,6 +135,32 @@ const VideoCall = ({
     setShowReviewModal(false);
     onClose();
   };
+
+  const handleFlipCamera = useCallback(async () => {
+    if (!dailyFrameRef.current?.setInputDevicesAsync) return;
+    const next = facingMode === "user" ? "environment" : "user";
+    setFlipping(true);
+    try {
+      // Request a fresh track from the OS with the desired facingMode, then hand it to Daily.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: next } },
+        audio: false,
+      });
+      const track = stream.getVideoTracks()[0];
+      if (!track) throw new Error("No video track");
+      await dailyFrameRef.current.setInputDevicesAsync({ videoSource: track });
+      setFacingMode(next);
+    } catch (e) {
+      console.error("Camera flip failed:", e);
+      toast({
+        title: "Couldn't flip camera",
+        description: "Your device may not have a second camera, or it's in use by another app.",
+        variant: "destructive",
+      });
+    } finally {
+      setFlipping(false);
+    }
+  }, [facingMode, toast]);
 
   if (!consentGiven) {
     return (
@@ -225,10 +261,26 @@ const VideoCall = ({
             )}
           </div>
 
-          <div className="p-4 border-t bg-background flex items-center justify-center gap-4">
-            {roomUrl && (
+          <div className="p-4 border-t bg-background flex items-center justify-center gap-3 flex-wrap">
+            {roomUrl && isMobile && provider === "daily" && (
               <Button
                 variant="outline"
+                onClick={handleFlipCamera}
+                disabled={flipping}
+                aria-label="Flip camera"
+              >
+                {flipping ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <SwitchCamera className="w-4 h-4 mr-2" />
+                )}
+                Flip camera
+              </Button>
+            )}
+            {roomUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
