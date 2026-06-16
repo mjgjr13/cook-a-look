@@ -29,6 +29,8 @@ import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import PendingLocationApprovals from "@/components/advisor/PendingLocationApprovals";
+import PendingBookingRequests from "@/components/advisor/PendingBookingRequests";
+
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
