@@ -79,6 +79,7 @@ const loadGoogleMaps = (): Promise<void> => {
   loaderPromise = new Promise((resolve, reject) => {
     const existing = document.getElementById("google-maps-js") as HTMLScriptElement | null;
     if (existing) {
+      // @ts-expect-error google global
       if (window.google?.maps?.importLibrary) {
         resolve();
         return;
