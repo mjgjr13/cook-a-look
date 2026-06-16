@@ -580,6 +580,31 @@ const AdvisorDashboard = () => {
                         View Details
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          const reason = window.prompt(
+                            "Cancel this booking? Optionally share a brief reason for the client:",
+                            ""
+                          );
+                          if (reason === null) return;
+                          const { error } = await supabase.rpc("cancel_booking", {
+                            p_booking_id: booking.id,
+                            p_reason: reason || null,
+                          });
+                          if (error) {
+                            toast({ title: "Couldn't cancel", description: error.message, variant: "destructive" });
+                          } else {
+                            toast({ title: "Booking cancelled" });
+                            loadDashboard();
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+
                     </div>
                   </motion.div>
                 ))}
