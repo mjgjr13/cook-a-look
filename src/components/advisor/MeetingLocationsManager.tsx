@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, MapPin, Plus, Trash2 } from "lucide-react";
+import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/google-places-autocomplete";
+
 
 interface MeetingLocation {
   id: string;
@@ -158,32 +160,51 @@ const MeetingLocationsManager = ({ advisorProfileId }: Props) => {
       )}
 
       {activeCount < MAX_LOCATIONS && (
-        <div className="grid gap-2 sm:grid-cols-3 p-3 border border-dashed border-border rounded-md">
-          <Input
-            placeholder="Place name (e.g. Westfield Valley Fair)"
-            value={newLoc.name}
-            maxLength={120}
-            onChange={(e) => setNewLoc({ ...newLoc, name: e.target.value })}
-          />
-          <Input
-            placeholder="Address"
+        <div className="space-y-2 p-3 border border-dashed border-border rounded-md">
+          <Label className="text-xs text-muted-foreground">Search a place to autofill the address</Label>
+          <GooglePlacesAutocomplete
             value={newLoc.address}
-            maxLength={300}
-            onChange={(e) => setNewLoc({ ...newLoc, address: e.target.value })}
+            onChange={(text) => setNewLoc((prev) => ({ ...prev, address: text }))}
+            onSelect={(place: SelectedPlace) => {
+              // Try to derive a city from the formatted address (second-to-last comma part)
+              const parts = place.formattedAddress.split(",").map((s) => s.trim()).filter(Boolean);
+              const city = parts.length >= 3 ? parts[parts.length - 3] : (parts[parts.length - 2] ?? "");
+              setNewLoc({
+                name: place.name || newLoc.name,
+                address: place.formattedAddress,
+                city: city || newLoc.city,
+              });
+            }}
+            placeholder="Search a mall, café, studio…"
           />
-          <div className="flex gap-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             <Input
-              placeholder="City"
-              value={newLoc.city}
+              placeholder="Place name"
+              value={newLoc.name}
               maxLength={120}
-              onChange={(e) => setNewLoc({ ...newLoc, city: e.target.value })}
+              onChange={(e) => setNewLoc({ ...newLoc, name: e.target.value })}
             />
-            <Button onClick={addLocation} disabled={saving} size="icon" aria-label="Add">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            </Button>
+            <Input
+              placeholder="Address"
+              value={newLoc.address}
+              maxLength={300}
+              onChange={(e) => setNewLoc({ ...newLoc, address: e.target.value })}
+            />
+            <div className="flex gap-2">
+              <Input
+                placeholder="City"
+                value={newLoc.city}
+                maxLength={120}
+                onChange={(e) => setNewLoc({ ...newLoc, city: e.target.value })}
+              />
+              <Button onClick={addLocation} disabled={saving} size="icon" aria-label="Add">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              </Button>
+            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

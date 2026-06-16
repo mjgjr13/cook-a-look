@@ -29,6 +29,8 @@ import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import PendingLocationApprovals from "@/components/advisor/PendingLocationApprovals";
+import PendingBookingRequests from "@/components/advisor/PendingBookingRequests";
+
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
@@ -372,9 +374,11 @@ const AdvisorDashboard = () => {
 
           {isApproved && profile && (
             <div className="mb-8">
+              <PendingBookingRequests advisorProfileId={profile.id} onChanged={loadDashboard} />
               <PendingLocationApprovals advisorProfileId={profile.id} />
             </div>
           )}
+
 
 
           {/* Quick Stats */}
@@ -576,6 +580,31 @@ const AdvisorDashboard = () => {
                         View Details
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          const reason = window.prompt(
+                            "Cancel this booking? Optionally share a brief reason for the client:",
+                            ""
+                          );
+                          if (reason === null) return;
+                          const { error } = await supabase.rpc("cancel_booking", {
+                            p_booking_id: booking.id,
+                            p_reason: reason || null,
+                          });
+                          if (error) {
+                            toast({ title: "Couldn't cancel", description: error.message, variant: "destructive" });
+                          } else {
+                            toast({ title: "Booking cancelled" });
+                            loadDashboard();
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+
                     </div>
                   </motion.div>
                 ))}
