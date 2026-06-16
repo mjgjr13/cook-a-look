@@ -57,6 +57,12 @@ type PlacesLib = {
   AutocompleteSessionToken: new () => unknown;
 };
 
+declare global {
+  interface Window {
+    initCookALookGoogleMaps?: () => void;
+  }
+}
+
 let loaderPromise: Promise<void> | null = null;
 
 const loadGoogleMaps = (): Promise<void> => {
@@ -73,17 +79,22 @@ const loadGoogleMaps = (): Promise<void> => {
   loaderPromise = new Promise((resolve, reject) => {
     const existing = document.getElementById("google-maps-js") as HTMLScriptElement | null;
     if (existing) {
-      existing.addEventListener("load", () => resolve());
+      // @ts-expect-error google global
+      if (window.google?.maps?.importLibrary) {
+        resolve();
+        return;
+      }
+      window.initCookALookGoogleMaps = () => resolve();
       existing.addEventListener("error", () => reject(new Error("Failed to load Google Maps")));
       return;
     }
+    window.initCookALookGoogleMaps = () => resolve();
     const s = document.createElement("script");
     s.id = "google-maps-js";
     s.async = true;
     s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
       key,
-    )}&libraries=places&v=weekly&loading=async${channel ? `&channel=${encodeURIComponent(channel)}` : ""}`;
-    s.onload = () => resolve();
+    )}&libraries=places&v=weekly&loading=async&callback=initCookALookGoogleMaps${channel ? `&channel=${encodeURIComponent(channel)}` : ""}`;
     s.onerror = () => reject(new Error("Failed to load Google Maps"));
     document.head.appendChild(s);
   });
@@ -203,7 +214,7 @@ const GooglePlacesAutocomplete = ({
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           placeholder={placeholder}
           className={cn("pl-10", error && "border-destructive", className)}
-          disabled={disabled || !!loadError}
+          disabled={disabled}
           autoComplete="off"
         />
         {loading && (
