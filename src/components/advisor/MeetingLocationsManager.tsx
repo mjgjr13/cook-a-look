@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, MapPin, Plus, Trash2 } from "lucide-react";
+import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/google-places-autocomplete";
+
 
 interface MeetingLocation {
   id: string;
