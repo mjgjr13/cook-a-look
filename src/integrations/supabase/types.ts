@@ -1456,6 +1456,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advisor_respond_booking: {
+        Args: { p_action: string; p_booking_id: string }
+        Returns: undefined
+      }
       award_client_points: {
         Args: {
           _action_type: string
@@ -1501,6 +1505,10 @@ export type Database = {
       can_leave_review: {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
+      }
+      cancel_booking: {
+        Args: { p_booking_id: string; p_reason?: string }
+        Returns: undefined
       }
       complete_due_bookings: { Args: never; Returns: number }
       delete_email: {
