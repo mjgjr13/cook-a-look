@@ -374,9 +374,11 @@ const AdvisorDashboard = () => {
 
           {isApproved && profile && (
             <div className="mb-8">
+              <PendingBookingRequests advisorProfileId={profile.id} onChanged={loadDashboard} />
               <PendingLocationApprovals advisorProfileId={profile.id} />
             </div>
           )}
+
 
 
           {/* Quick Stats */}
