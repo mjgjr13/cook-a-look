@@ -315,6 +315,23 @@ const AdminDashboard = () => {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Cancellations & Refunds
+              </CardTitle>
+              <CardDescription>
+                View cancellations, override refund amounts, retry failed refunds
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link to="/admin/cancellations">Manage Refunds</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
                 Brand Assets
               </CardTitle>
