@@ -72,6 +72,7 @@ const AdvisorDashboard = () => {
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [earnings, setEarnings] = useState({ available: 0, pending: 0, total: 0 });
   const [platformFee, setPlatformFee] = useState({ feePercent: 15, bookingsThisMonth: 0 });
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; start: string } | null>(null);
 
   useEffect(() => {
     if (!profileLoading && profile) {
