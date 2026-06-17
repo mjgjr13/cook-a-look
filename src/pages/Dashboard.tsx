@@ -358,6 +358,14 @@ const Dashboard = () => {
                         View Details
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setCancelTarget(booking)}
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </motion.div>
                 ))}
