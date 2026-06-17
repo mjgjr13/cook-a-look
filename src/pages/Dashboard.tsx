@@ -44,6 +44,7 @@ const Dashboard = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
   // Check for pending reviews
   const { pendingReview, dismissReview } = useReviewPrompt(profile?.user_id || undefined);
