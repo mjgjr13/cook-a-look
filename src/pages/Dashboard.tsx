@@ -403,6 +403,14 @@ const Dashboard = () => {
           )}
         </div>
       </section>
+      <CancelBookingDialog
+        bookingId={cancelTarget?.id ?? null}
+        appointmentAt={cancelTarget?.slot.start_time ?? null}
+        role="client"
+        open={!!cancelTarget}
+        onOpenChange={(o) => !o && setCancelTarget(null)}
+        onCancelled={loadBookings}
+      />
     </Layout>
   );
 };
