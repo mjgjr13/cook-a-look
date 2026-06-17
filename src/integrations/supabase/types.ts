@@ -601,6 +601,9 @@ export type Database = {
       bookings: {
         Row: {
           advisor_id: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           client_id: string
           completed_at: string | null
           created_at: string | null
@@ -612,6 +615,11 @@ export type Database = {
           location_status: string
           meeting_type: string
           notes: string | null
+          refund_amount_cents: number | null
+          refund_id: string | null
+          refund_percentage: number | null
+          refund_processed_at: string | null
+          refund_status: string | null
           slot_id: string
           status: string | null
           suggested_location: Json | null
@@ -619,6 +627,9 @@ export type Database = {
         }
         Insert: {
           advisor_id: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           client_id: string
           completed_at?: string | null
           created_at?: string | null
@@ -630,6 +641,11 @@ export type Database = {
           location_status?: string
           meeting_type?: string
           notes?: string | null
+          refund_amount_cents?: number | null
+          refund_id?: string | null
+          refund_percentage?: number | null
+          refund_processed_at?: string | null
+          refund_status?: string | null
           slot_id: string
           status?: string | null
           suggested_location?: Json | null
@@ -637,6 +653,9 @@ export type Database = {
         }
         Update: {
           advisor_id?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           client_id?: string
           completed_at?: string | null
           created_at?: string | null
@@ -648,6 +667,11 @@ export type Database = {
           location_status?: string
           meeting_type?: string
           notes?: string | null
+          refund_amount_cents?: number | null
+          refund_id?: string | null
+          refund_percentage?: number | null
+          refund_processed_at?: string | null
+          refund_status?: string | null
           slot_id?: string
           status?: string | null
           suggested_location?: Json | null
@@ -1204,6 +1228,50 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_events: {
+        Row: {
+          actor_user_id: string | null
+          amount_cents: number | null
+          booking_id: string
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          percentage: number | null
+          stripe_reference: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          amount_cents?: number | null
+          booking_id: string
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          percentage?: number | null
+          stripe_reference?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          amount_cents?: number | null
+          booking_id?: string
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          percentage?: number | null
+          stripe_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reward_settings: {
         Row: {
           description: string | null
@@ -1456,6 +1524,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_override_refund: {
+        Args: {
+          p_booking_id: string
+          p_new_percentage: number
+          p_note?: string
+        }
+        Returns: undefined
+      }
       advisor_respond_booking: {
         Args: { p_action: string; p_booking_id: string }
         Returns: undefined
@@ -1502,6 +1578,15 @@ export type Database = {
               slot_id: string
             }[]
           }
+      calculate_refund: {
+        Args: { p_booking_id: string; p_canceller: string }
+        Returns: {
+          amount_cents: number
+          percentage: number
+          reason: string
+          total_cents: number
+        }[]
+      }
       can_leave_review: {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
@@ -1509,6 +1594,16 @@ export type Database = {
       cancel_booking: {
         Args: { p_booking_id: string; p_reason?: string }
         Returns: undefined
+      }
+      cancel_booking_with_refund: {
+        Args: { p_booking_id: string; p_reason?: string }
+        Returns: {
+          booking_id: string
+          canceller: string
+          refund_amount_cents: number
+          refund_percentage: number
+          total_cents: number
+        }[]
       }
       complete_due_bookings: { Args: never; Returns: number }
       delete_email: {
@@ -1691,6 +1786,15 @@ export type Database = {
       is_slot_available: {
         Args: { p_advisor_id: string; p_end_time: string; p_start_time: string }
         Returns: boolean
+      }
+      mark_refund_result: {
+        Args: {
+          p_booking_id: string
+          p_details?: Json
+          p_refund_id?: string
+          p_status: string
+        }
+        Returns: undefined
       }
       move_to_dlq: {
         Args: {

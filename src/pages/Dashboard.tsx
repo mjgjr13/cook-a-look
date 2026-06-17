@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
+import CancelBookingDialog from "@/components/booking/CancelBookingDialog";
 import ReviewModal from "@/components/reviews/ReviewModal";
 import { useProfile } from "@/hooks/useProfile";
 import { useReviewPrompt } from "@/hooks/useReviewPrompt";
@@ -43,6 +44,7 @@ const Dashboard = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
   // Check for pending reviews
   const { pendingReview, dismissReview } = useReviewPrompt(profile?.user_id || undefined);
@@ -356,6 +358,14 @@ const Dashboard = () => {
                         View Details
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setCancelTarget(booking)}
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </motion.div>
                 ))}
@@ -393,6 +403,14 @@ const Dashboard = () => {
           )}
         </div>
       </section>
+      <CancelBookingDialog
+        bookingId={cancelTarget?.id ?? null}
+        appointmentAt={cancelTarget?.slot.start_time ?? null}
+        role="client"
+        open={!!cancelTarget}
+        onOpenChange={(o) => !o && setCancelTarget(null)}
+        onCancelled={loadBookings}
+      />
     </Layout>
   );
 };

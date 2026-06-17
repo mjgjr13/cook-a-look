@@ -1,67 +1,117 @@
-# Implementation Plan — Batch 2/3/4
+## Cancellation & Refund System for Cook A Look
 
-Priority 1 (signup fix + remove liveness skip) is already done. This plan covers the remaining three priorities. I'll do them together — they touch different files and don't interfere.
+A complete refund pipeline tied to bookings, with tiered policies, automated Stripe refunds, email notifications, and an admin override panel.
 
-## 1. Video call: in-page + mobile camera flip
+---
 
-**Problem:** Users report having to open the call in a new tab; mobile users can't flip the camera.
+### 1. Database changes (migration)
 
-**Approach:**
-- Keep Daily.co prebuilt iframe (already mounted in `src/components/VideoCall.tsx`), but:
-  - Pass explicit `iframeStyle` + Daily `userName` so the embed reliably starts in-page.
-  - Add `allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"` to the iframe wrapper as a safety net.
-  - Enable mobile camera flip by passing Daily's `customTrayButtons` for "Flip camera" on mobile (uses `useIsMobile`) and calling `callObject.setInputDevicesAsync` to toggle `facingMode: 'environment' | 'user'` between front/back.
-- Remove the "Open in new tab" button — keep it only as a fallback link shown if the embed fails to initialize within 8 s.
-- Add a Permissions-Policy meta tag to `index.html` so embedded iframes are granted camera/microphone.
+Extend `bookings`:
+- `cancelled_by` text — `'client' | 'advisor' | 'admin' | 'system'`
+- `cancelled_at` timestamptz
+- `cancellation_reason` text
+- `refund_percentage` int (0–100)
+- `refund_amount_cents` int
+- `refund_status` text — `'none' | 'pending' | 'processing' | 'succeeded' | 'failed' | 'voided' | 'manual'`
+- `refund_id` text (Stripe refund id)
+- `refund_processed_at` timestamptz
 
-## 2. Location suggestions: Google Places autocomplete + decline flow
+New table `refund_events` (audit log):
+- `booking_id`, `actor_user_id`, `event_type` (`calculated`, `requested`, `void`, `refund_succeeded`, `refund_failed`, `admin_override`, `manual_refund`), `amount_cents`, `percentage`, `stripe_event_id`, `details jsonb`
 
-**Autocomplete (client-side):**
-- Add a new `GooglePlacesAutocomplete` component (Places API New, `Autocomplete (New)` session-token flow) that loads `@googlemaps/js-api-loader` on demand.
-- Use it inside the booking flow where the client types a suggested in-person location (currently `LocationAutocomplete` hard-coded city list).
-- Store the full Places result (formatted address + place_id + lat/lng) in `bookings.suggested_location` JSONB so advisors see exactly what the client meant.
-- Needs `GOOGLE_MAPS_BROWSER_API_KEY` (publishable, restricted to our domains). I'll prompt for it before shipping.
+RPCs:
+- `calculate_refund(p_booking_id uuid, p_canceller text)` → returns `{percentage, amount_cents, reason}`. Pure function applying the tiered policy.
+- `cancel_booking_with_refund(p_booking_id uuid, p_reason text)` — replaces the current `cancel_booking`. Determines actor (client vs advisor), computes refund, writes cancellation fields with `refund_status='pending'`, frees the slot, logs `calculated` event, and returns a payload the edge function uses.
+- `admin_override_refund(p_booking_id uuid, p_new_percentage int, p_note text)` — admin only. Updates `refund_percentage`/`refund_amount_cents`, sets `refund_status='manual'`, logs `admin_override`.
+- `mark_refund_result(p_booking_id, p_status, p_refund_id, p_details)` — service-role only; updates status + logs event. Has duplicate-refund guard: refuses if `refund_status='succeeded'`.
 
-**Decline flow:**
-- When an advisor declines a client-suggested location, **do not cancel the booking**. Instead set `bookings.location_status = 'declined_by_advisor'` and notify the client.
-- Client dashboard shows a modal (`SuggestedLocationDeclinedModal`) with three options:
-  1. Pick one of the advisor's saved meeting locations (lists `advisor_meeting_locations` where `is_active`).
-  2. Switch to virtual (only if `advisor.virtual_available`).
-  3. Cancel & refund.
-- Selecting an option updates the booking server-side via a new `resolve_declined_location` Postgres RPC (atomic: updates `location_id`/`meeting_type`/`location_status`, recalculates surcharge, snapshots address).
-- Modal also surfaces from the booking detail card on the dashboard.
+Trigger updates: amend `restrict_booking_participant_updates` to allow the new refund columns only when set by service role / admin / the cancellation RPC.
 
-## 3. Admin workflow cleanup
+RLS:
+- `refund_events`: participants can SELECT their own; only service role / admin can INSERT.
+- Admin SELECT/UPDATE on bookings already covered.
 
-Reorganise the admin area around four clear tabs (already exist as separate pages — I'll restructure navigation + dashboards, not rebuild the data model):
+### 2. Refund tier policy
 
-- **Approve advisors** — `AdminAdvisors` gets a "Pending review" filter pinned by default, quick-approve / reject buttons, and the verification archive (selfie + ID) shown inline.
-- **Financials** — `AdminPayments` adds top-line cards: gross revenue, platform fees, escrow balance, pending payouts. Add CSV export.
-- **Session recordings & disputes** — merge `AdminDisputes` with a recordings panel powered by `admin-get-recordings` edge function; each dispute card shows the linked Daily recording with secure signed URL.
-- **Clients** — new lightweight `AdminClients` page listing client profiles (search, bookings count, lifetime spend, tier).
+```
+Advisor cancels (any time)        → 100%
+Client cancels — virtual:
+  > 24h                           → 100%
+  12h–24h                         → 50%
+  1h–12h                          → 25%
+  < 1h                            → 0%
+Client cancels — in_person:
+  > 24h                           → 100%
+  12h–24h                         → 50%
+  < 12h                           → 0%
+No-show (handled separately)      → 0%
+```
 
-`AdminDashboard` becomes a single overview with counts + links into each tab.
+Hours are computed against `availability_slots.start_time`.
 
-## 4. Easier advisor availability
+### 3. Edge function `process-booking-cancellation`
 
-Replace the current multi-component availability page with a simpler flow on `AdvisorAvailability`:
+Invoked from the client after the cancellation RPC succeeds. Steps:
+1. Auth check via JWT.
+2. Load booking + payment row.
+3. If `payments.stripe_payment_intent_id` exists and intent is uncaptured → `paymentIntents.cancel` (void).
+4. Else if captured and `refund_amount_cents > 0` → `refunds.create` with idempotency key `refund:{booking_id}`.
+5. Call `mark_refund_result` with success/failure.
+6. Enqueue both emails via `send-transactional-email`:
+   - `booking-cancelled-client` — refund amount + percent
+   - `booking-cancelled-advisor` — informational
+7. Always returns structured JSON; failures keep `refund_status='failed'` so admin can retry.
 
-- Default to a "Weekly hours" grid (Mon–Sun rows, single start/end per day, copy-to-all button).
-- One-click presets: "Weekdays 9–5", "Evenings 6–10", "Weekends only" (already partly in `QuickSetupPresets` — promote to the top).
-- Move advanced controls (breaks, date overrides, blocks) into a collapsible "Advanced" section.
-- Show a live preview of the next 7 days of generated slots so the advisor sees exactly what clients will see.
+### 4. Email templates
 
-## Technical notes
+Two new templates registered in `_shared/transactional-email-templates/registry.ts`:
+- `booking-cancelled-client.tsx` — shows date, refund %, refund amount, who cancelled.
+- `booking-cancelled-advisor.tsx` — confirmation + reason.
 
-- New file: `src/components/ui/google-places-autocomplete.tsx`.
-- New file: `src/components/booking/SuggestedLocationDeclinedModal.tsx`.
-- New file: `src/pages/admin/AdminClients.tsx` + route in `App.tsx`.
-- DB migration: add `location_status = 'declined_by_advisor'` handling + `resolve_declined_location(booking_id, mode, location_id?)` RPC. No new tables.
-- Edge function update: `create-video-room` already returns Daily URL — no change. Add nothing server-side for camera flip (handled client-side via daily-js `setInputDevicesAsync`).
-- Secret needed: `GOOGLE_MAPS_BROWSER_API_KEY` (publishable, domain-restricted). I'll ask for it after the plan is approved.
+### 5. UI
 
-## Out of scope (ask if you want them)
+**Client dashboard (`ClientDashboard.tsx`)** — new `CancelBookingDialog`:
+- Computes refund preview live via `calculate_refund` RPC.
+- Shows: appointment date/time, "Canceling now will refund $X CAD (Y% of your booking fee)".
+- Optional reason textarea.
+- On confirm → RPC → invoke edge function → toast result.
 
-- Replacing Daily.co with a different provider.
-- Custom recording playback UI (we'll use Daily's signed URLs in an HTML5 `<video>`).
-- Admin role permissions / multi-admin tiers.
+**Advisor dashboard (`AdvisorDashboard.tsx`)** — replace existing Cancel button with `AdvisorCancelDialog`:
+- Warning: "Cancelling will automatically refund the client 100%."
+- Same flow.
+
+**Admin panel (`src/pages/admin/Cancellations.tsx`)** — new route `/admin/cancellations`:
+- Table of cancelled bookings: date, advisor, client, who cancelled, refund %, amount, status.
+- Filters: status, who cancelled, date range.
+- Row actions: **Override refund %**, **Retry refund**, **Issue manual refund**.
+- **Export CSV** button (client-side from loaded rows).
+- Linked from existing admin navigation.
+
+### 6. Edge cases
+
+- Duplicate refund: idempotency key + DB guard on `refund_status='succeeded'`.
+- Uncaptured payment → void via `paymentIntents.cancel`, mark `refund_status='voided'`.
+- Stripe failure → status `failed`, surfaced in admin; user sees "refund pending review".
+- Already-cancelled booking → RPC raises `invalid_state`.
+- No payment row (free/demo) → skip Stripe, mark `voided`.
+
+### 7. Files
+
+**New**
+- `supabase/migrations/<ts>_cancellation_refunds.sql`
+- `supabase/functions/process-booking-cancellation/index.ts`
+- `supabase/functions/_shared/transactional-email-templates/booking-cancelled-client.tsx`
+- `supabase/functions/_shared/transactional-email-templates/booking-cancelled-advisor.tsx`
+- `src/components/booking/CancelBookingDialog.tsx`
+- `src/components/advisor/AdvisorCancelDialog.tsx`
+- `src/pages/admin/Cancellations.tsx`
+
+**Edited**
+- `src/pages/ClientDashboard.tsx`, `src/pages/AdvisorDashboard.tsx`
+- `_shared/transactional-email-templates/registry.ts`
+- Admin nav + `App.tsx` route
+
+---
+
+### Open question
+The `payments` table exists but I haven't read its columns yet — I'll assume `stripe_payment_intent_id`, `amount_cents`, `currency`, `status`. If the actual schema differs I'll adapt during implementation. Want me to proceed?
