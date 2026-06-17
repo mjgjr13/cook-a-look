@@ -33,6 +33,7 @@ import PendingBookingRequests from "@/components/advisor/PendingBookingRequests"
 
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
+import CancelBookingDialog from "@/components/booking/CancelBookingDialog";
 import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
