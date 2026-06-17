@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin, Gift, ShieldAlert, Palette } from "lucide-react";
+import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin, Gift, ShieldAlert, Palette, RefreshCw } from "lucide-react";
 import AdminInbox from "@/components/admin/AdminInbox";
 
 interface DemoAdvisor {
