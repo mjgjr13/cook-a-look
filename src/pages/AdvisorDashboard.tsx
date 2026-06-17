@@ -599,6 +599,14 @@ const AdvisorDashboard = () => {
           </div>
         </div>
       </section>
+      <CancelBookingDialog
+        bookingId={cancelTarget?.id ?? null}
+        appointmentAt={cancelTarget?.start ?? null}
+        role="advisor"
+        open={!!cancelTarget}
+        onOpenChange={(o) => !o && setCancelTarget(null)}
+        onCancelled={loadDashboard}
+      />
     </Layout>
   );
 };
