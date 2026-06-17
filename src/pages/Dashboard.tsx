@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
+import CancelBookingDialog from "@/components/booking/CancelBookingDialog";
 import ReviewModal from "@/components/reviews/ReviewModal";
 import { useProfile } from "@/hooks/useProfile";
 import { useReviewPrompt } from "@/hooks/useReviewPrompt";
