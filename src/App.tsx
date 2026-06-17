@@ -135,6 +135,11 @@ const App = () => (
                 <AdminDisputes />
               </AdminRoute>
             } />
+            <Route path="/admin/cancellations" element={
+              <AdminRoute>
+                <AdminCancellations />
+              </AdminRoute>
+            } />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
