@@ -14,6 +14,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+
+function extractErrorMessage(e: unknown): string {
+  if (!e) return "Something went wrong. Please try again.";
+  if (typeof e === "string") return e;
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e === "object") {
+    const obj = e as Record<string, unknown>;
+    const candidate = obj.message ?? obj.error_description ?? obj.error ?? obj.hint ?? obj.details;
+    if (typeof candidate === "string" && candidate.trim()) return candidate;
+    try {
+      const json = JSON.stringify(e);
+      if (json && json !== "{}") return json;
+    } catch {
+      // ignore
+    }
+  }
+  return "Something went wrong. Please try again.";
+}
+
 interface CancelBookingDialogProps {
   bookingId: string | null;
   appointmentAt: string | null;
@@ -78,8 +97,8 @@ export function CancelBookingDialog({
       onOpenChange(false);
       onCancelled?.();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast({ title: "Couldn't cancel", description: msg, variant: "destructive" });
+      const msg = extractErrorMessage(e);
+      toast({ title: "Couldn't cancel booking", description: msg, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
