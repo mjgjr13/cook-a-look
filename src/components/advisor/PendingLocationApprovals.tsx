@@ -57,41 +57,33 @@ const PendingLocationApprovals = ({ advisorProfileId }: Props) => {
 
   const accept = async (b: PendingBooking) => {
     setBusyId(b.id);
-    const snap = b.suggested_location || {};
-    const { error } = await supabase
-      .from("bookings")
-      .update({
-        location_status: "confirmed",
-        location_snapshot: snap,
-      })
-      .eq("id", b.id);
+    const { error } = await supabase.rpc("respond_location_proposal", {
+      p_booking_id: b.id,
+      p_action: "accept",
+    });
     setBusyId(null);
     if (error) {
       toast({ title: "Couldn't accept", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Location accepted" });
-    load();
+    toast({ title: "Location confirmed" });
+    await load();
   };
 
   const declineWith = async (b: PendingBooking, loc: MeetingLocation) => {
     setBusyId(b.id);
-    const { error } = await supabase
-      .from("bookings")
-      .update({
-        location_status: "confirmed",
-        location_id: loc.id,
-        suggested_location: null,
-        location_snapshot: { name: loc.name, address: loc.address },
-      })
-      .eq("id", b.id);
+    const { error } = await supabase.rpc("respond_location_proposal", {
+      p_booking_id: b.id,
+      p_action: "counter",
+      p_location_id: loc.id,
+    });
     setBusyId(null);
     if (error) {
       toast({ title: "Couldn't update", description: error.message, variant: "destructive" });
       return;
     }
     toast({ title: "Counter-location set", description: "Client has been notified in their dashboard." });
-    load();
+    await load();
   };
 
   if (loading || pending.length === 0) return null;
