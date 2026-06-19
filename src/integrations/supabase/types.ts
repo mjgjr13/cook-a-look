@@ -1817,6 +1817,10 @@ export type Database = {
         Args: { _amount_cents: number; _description?: string; _user_id: string }
         Returns: number
       }
+      respond_location_proposal: {
+        Args: { p_action: string; p_booking_id: string; p_location_id?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
