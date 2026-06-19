@@ -78,8 +78,8 @@ export function CancelBookingDialog({
       onOpenChange(false);
       onCancelled?.();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast({ title: "Couldn't cancel", description: msg, variant: "destructive" });
+      const msg = extractErrorMessage(e);
+      toast({ title: "Couldn't cancel booking", description: msg, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
