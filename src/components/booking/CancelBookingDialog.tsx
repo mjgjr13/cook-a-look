@@ -78,18 +78,19 @@ export function CancelBookingDialog({
     if (!bookingId) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.rpc("cancel_booking_with_refund", {
+      const { error } = await supabase.rpc("cancel_booking", {
         p_booking_id: bookingId,
         p_reason: reason || null,
       });
       if (error) throw error;
+      // Best-effort: trigger refund processing edge function. Don't fail the cancel UX if it errors.
       const { error: fnErr } = await supabase.functions.invoke("process-booking-cancellation", {
         body: { bookingId },
       });
       if (fnErr) {
         toast({
-          title: "Booking cancelled — refund pending review",
-          description: fnErr.message,
+          title: "Booking cancelled",
+          description: "Refund is pending review.",
         });
       } else {
         toast({ title: "Booking cancelled", description: "Refund is processing." });
