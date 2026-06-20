@@ -25,7 +25,7 @@ serve(async (req) => {
 
   const cronSecret = Deno.env.get("CRON_SECRET");
   const headerSecret = req.headers.get("x-cron-secret");
-  if (cronSecret && headerSecret !== cronSecret) {
+  if (!cronSecret || headerSecret !== cronSecret) {
     return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
   }
 
