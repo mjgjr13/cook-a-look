@@ -1776,6 +1776,12 @@ export type Database = {
           start_date: string
         }[]
       }
+      get_reviewed_booking_ids: {
+        Args: { p_booking_ids: string[] }
+        Returns: {
+          booking_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
