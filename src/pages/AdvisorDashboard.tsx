@@ -31,6 +31,8 @@ import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import PendingLocationApprovals from "@/components/advisor/PendingLocationApprovals";
 import PendingBookingRequests from "@/components/advisor/PendingBookingRequests";
+import VisibilityToggle from "@/components/advisor/VisibilityToggle";
+import { AlertCircle } from "lucide-react";
 
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
@@ -352,6 +354,61 @@ const AdvisorDashboard = () => {
               </div>
             </motion.div>
           )}
+
+          {/* Persistent Finish Setup Banner - always visible while profile is incomplete */}
+          {!completionStatus.isComplete && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gold/10 border border-gold/40 rounded-lg p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-gold mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="font-medium text-foreground mb-1">
+                    Finish setting up your profile ({completionStatus.completedSteps}/{completionStatus.totalSteps} complete)
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {[
+                      !completionStatus.hasAvatar && "profile photo",
+                      !completionStatus.hasPrice && "session price",
+                      !completionStatus.hasBio && "bio",
+                      !completionStatus.hasAvailability && "availability",
+                    ].filter(Boolean).join(", ")} still needed before you can go live.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={() => setShowFinishSetupModal(true)}>
+                  View checklist
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/settings">
+                    Finish Setup
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Profile Visibility Toggle - always shown for approved advisors */}
+          {isApproved && (
+            <div className="mb-8">
+              <VisibilityToggle
+                isListed={advisorProfile?.is_listed ?? false}
+                isApproved={isApproved}
+                completionStatus={completionStatus}
+                pendingBookingsCount={pendingBookingsCount}
+                onToggle={async (newValue) => {
+                  const result = await toggleVisibility(newValue);
+                  if (result.success) refetchAdvisorProfile();
+                  return result;
+                }}
+              />
+            </div>
+          )}
+
 
           {/* New Advisor Setup Card - prominent setup prompt when not visible (shown to pending + approved) */}
           {(isPending || isApproved) && !advisorProfile?.is_listed && !advisorProfile?.has_been_visible_before && (
