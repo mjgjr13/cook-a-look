@@ -47,6 +47,24 @@ serve(async (req) => {
       .single();
     if (bErr || !booking) return new Response(JSON.stringify({ error: "booking_not_found" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
 
+    // Authorization: caller must be a participant of this booking, or an admin
+    const callerId = userData.user.id;
+    const isClientCaller = (booking.client as { user_id?: string } | null)?.user_id === callerId;
+    const isAdvisorCaller = (booking.advisor as { user_id?: string } | null)?.user_id === callerId;
+    let isAdmin = false;
+    if (!isClientCaller && !isAdvisorCaller) {
+      const { data: roleRow } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerId)
+        .eq("role", "admin")
+        .maybeSingle();
+      isAdmin = !!roleRow;
+    }
+    if (!isClientCaller && !isAdvisorCaller && !isAdmin) {
+      return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
     if (booking.status !== "cancelled") {
       return new Response(JSON.stringify({ error: "not_cancelled" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     }
