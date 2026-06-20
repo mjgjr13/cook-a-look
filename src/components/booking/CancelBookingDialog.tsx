@@ -80,7 +80,7 @@ export function CancelBookingDialog({
     try {
       const { error } = await supabase.rpc("cancel_booking_with_refund", {
         p_booking_id: bookingId,
-        p_reason: reason || null,
+        p_reason: reason.trim() || undefined,
       });
       if (error) throw error;
       // Best-effort: trigger refund processing edge function. Don't fail the cancel UX if it errors.
