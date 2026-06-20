@@ -13,6 +13,7 @@ interface NewAdvisorSetupCardProps {
   hasAvailability: boolean;
   portfolioCount: number;
   onToggleVisibility: () => void;
+  isPending?: boolean;
 }
 
 const NewAdvisorSetupCard = ({
@@ -22,6 +23,7 @@ const NewAdvisorSetupCard = ({
   hasAvailability,
   portfolioCount,
   onToggleVisibility,
+  isPending = false,
 }: NewAdvisorSetupCardProps) => {
   // Hide card if already visible OR if they've published before (use Settings toggle instead)
   if (isListed || hasBeenVisibleBefore) return null;
@@ -66,10 +68,12 @@ const NewAdvisorSetupCard = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
-                🎉 You're Approved!
+                {isPending ? "👋 Welcome — let's get you ready" : "🎉 You're Approved!"}
               </CardTitle>
               <CardDescription className="mt-1">
-                Complete these steps to start receiving bookings
+                {isPending
+                  ? "Finish setting up your profile now so you can go live the moment you're approved."
+                  : "Complete these steps to start receiving bookings"}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-gold border-gold/50">
@@ -108,11 +112,11 @@ const NewAdvisorSetupCard = ({
                   <Button
                     size="sm"
                     onClick={onToggleVisibility}
-                    disabled={!canGoLive}
+                    disabled={!canGoLive || isPending}
                     className="shrink-0"
                   >
                     <Eye className="w-4 h-4 mr-1" />
-                    Go Live
+                    {isPending ? "Pending Approval" : "Go Live"}
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" asChild className="shrink-0">
@@ -127,7 +131,11 @@ const NewAdvisorSetupCard = ({
             </motion.div>
           ))}
 
-          {!canGoLive && (
+          {isPending ? (
+            <p className="text-sm text-muted-foreground text-center pt-2">
+              Your application is under review. Get these steps done now and you'll be able to go live as soon as you're approved.
+            </p>
+          ) : !canGoLive && (
             <p className="text-sm text-muted-foreground text-center pt-2">
               Complete all required steps above to make your profile visible.
             </p>

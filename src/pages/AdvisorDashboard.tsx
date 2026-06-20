@@ -328,8 +328,8 @@ const AdvisorDashboard = () => {
             </motion.div>
           )}
 
-          {/* New Advisor Setup Card - prominent setup prompt when not visible */}
-          {isApproved && !advisorProfile?.is_listed && !advisorProfile?.has_been_visible_before && (
+          {/* New Advisor Setup Card - prominent setup prompt when not visible (shown to pending + approved) */}
+          {(isPending || isApproved) && !advisorProfile?.is_listed && !advisorProfile?.has_been_visible_before && (
             <div className="mb-8">
               <NewAdvisorSetupCard
                 completionStatus={completionStatus}
@@ -337,6 +337,7 @@ const AdvisorDashboard = () => {
                 hasBeenVisibleBefore={advisorProfile?.has_been_visible_before ?? false}
                 hasAvailability={completionStatus.hasAvailability}
                 portfolioCount={advisorProfile?.portfolio_images?.length || 0}
+                isPending={isPending}
                 onToggleVisibility={async () => {
                   const result = await toggleVisibility(true);
                   if (!result.success) {
