@@ -17,8 +17,6 @@ interface VideoCallProps {
   isClient?: boolean;
 }
 
-type Provider = "daily" | "jitsi_fallback";
-
 const VideoCall = ({
   bookingId,
   onClose,
@@ -30,7 +28,6 @@ const VideoCall = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
-  const [provider, setProvider] = useState<Provider>("daily");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
@@ -38,7 +35,6 @@ const VideoCall = ({
   const [flipping, setFlipping] = useState(false);
   const isMobile = useIsMobile();
   const dailyContainerRef = useRef<HTMLDivElement>(null);
-  // Daily-js frame; methods we use: destroy, on, join, setInputDevicesAsync
   const dailyFrameRef = useRef<{
     destroy: () => void;
     on: (event: string, cb: (...args: unknown[]) => void) => unknown;
@@ -46,19 +42,20 @@ const VideoCall = ({
     setInputDevicesAsync?: (opts: { videoSource?: MediaStreamTrack | boolean | string }) => Promise<unknown>;
   } | null>(null);
 
+  // 1. Fetch the Daily room URL from the edge function after consent.
   useEffect(() => {
     if (!consentGiven) return;
     let cancelled = false;
     setIsLoading(true);
-    const createRoom = async () => {
+    (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("create-video-room", {
           body: { bookingId },
         });
         if (error) throw error;
+        if (!data?.roomUrl) throw new Error("No room URL returned");
         if (cancelled) return;
         setRoomUrl(data.roomUrl);
-        setProvider((data.provider as Provider) ?? "daily");
       } catch (error) {
         console.error("Failed to create video room:", error);
         toast({
@@ -70,16 +67,15 @@ const VideoCall = ({
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    };
-    createRoom();
+    })();
     return () => {
       cancelled = true;
     };
   }, [bookingId, onClose, toast, consentGiven]);
 
-  // Mount Daily.co prebuilt UI (supports mobile camera flip + cloud recording)
+  // 2. Mount Daily.co prebuilt UI in-app — never opens an external tab.
   useEffect(() => {
-    if (!roomUrl || provider !== "daily" || !dailyContainerRef.current) return;
+    if (!roomUrl || !dailyContainerRef.current) return;
 
     let destroyed = false;
     (async () => {
@@ -101,6 +97,11 @@ const VideoCall = ({
         await frame.join({ url: roomUrl });
       } catch (e) {
         console.error("Failed to mount Daily frame:", e);
+        toast({
+          title: "Video error",
+          description: "We couldn't load the video call. Please try again.",
+          variant: "destructive",
+        });
       }
     })();
 
@@ -114,7 +115,7 @@ const VideoCall = ({
       dailyFrameRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomUrl, provider]);
+  }, [roomUrl]);
 
   const handleEndCall = () => {
     try {
@@ -141,7 +142,6 @@ const VideoCall = ({
     const next = facingMode === "user" ? "environment" : "user";
     setFlipping(true);
     try {
-      // Request a fresh track from the OS with the desired facingMode, then hand it to Daily.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: next } },
         audio: false,
@@ -241,28 +241,17 @@ const VideoCall = ({
           </DialogHeader>
 
           <div className="relative w-full bg-black" style={{ height: "70vh" }}>
-            {!roomUrl && (
+            {!roomUrl ? (
               <div className="flex items-center justify-center h-full bg-secondary">
                 <p className="text-muted-foreground">Unable to load video call</p>
               </div>
-            )}
-
-            {roomUrl && provider === "daily" && (
+            ) : (
               <div ref={dailyContainerRef} className="w-full h-full" />
-            )}
-
-            {roomUrl && provider === "jitsi_fallback" && (
-              <iframe
-                src={roomUrl}
-                allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
-                className="w-full h-full border-0"
-                title="Video consultation"
-              />
             )}
           </div>
 
           <div className="p-4 border-t bg-background flex items-center justify-center gap-3 flex-wrap">
-            {roomUrl && isMobile && provider === "daily" && (
+            {roomUrl && isMobile && (
               <Button
                 variant="outline"
                 onClick={handleFlipCamera}
