@@ -106,12 +106,11 @@ const AdvisorDashboard = () => {
     }
   }, [profileLoading, profile]);
 
-  // Prompt new advisors to finish setting up their account (shown once per user)
+  // Prompt advisors to finish setting up their account (shown once per user)
   useEffect(() => {
     if (profileLoading || !profile || !advisorProfile) return;
     if (showOnboardingModal) return; // wait until onboarding ack flow is finished
     if (!profile.onboarding_acknowledged_at) return;
-    if (advisorProfile.is_listed || advisorProfile.has_been_visible_before) return;
     if (completionStatus.isComplete) return;
 
     const storageKey = `cal_finish_setup_prompted_${profile.id}`;
