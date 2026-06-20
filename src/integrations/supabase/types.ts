@@ -1793,6 +1793,10 @@ export type Database = {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
       }
+      is_public_bookable_in_person_advisor: {
+        Args: { _advisor_id: string }
+        Returns: boolean
+      }
       is_slot_available: {
         Args: { p_advisor_id: string; p_end_time: string; p_start_time: string }
         Returns: boolean
