@@ -139,10 +139,14 @@ serve(async (req) => {
       day: "numeric",
     });
 
-    // Truncate message preview
-    const preview = messagePreview.length > 100 
-      ? messagePreview.substring(0, 100) + "..." 
+    // HTML-escape user-controlled values before email interpolation
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const rawPreview = messagePreview.length > 100
+      ? messagePreview.substring(0, 100) + "..."
       : messagePreview;
+    const preview = escapeHtml(rawPreview);
+    const senderName = escapeHtml(sender?.full_name || "your contact");
 
     const dashboardUrl = recipientRole === "advisor" 
       ? "https://cookalookcom.lovable.app/advisor" 
@@ -176,7 +180,7 @@ serve(async (req) => {
               <div class="logo">COOK A LOOK</div>
             </div>
             
-            <h2 style="font-weight: 400;">New Message from ${sender?.full_name || "your contact"}</h2>
+            <h2 style="font-weight: 400;">New Message from ${senderName}</h2>
             
             <p>You have a new message regarding your ${formattedDate} consultation:</p>
             
@@ -199,7 +203,7 @@ serve(async (req) => {
 
     await sendEmail(
       recipient.email,
-      `New message from ${sender?.full_name || "your contact"}`,
+      `New message from ${sender?.full_name || "your contact"}`.slice(0, 200),
       emailHtml
     );
 

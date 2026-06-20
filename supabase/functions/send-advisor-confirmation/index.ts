@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -10,6 +11,9 @@ interface AdvisorConfirmationRequest {
   specialty: string;
 }
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   const corsResponse = handleCorsPreflightRequest(req);
@@ -18,12 +22,41 @@ const handler = async (req: Request): Promise<Response> => {
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
 
   try {
+    // Require authenticated caller
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const { data: userData, error: userErr } = await anon.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const { email, firstName, specialty }: AdvisorConfirmationRequest = await req.json();
 
     // Validate required fields
     if (!email || !firstName) {
       throw new Error("Missing required fields");
     }
+
+    // Only allow sending to the authenticated caller's own email address
+    if ((userData.user.email ?? "").toLowerCase() !== String(email).toLowerCase()) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const safeFirstName = escapeHtml(firstName);
+    const safeSpecialty = escapeHtml(specialty || "");
 
     const emailResponse = await resend.emails.send({
       from: "Cook A Look <noreply@cookalookcom.lovable.app>",
@@ -44,12 +77,12 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <div style="background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <h2 style="font-family: Georgia, serif; font-size: 20px; color: #1a1a1a; margin-top: 0;">Hi ${firstName}!</h2>
+            <h2 style="font-family: Georgia, serif; font-size: 20px; color: #1a1a1a; margin-top: 0;">Hi ${safeFirstName}!</h2>
             <p>Thank you for applying to become a Style Advisor on Cook A Look. We're excited to review your application!</p>
             
             <div style="background: white; border-left: 4px solid #c9a96e; padding: 16px; margin: 20px 0;">
               <p style="margin: 0; font-weight: 600;">Application Details:</p>
-              <p style="margin: 8px 0 0 0;">Specialty: ${specialty || "Not specified"}</p>
+              <p style="margin: 8px 0 0 0;">Specialty: ${safeSpecialty || "Not specified"}</p>
             </div>
             
             <h3 style="font-family: Georgia, serif; font-size: 16px; color: #1a1a1a;">What happens next?</h3>
