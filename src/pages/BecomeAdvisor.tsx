@@ -314,12 +314,17 @@ const BecomeAdvisor = () => {
             .from("avatars")
             .upload(fileName, formData.profilePhotoFile, {
               upsert: true,
-              contentType: formData.profilePhotoFile.type,
+              contentType: formData.profilePhotoFile.type || "image/jpeg",
+              cacheControl: "3600",
             });
 
           if (uploadError) {
             console.error("Avatar upload error:", uploadError);
-            // Don't fail the whole process, continue without avatar
+            toast({
+              title: "Photo Upload Failed",
+              description: `${uploadError.message}. You can add your photo from Settings after signing in.`,
+              variant: "destructive",
+            });
           } else {
             const { data: urlData } = supabase.storage
               .from("avatars")
@@ -329,6 +334,11 @@ const BecomeAdvisor = () => {
           }
         } catch (err) {
           console.error("Error uploading avatar:", err);
+          toast({
+            title: "Photo Upload Failed",
+            description: err instanceof Error ? err.message : "Unknown error. You can add your photo from Settings.",
+            variant: "destructive",
+          });
         }
       }
 

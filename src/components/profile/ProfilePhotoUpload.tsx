@@ -179,9 +179,15 @@ const ProfilePhotoUpload = ({
       });
     } catch (error) {
       console.error("Upload error:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "object" && error && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Failed to upload photo. Please try again.";
       toast({
         title: "Upload Failed",
-        description: "Failed to upload photo. Please try again.",
+        description: message,
         variant: "destructive",
       });
     } finally {
