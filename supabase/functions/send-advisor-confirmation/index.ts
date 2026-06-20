@@ -77,12 +77,12 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <div style="background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-            <h2 style="font-family: Georgia, serif; font-size: 20px; color: #1a1a1a; margin-top: 0;">Hi ${firstName}!</h2>
+            <h2 style="font-family: Georgia, serif; font-size: 20px; color: #1a1a1a; margin-top: 0;">Hi ${safeFirstName}!</h2>
             <p>Thank you for applying to become a Style Advisor on Cook A Look. We're excited to review your application!</p>
             
             <div style="background: white; border-left: 4px solid #c9a96e; padding: 16px; margin: 20px 0;">
               <p style="margin: 0; font-weight: 600;">Application Details:</p>
-              <p style="margin: 8px 0 0 0;">Specialty: ${specialty || "Not specified"}</p>
+              <p style="margin: 8px 0 0 0;">Specialty: ${safeSpecialty || "Not specified"}</p>
             </div>
             
             <h3 style="font-family: Georgia, serif; font-size: 16px; color: #1a1a1a;">What happens next?</h3>
