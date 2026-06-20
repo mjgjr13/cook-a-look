@@ -115,12 +115,11 @@ serve(async (req) => {
       .single();
     if (!clientProfile) throw new Error("Client profile not found");
 
-    // Confirm the pending booking created at checkout time
-    const { error: confirmError } = await supabaseClient
-      .from("bookings")
-      .update({ status: "confirmed", updated_at: new Date().toISOString() })
-      .eq("id", bookingId)
-      .eq("client_id", clientProfile.id);
+    // Confirm the pending booking created at checkout time through the guarded RPC.
+    const { error: confirmError } = await supabaseClient.rpc("confirm_paid_booking", {
+      p_booking_id: bookingId,
+      p_client_id: clientProfile.id,
+    });
     if (confirmError) throw confirmError;
 
     // Record the payment with platform fee + 48h escrow

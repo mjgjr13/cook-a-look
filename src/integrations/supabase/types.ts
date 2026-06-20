@@ -1606,6 +1606,10 @@ export type Database = {
         }[]
       }
       complete_due_bookings: { Args: never; Returns: number }
+      confirm_paid_booking: {
+        Args: { p_booking_id: string; p_client_id: string }
+        Returns: undefined
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
