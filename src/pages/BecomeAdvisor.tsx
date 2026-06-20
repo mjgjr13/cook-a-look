@@ -332,6 +332,47 @@ const BecomeAdvisor = () => {
         }
       }
 
+      // Step 3b: Upload verification documents (selfie + government ID) to the private "verifications" bucket.
+      // We create long-lived signed URLs so the admin review screen can render the images directly.
+      const uploadVerificationDoc = async (
+        file: File,
+        kind: "selfie" | "id"
+      ): Promise<string | null> => {
+        try {
+          const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+          const path = `${userId}/${kind}_${Date.now()}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from("verifications")
+            .upload(path, file, { upsert: false, contentType: file.type });
+          if (upErr) {
+            console.error(`${kind} upload error:`, upErr);
+            return null;
+          }
+          // Private bucket — generate a signed URL (1 year) for admin viewing.
+          const { data: signed, error: signErr } = await supabase.storage
+            .from("verifications")
+            .createSignedUrl(path, 60 * 60 * 24 * 365);
+          if (signErr || !signed?.signedUrl) {
+            console.error(`${kind} signed URL error:`, signErr);
+            return null;
+          }
+          console.log(`${kind} uploaded:`, path);
+          return signed.signedUrl;
+        } catch (err) {
+          console.error(`Error uploading ${kind}:`, err);
+          return null;
+        }
+      };
+
+      let selfieUrl: string | null = null;
+      let idDocumentUrl: string | null = null;
+      if (formData.selfieFile) {
+        selfieUrl = await uploadVerificationDoc(formData.selfieFile, "selfie");
+      }
+      if (formData.idFile) {
+        idDocumentUrl = await uploadVerificationDoc(formData.idFile, "id");
+      }
+
       // Step 4: Wait for profile trigger to create base profile, then update it
       // The handle_new_user trigger creates a basic profile - we need to update it
       let retries = 0;
