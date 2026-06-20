@@ -139,10 +139,14 @@ serve(async (req) => {
       day: "numeric",
     });
 
-    // Truncate message preview
-    const preview = messagePreview.length > 100 
-      ? messagePreview.substring(0, 100) + "..." 
+    // HTML-escape user-controlled values before email interpolation
+    const escapeHtml = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const rawPreview = messagePreview.length > 100
+      ? messagePreview.substring(0, 100) + "..."
       : messagePreview;
+    const preview = escapeHtml(rawPreview);
+    const senderName = escapeHtml(sender?.full_name || "your contact");
 
     const dashboardUrl = recipientRole === "advisor" 
       ? "https://cookalookcom.lovable.app/advisor" 
