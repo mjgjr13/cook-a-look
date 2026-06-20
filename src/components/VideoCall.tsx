@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Phone, ExternalLink, Video as VideoIcon, ShieldCheck, SwitchCamera } from "lucide-react";
+import { Loader2, Phone, Video as VideoIcon, ShieldCheck, SwitchCamera } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -275,16 +275,6 @@ const VideoCall = ({
                   <SwitchCamera className="w-4 h-4 mr-2" />
                 )}
                 Flip camera
-              </Button>
-            )}
-            {roomUrl && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open in new tab
               </Button>
             )}
             <Button
