@@ -203,7 +203,7 @@ serve(async (req) => {
 
     await sendEmail(
       recipient.email,
-      `New message from ${sender?.full_name || "your contact"}`,
+      `New message from ${sender?.full_name || "your contact"}`.slice(0, 200),
       emailHtml
     );
 
