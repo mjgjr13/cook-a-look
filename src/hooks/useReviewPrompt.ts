@@ -63,14 +63,15 @@ export const useReviewPrompt = (userId: string | undefined) => {
         return;
       }
 
-      // Check which bookings already have reviews
+      // Check which bookings already have reviews (via RPC — direct table read is locked down)
       const bookingIds = completedBookings.map((b) => b.id);
-      const { data: existingReviews } = await supabase
-        .from("advisor_reviews")
-        .select("booking_id")
-        .in("booking_id", bookingIds);
+      const { data: existingReviews } = await supabase.rpc("get_reviewed_booking_ids", {
+        p_booking_ids: bookingIds,
+      });
 
-      const reviewedBookingIds = new Set(existingReviews?.map((r) => r.booking_id) || []);
+      const reviewedBookingIds = new Set(
+        (existingReviews as Array<{ booking_id: string }> | null)?.map((r) => r.booking_id) || []
+      );
 
       // Find the first booking without a review
       const unreviewedBooking = completedBookings.find(
