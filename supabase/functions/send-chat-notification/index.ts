@@ -180,7 +180,7 @@ serve(async (req) => {
               <div class="logo">COOK A LOOK</div>
             </div>
             
-            <h2 style="font-weight: 400;">New Message from ${sender?.full_name || "your contact"}</h2>
+            <h2 style="font-weight: 400;">New Message from ${senderName}</h2>
             
             <p>You have a new message regarding your ${formattedDate} consultation:</p>
             
