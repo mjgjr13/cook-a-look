@@ -723,7 +723,7 @@ const BecomeAdvisor = () => {
                 Application Submitted
               </h1>
               <p className="font-sans text-lg text-muted-foreground mb-4">
-                Thank you for your interest in becoming a Cook a Look advisor.
+                Thank you for your interest in becoming a Cook A Look advisor.
               </p>
               <div className="bg-card border border-border p-6 mb-8">
                 <p className="font-sans text-foreground">

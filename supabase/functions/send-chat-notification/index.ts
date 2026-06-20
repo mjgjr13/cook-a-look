@@ -20,7 +20,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       "Authorization": `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
-      from: "Cook a Look <onboarding@resend.dev>",
+      from: "Cook A Look <onboarding@resend.dev>",
       to: [to],
       subject,
       html,
@@ -189,8 +189,8 @@ serve(async (req) => {
             </p>
             
             <div class="footer">
-              <p>You're receiving this because you have an active booking on Cook a Look.</p>
-              <p>&copy; ${new Date().getFullYear()} Cook a Look. All rights reserved.</p>
+              <p>You're receiving this because you have an active booking on Cook A Look.</p>
+              <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
             </div>
           </div>
         </body>

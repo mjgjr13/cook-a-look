@@ -30,7 +30,7 @@ async function sendEmail(to: string[], subject: string, html: string, icsContent
   }
 
   const payload: Record<string, unknown> = {
-    from: "Cook a Look <onboarding@resend.dev>",
+    from: "Cook A Look <onboarding@resend.dev>",
     to,
     subject,
     html,
@@ -236,7 +236,7 @@ serve(async (req) => {
             
             <div class="footer">
               <p>Questions? Reply to this email or visit our help center.</p>
-              <p>&copy; ${new Date().getFullYear()} Cook a Look. All rights reserved.</p>
+              <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -297,7 +297,7 @@ serve(async (req) => {
             
             <div class="footer">
               <p>Manage your bookings in your advisor dashboard.</p>
-              <p>&copy; ${new Date().getFullYear()} Cook a Look. All rights reserved.</p>
+              <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -348,7 +348,7 @@ function generateICS({ title, description, startTime, endTime, isVirtual, joinUr
 
   return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Cook a Look//Consultation//EN
+PRODID:-//Cook A Look//Consultation//EN
 BEGIN:VEVENT
 UID:${Date.now()}@cookalook.com
 DTSTART:${formatDate(startTime)}

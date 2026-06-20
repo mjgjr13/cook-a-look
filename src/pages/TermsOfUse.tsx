@@ -31,7 +31,7 @@ const TermsOfUse = () => {
               <section>
                 <h2 className="font-serif text-2xl font-medium mb-4">1. Acceptance of Terms</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  By accessing or using Cook a Look ("the Platform"), you agree to be bound by these Terms of Use. 
+                  By accessing or using Cook A Look ("the Platform"), you agree to be bound by these Terms of Use. 
                   If you do not agree to these terms, please do not use our services. The Platform connects clients 
                   with independent style advisors for virtual and in-person consultations.
                 </p>
@@ -40,7 +40,7 @@ const TermsOfUse = () => {
               <section>
                 <h2 className="font-serif text-2xl font-medium mb-4">2. Platform Services</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  Cook a Look provides a marketplace platform that enables users to discover, book, and engage with 
+                  Cook A Look provides a marketplace platform that enables users to discover, book, and engage with 
                   independent style advisors. We facilitate connections but do not employ advisors directly. All 
                   advisors on our platform are independent contractors responsible for their own services.
                 </p>
@@ -74,13 +74,13 @@ const TermsOfUse = () => {
                     <strong className="text-foreground">IMPORTANT - PLEASE READ CAREFULLY:</strong>
                   </p>
                   <p>
-                    <strong>Independent Contractors:</strong> Style advisors on Cook a Look are independent 
-                    contractors, not employees or agents of the Platform. Cook a Look does not control, supervise, 
+                    <strong>Independent Contractors:</strong> Style advisors on Cook A Look are independent 
+                    contractors, not employees or agents of the Platform. Cook A Look does not control, supervise, 
                     or direct the manner in which advisors provide their services.
                   </p>
                   <p>
                     <strong>In-Person Meetings:</strong> If you choose to meet an advisor in person, you do so 
-                    entirely at your own risk. Cook a Look is NOT responsible for any injury, harm, damage, loss, 
+                    entirely at your own risk. Cook A Look is NOT responsible for any injury, harm, damage, loss, 
                     or any other negative outcome that may result from in-person meetings.
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
@@ -114,7 +114,7 @@ const TermsOfUse = () => {
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
-                    All advisors on the Cook a Look platform agree to maintain the highest standards of 
+                    All advisors on the Cook A Look platform agree to maintain the highest standards of 
                     professionalism. By becoming an advisor, you commit to:
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
@@ -126,7 +126,7 @@ const TermsOfUse = () => {
                   </ul>
                   <p className="mt-4">
                     <strong className="text-foreground">Consequences:</strong> Violations of these expectations 
-                    may result in warnings, suspension, or permanent removal from the platform at Cook a Look's 
+                    may result in warnings, suspension, or permanent removal from the platform at Cook A Look's 
                     sole discretion.
                   </p>
                 </div>
@@ -139,7 +139,7 @@ const TermsOfUse = () => {
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
-                    Customers using Cook a Look agree to treat all advisors with respect and professionalism:
+                    Customers using Cook A Look agree to treat all advisors with respect and professionalism:
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li><strong>Respectful Communication:</strong> Treating advisors with courtesy and respect</li>
@@ -161,7 +161,7 @@ const TermsOfUse = () => {
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
                     <strong className="text-foreground">IMPORTANT NOTICE:</strong> All virtual consultations 
-                    conducted through the Cook a Look platform are automatically recorded.
+                    conducted through the Cook A Look platform are automatically recorded.
                   </p>
                   <p>
                     <strong>Purpose of Recordings:</strong>
@@ -172,7 +172,7 @@ const TermsOfUse = () => {
                     <li>Protection of both advisors and clients</li>
                   </ul>
                   <p>
-                    <strong>Access to Recordings:</strong> Session recordings are only accessible by Cook a Look 
+                    <strong>Access to Recordings:</strong> Session recordings are only accessible by Cook A Look 
                     administrators for the purposes stated above. Recordings are never shared publicly or with 
                     third parties except as required by law.
                   </p>
@@ -201,11 +201,11 @@ const TermsOfUse = () => {
                   </p>
                   <p>
                     <strong>Dispute Investigation:</strong> When a dispute is raised, funds remain in escrow 
-                    until Cook a Look administrators review the case. This may include reviewing session recordings 
+                    until Cook A Look administrators review the case. This may include reviewing session recordings 
                     for virtual consultations.
                   </p>
                   <p>
-                    <strong>Resolution:</strong> Cook a Look will make a determination based on available evidence 
+                    <strong>Resolution:</strong> Cook A Look will make a determination based on available evidence 
                     and may issue a full or partial refund to the client, or release funds to the advisor.
                   </p>
                 </div>
@@ -215,7 +215,7 @@ const TermsOfUse = () => {
                 <h2 className="font-serif text-2xl font-medium mb-4">11. Intellectual Property</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   All content on the Platform, including but not limited to text, graphics, logos, and software, 
-                  is the property of Cook a Look or its licensors and is protected by intellectual property laws.
+                  is the property of Cook A Look or its licensors and is protected by intellectual property laws.
                 </p>
               </section>
 
@@ -232,7 +232,7 @@ const TermsOfUse = () => {
               <section>
                 <h2 className="font-serif text-2xl font-medium mb-4">13. Indemnification</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  You agree to indemnify and hold harmless Cook a Look and its affiliates from any claims, 
+                  You agree to indemnify and hold harmless Cook A Look and its affiliates from any claims, 
                   damages, losses, and expenses arising from your use of the Platform, your violation of these 
                   Terms, or your violation of any rights of another party.
                 </p>
@@ -242,7 +242,7 @@ const TermsOfUse = () => {
                 <h2 className="font-serif text-2xl font-medium mb-4">14. Governing Law</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   These Terms shall be governed by and construed in accordance with the laws of the jurisdiction 
-                  in which Cook a Look operates, without regard to its conflict of law provisions.
+                  in which Cook A Look operates, without regard to its conflict of law provisions.
                 </p>
               </section>
 

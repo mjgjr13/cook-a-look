@@ -207,7 +207,7 @@ export const AdminMessagesInbox = () => {
                 )}
               </CardTitle>
               <CardDescription>
-                Messages from Cook a Look administration
+                Messages from Cook A Look administration
               </CardDescription>
             </div>
           </div>
@@ -218,7 +218,7 @@ export const AdminMessagesInbox = () => {
               <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No messages yet</p>
               <p className="text-sm mt-1">
-                You'll see messages from Cook a Look admin here
+                You'll see messages from Cook A Look admin here
               </p>
             </div>
           ) : (
@@ -239,7 +239,7 @@ export const AdminMessagesInbox = () => {
                     {unreadCount > 0 && (
                       <div className="w-2 h-2 rounded-full bg-primary" />
                     )}
-                    <span className="font-medium">Cook a Look Admin</span>
+                    <span className="font-medium">Cook A Look Admin</span>
                     {unreadCount > 0 && (
                       <Badge variant="secondary" className="text-xs">
                         {unreadCount} new
@@ -271,7 +271,7 @@ export const AdminMessagesInbox = () => {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <span>Cook a Look Admin</span>
+                <span>Cook A Look Admin</span>
                 <p className="text-sm font-normal text-muted-foreground">
                   Platform Administration
                 </p>

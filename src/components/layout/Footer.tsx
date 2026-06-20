@@ -43,14 +43,6 @@ const Footer = () => {
                   Terms of Use
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/brand"
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
-                >
-                  Press Kit
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -88,7 +80,7 @@ const Footer = () => {
 
         <div className="border-t border-primary-foreground/20 mt-12 pt-8 text-center">
           <p className="font-sans text-xs text-primary-foreground/60">
-            © {new Date().getFullYear()} Cook a Look. All rights reserved.
+            © {new Date().getFullYear()} Cook A Look. All rights reserved.
           </p>
         </div>
       </div>
