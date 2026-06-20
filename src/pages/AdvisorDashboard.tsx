@@ -383,8 +383,22 @@ const AdvisorDashboard = () => {
                   View checklist
                 </Button>
                 <Button size="sm" asChild>
-                  <Link to="/settings">
-                    Finish Setup
+                  <Link
+                    to={
+                      !completionStatus.hasAvailability &&
+                      completionStatus.hasAvatar &&
+                      completionStatus.hasPrice &&
+                      completionStatus.hasBio
+                        ? "/advisor-availability"
+                        : "/settings"
+                    }
+                  >
+                    {!completionStatus.hasAvailability &&
+                    completionStatus.hasAvatar &&
+                    completionStatus.hasPrice &&
+                    completionStatus.hasBio
+                      ? "Set Availability"
+                      : "Finish Setup"}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
@@ -392,22 +406,20 @@ const AdvisorDashboard = () => {
             </motion.div>
           )}
 
-          {/* Profile Visibility Toggle - always shown for approved advisors */}
-          {isApproved && (
-            <div className="mb-8">
-              <VisibilityToggle
-                isListed={advisorProfile?.is_listed ?? false}
-                isApproved={isApproved}
-                completionStatus={completionStatus}
-                pendingBookingsCount={pendingBookingsCount}
-                onToggle={async (newValue) => {
-                  const result = await toggleVisibility(newValue);
-                  if (result.success) refetchAdvisorProfile();
-                  return result;
-                }}
-              />
-            </div>
-          )}
+          {/* Profile Visibility Toggle - always shown so advisors can see status */}
+          <div className="mb-8">
+            <VisibilityToggle
+              isListed={advisorProfile?.is_listed ?? false}
+              isApproved={isApproved}
+              completionStatus={completionStatus}
+              pendingBookingsCount={pendingBookingsCount}
+              onToggle={async (newValue) => {
+                const result = await toggleVisibility(newValue);
+                if (result.success) refetchAdvisorProfile();
+                return result;
+              }}
+            />
+          </div>
 
 
           {/* New Advisor Setup Card - prominent setup prompt when not visible (shown to pending + approved) */}

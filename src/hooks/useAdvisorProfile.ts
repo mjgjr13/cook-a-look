@@ -60,6 +60,7 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     bio: string | null;
   } | null>(null);
   const [pendingBookingsCount, setPendingBookingsCount] = useState(0);
+  const [availabilityWindowCount, setAvailabilityWindowCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,20 +101,29 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
       setAdvisorProfile(advisorResult.data as AdvisorProfile | null);
       setUserProfile(profileResult.data);
 
-      // Fetch pending bookings count if we have a profile
+      // Fetch pending bookings count and availability windows if we have a profile
       if (profileResult.data?.id) {
-        const { data: bookingsData, error: bookingsError } = await supabase
-          .from("bookings")
-          .select("id, slot:availability_slots(start_time)")
-          .eq("advisor_id", profileResult.data.id)
-          .in("status", ["confirmed", "pending"]);
+        const [bookingsRes, windowsRes] = await Promise.all([
+          supabase
+            .from("bookings")
+            .select("id, slot:availability_slots(start_time)")
+            .eq("advisor_id", profileResult.data.id)
+            .in("status", ["confirmed", "pending"]),
+          supabase
+            .from("advisor_availability_windows")
+            .select("id", { count: "exact", head: true })
+            .eq("advisor_id", profileResult.data.id),
+        ]);
 
-        if (!bookingsError && bookingsData) {
-          // Count future bookings only
-          const futureBookings = bookingsData.filter(
+        if (!bookingsRes.error && bookingsRes.data) {
+          const futureBookings = bookingsRes.data.filter(
             (b) => b.slot && new Date(b.slot.start_time) > new Date()
           );
           setPendingBookingsCount(futureBookings.length);
+        }
+
+        if (!windowsRes.error) {
+          setAvailabilityWindowCount(windowsRes.count ?? 0);
         }
       }
     } catch (err) {
@@ -136,7 +146,7 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     hasAvatar: Boolean(userProfile?.avatar_url && userProfile.avatar_url.trim() !== ""),
     hasPrice: Boolean(userProfile?.price_per_session && userProfile.price_per_session > 0),
     hasBio: Boolean(userProfile?.bio && userProfile.bio.trim().length > 0),
-    hasAvailability: Boolean(advisorProfile?.availability_set),
+    hasAvailability: Boolean(advisorProfile?.availability_set) || availabilityWindowCount > 0,
     isComplete: false,
     completedSteps: 0,
     totalSteps: 4,
