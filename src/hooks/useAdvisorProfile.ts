@@ -101,20 +101,29 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
       setAdvisorProfile(advisorResult.data as AdvisorProfile | null);
       setUserProfile(profileResult.data);
 
-      // Fetch pending bookings count if we have a profile
+      // Fetch pending bookings count and availability windows if we have a profile
       if (profileResult.data?.id) {
-        const { data: bookingsData, error: bookingsError } = await supabase
-          .from("bookings")
-          .select("id, slot:availability_slots(start_time)")
-          .eq("advisor_id", profileResult.data.id)
-          .in("status", ["confirmed", "pending"]);
+        const [bookingsRes, windowsRes] = await Promise.all([
+          supabase
+            .from("bookings")
+            .select("id, slot:availability_slots(start_time)")
+            .eq("advisor_id", profileResult.data.id)
+            .in("status", ["confirmed", "pending"]),
+          supabase
+            .from("advisor_availability_windows")
+            .select("id", { count: "exact", head: true })
+            .eq("advisor_id", profileResult.data.id),
+        ]);
 
-        if (!bookingsError && bookingsData) {
-          // Count future bookings only
-          const futureBookings = bookingsData.filter(
+        if (!bookingsRes.error && bookingsRes.data) {
+          const futureBookings = bookingsRes.data.filter(
             (b) => b.slot && new Date(b.slot.start_time) > new Date()
           );
           setPendingBookingsCount(futureBookings.length);
+        }
+
+        if (!windowsRes.error) {
+          setAvailabilityWindowCount(windowsRes.count ?? 0);
         }
       }
     } catch (err) {
