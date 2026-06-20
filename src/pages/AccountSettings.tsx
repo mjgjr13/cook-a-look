@@ -197,7 +197,6 @@ interface Profile {
   avatar_url: string;
   // Advisor-specific fields
   price_per_session: number;
-  session_duration: number;
   virtual_available: boolean;
   in_person_available: boolean;
   in_person_surcharge: number;
@@ -284,7 +283,6 @@ const AccountSettings = () => {
         bio: profile.bio,
         location: profile.location,
         price_per_session: profile.price_per_session,
-        session_duration: profile.session_duration,
         virtual_available: profile.virtual_available,
         in_person_available: profile.in_person_available,
         in_person_surcharge: profile.in_person_surcharge ?? 0,
@@ -497,15 +495,6 @@ const AccountSettings = () => {
                           Your payout: <span className="font-semibold text-green-600">${(profile.price_per_session * 0.85).toFixed(2)}</span> per hour (clients book 1–3 hours per session)
                         </p>
                       )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Session Duration (minutes)</Label>
-                      <Input
-                        id="duration"
-                        type="number"
-                        value={profile?.session_duration || 60}
-                        onChange={(e) => updateProfile("session_duration", parseInt(e.target.value))}
-                      />
                     </div>
                   </div>
 
