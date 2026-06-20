@@ -518,34 +518,61 @@ const AccountSettings = () => {
                       </div>
                       <Switch
                         checked={profile?.in_person_available ?? false}
-                        onCheckedChange={(checked) => updateProfile("in_person_available", checked)}
+                        onCheckedChange={(checked) => {
+                          updateProfile("in_person_available", checked);
+                          // Default surcharge to $25 the first time in-person is enabled
+                          if (checked && (profile?.in_person_surcharge ?? null) === null) {
+                            updateProfile("in_person_surcharge", 25);
+                          }
+                        }}
                       />
                     </div>
 
-                    {profile?.in_person_available && (
-                      <div className="space-y-4 pl-2 border-l-2 border-border">
-                        <div className="space-y-2">
-                          <Label htmlFor="surcharge">In-Person Surcharge ($)</Label>
-                          <Input
-                            id="surcharge"
-                            type="number"
-                            min={0}
-                            max={100}
-                            step={5}
-                            value={profile?.in_person_surcharge ?? 0}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => {
-                              const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                              updateProfile("in_person_surcharge", v);
-                            }}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Flat fee added to in-person bookings on top of your hourly rate (max $100).
-                          </p>
+                    {profile?.in_person_available && (() => {
+                      const surcharge = profile?.in_person_surcharge ?? 25;
+                      const setSurcharge = (v: number) => {
+                        const clamped = Math.max(0, Math.min(100, Math.round(v / 5) * 5));
+                        updateProfile("in_person_surcharge", clamped);
+                      };
+                      return (
+                        <div className="space-y-4 pl-2 border-l-2 border-border">
+                          <div className="space-y-2">
+                            <Label>In-Person Surcharge</Label>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 flex items-center justify-center h-11 px-4 rounded-md border border-input bg-background font-medium text-lg">
+                                ${surcharge}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-11 w-11 shrink-0"
+                                onClick={() => setSurcharge(surcharge - 5)}
+                                disabled={surcharge <= 0}
+                                aria-label="Decrease surcharge"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-11 w-11 shrink-0"
+                                onClick={() => setSurcharge(surcharge + 5)}
+                                disabled={surcharge >= 100}
+                                aria-label="Increase surcharge"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Flat fee added to in-person bookings on top of your hourly rate. Adjust in $5 increments (max $100, or set to $0 for no surcharge).
+                            </p>
+                          </div>
+                          <MeetingLocationsManager advisorProfileId={profile?.id ?? null} />
                         </div>
-                        <MeetingLocationsManager advisorProfileId={profile?.id ?? null} />
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   <Separator />
