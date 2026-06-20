@@ -76,8 +76,8 @@ const handler = async (req: Request): Promise<Response> => {
     const isAdvisor = type === "advisor";
 
     const subject = isAdvisor
-      ? "Welcome to Cook a Look - Advisor Application Received"
-      : "Welcome to Cook a Look!";
+      ? "Welcome to Cook A Look - Advisor Application Received"
+      : "Welcome to Cook A Look!";
 
     const html = isAdvisor
       ? `
@@ -103,11 +103,11 @@ const handler = async (req: Request): Promise<Response> => {
           <body>
             <div class="container">
               <div class="header">
-                <div class="logo">Cook a Look</div>
+                <div class="logo">Cook A Look</div>
               </div>
               <h1>Thank you for applying, ${firstName}!</h1>
               <div class="content">
-                <p>We've received your application to become a Style Advisor on Cook a Look.</p>
+                <p>We've received your application to become a Style Advisor on Cook A Look.</p>
                 <p class="highlight">What happens next?</p>
                 <div class="steps">
                   <div class="step">Our team will review your application and portfolio</div>
@@ -118,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
               <div class="footer">
                 <p>Questions? Reply to this email and we'll help you out.</p>
-                <p>&copy; ${new Date().getFullYear()} Cook a Look. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
               </div>
             </div>
           </body>
@@ -145,9 +145,9 @@ const handler = async (req: Request): Promise<Response> => {
           <body>
             <div class="container">
               <div class="header">
-                <div class="logo">Cook a Look</div>
+                <div class="logo">Cook A Look</div>
               </div>
-              <h1>Welcome to Cook a Look, ${firstName}!</h1>
+              <h1>Welcome to Cook A Look, ${firstName}!</h1>
               <div class="content">
                 <p>Your account has been created successfully. You're now ready to discover your personal style with the help of our expert advisors.</p>
                 <p class="highlight">Here's what you can do:</p>
@@ -163,7 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
               <div class="footer">
                 <p>Questions? Reply to this email and we'll help you out.</p>
-                <p>&copy; ${new Date().getFullYear()} Cook a Look. All rights reserved.</p>
+                <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
               </div>
             </div>
           </body>
@@ -171,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
       `;
 
     const emailResponse = await resend.emails.send({
-      from: "Cook a Look <onboarding@resend.dev>",
+      from: "Cook A Look <onboarding@resend.dev>",
       to: [email],
       subject,
       html,

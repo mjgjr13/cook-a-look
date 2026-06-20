@@ -49,7 +49,7 @@ const RecordingConsentModal = ({
             <div>
               <p className="font-medium text-sm">Who can access recordings?</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Recordings are only accessible by Cook a Look administrators for 
+                Recordings are only accessible by Cook A Look administrators for 
                 dispute resolution and quality review. They are never shared publicly.
               </p>
             </div>

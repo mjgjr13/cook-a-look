@@ -133,7 +133,7 @@ const AdvisorOnboardingModal = ({
       <DialogContent className="sm:max-w-[600px]" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl text-center">
-            Welcome to Cook a Look
+            Welcome to Cook A Look
           </DialogTitle>
         </DialogHeader>
 

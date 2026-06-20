@@ -101,7 +101,7 @@ const SignUp = () => {
 
       toast({
         title: "Account created!",
-        description: "Welcome to Cook a Look. Check your email for confirmation.",
+        description: "Welcome to Cook A Look. Check your email for confirmation.",
       });
 
       navigate("/dashboard");
@@ -147,7 +147,7 @@ const SignUp = () => {
                 Create Account
               </h1>
               <p className="font-sans text-muted-foreground">
-                Join Cook a Look and connect with style experts
+                Join Cook A Look and connect with style experts
               </p>
             </div>
 

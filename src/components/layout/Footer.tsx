@@ -88,7 +88,7 @@ const Footer = () => {
 
         <div className="border-t border-primary-foreground/20 mt-12 pt-8 text-center">
           <p className="font-sans text-xs text-primary-foreground/60">
-            © {new Date().getFullYear()} Cook a Look. All rights reserved.
+            © {new Date().getFullYear()} Cook A Look. All rights reserved.
           </p>
         </div>
       </div>

@@ -31,7 +31,7 @@ const PrivacyPolicy = () => {
               <section>
                 <h2 className="font-serif text-2xl font-medium mb-4">1. Introduction</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  Cook a Look ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy 
+                  Cook A Look ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy 
                   explains how we collect, use, disclose, and safeguard your information when you use our platform.
                 </p>
               </section>
