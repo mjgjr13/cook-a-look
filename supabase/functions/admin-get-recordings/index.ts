@@ -84,8 +84,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           recordings: [],
-          note:
-            "This session used the Jitsi fallback provider, which does not record. No recording is available.",
+          note: "This session was not recorded on Daily.co. No recording is available.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
