@@ -60,6 +60,7 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     bio: string | null;
   } | null>(null);
   const [pendingBookingsCount, setPendingBookingsCount] = useState(0);
+  const [availabilityWindowCount, setAvailabilityWindowCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
