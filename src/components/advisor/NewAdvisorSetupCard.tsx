@@ -68,10 +68,12 @@ const NewAdvisorSetupCard = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
-                🎉 You're Approved!
+                {isPending ? "👋 Welcome — let's get you ready" : "🎉 You're Approved!"}
               </CardTitle>
               <CardDescription className="mt-1">
-                Complete these steps to start receiving bookings
+                {isPending
+                  ? "Finish setting up your profile now so you can go live the moment you're approved."
+                  : "Complete these steps to start receiving bookings"}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-gold border-gold/50">
