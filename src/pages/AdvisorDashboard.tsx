@@ -31,6 +31,8 @@ import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import PendingLocationApprovals from "@/components/advisor/PendingLocationApprovals";
 import PendingBookingRequests from "@/components/advisor/PendingBookingRequests";
+import VisibilityToggle from "@/components/advisor/VisibilityToggle";
+import { AlertCircle } from "lucide-react";
 
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
