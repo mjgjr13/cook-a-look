@@ -146,7 +146,7 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     hasAvatar: Boolean(userProfile?.avatar_url && userProfile.avatar_url.trim() !== ""),
     hasPrice: Boolean(userProfile?.price_per_session && userProfile.price_per_session > 0),
     hasBio: Boolean(userProfile?.bio && userProfile.bio.trim().length > 0),
-    hasAvailability: Boolean(advisorProfile?.availability_set),
+    hasAvailability: Boolean(advisorProfile?.availability_set) || availabilityWindowCount > 0,
     isComplete: false,
     completedSteps: 0,
     totalSteps: 4,
