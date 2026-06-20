@@ -306,6 +306,20 @@ const VideoCall = ({
                 Flip camera
               </Button>
             )}
+            {roomUrl && (
+              <Button
+                variant="outline"
+                onClick={toggleFullscreen}
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-4 h-4 mr-2" />
+                ) : (
+                  <Maximize2 className="w-4 h-4 mr-2" />
+                )}
+                {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="icon"
