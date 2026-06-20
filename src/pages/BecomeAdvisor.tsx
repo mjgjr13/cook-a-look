@@ -501,6 +501,8 @@ const BecomeAdvisor = () => {
           portfolio: formData.portfolio?.trim() || null,
           status: "pending",
           liveness_verified: true, // MVP: Skip verification
+          selfie_url: selfieUrl,
+          id_document_url: idDocumentUrl,
         });
 
       if (applicationError) {
