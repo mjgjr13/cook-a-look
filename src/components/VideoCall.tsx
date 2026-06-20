@@ -1,7 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Phone, Video as VideoIcon, ShieldCheck, SwitchCamera } from "lucide-react";
+import {
+  Loader2,
+  Phone,
+  Video as VideoIcon,
+  ShieldCheck,
+  SwitchCamera,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -33,8 +41,10 @@ const VideoCall = ({
   const [consentChecked, setConsentChecked] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [flipping, setFlipping] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const isMobile = useIsMobile();
   const dailyContainerRef = useRef<HTMLDivElement>(null);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
   const dailyFrameRef = useRef<{
     destroy: () => void;
     on: (event: string, cb: (...args: unknown[]) => void) => unknown;
@@ -162,6 +172,26 @@ const VideoCall = ({
     }
   }, [facingMode, toast]);
 
+  const toggleFullscreen = useCallback(async () => {
+    const el = dialogContentRef.current;
+    if (!el) return;
+    try {
+      if (!document.fullscreenElement) {
+        await el.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (e) {
+      console.error("Fullscreen toggle failed:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
   if (!consentGiven) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
@@ -229,8 +259,15 @@ const VideoCall = ({
   return (
     <>
       <Dialog open={!showReviewModal} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[95vw] sm:max-h-[95vh] p-0">
-          <DialogHeader className="p-4 border-b">
+        <DialogContent
+          ref={dialogContentRef}
+          className={
+            isFullscreen
+              ? "max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 rounded-none border-none"
+              : "sm:max-w-[95vw] sm:max-h-[95vh] p-0"
+          }
+        >
+          <DialogHeader className="p-4 border-b shrink-0">
             <DialogTitle className="font-serif flex items-center justify-between gap-3 pr-8">
               <span>Style Consultation</span>
               <span className="inline-flex items-center gap-1.5 text-xs font-sans font-normal text-muted-foreground shrink-0">
@@ -240,7 +277,10 @@ const VideoCall = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="relative w-full bg-black" style={{ height: "70vh" }}>
+          <div
+            className="relative w-full bg-black"
+            style={{ height: isFullscreen ? "calc(100vh - 64px - 80px)" : "70vh" }}
+          >
             {!roomUrl ? (
               <div className="flex items-center justify-center h-full bg-secondary">
                 <p className="text-muted-foreground">Unable to load video call</p>
@@ -250,7 +290,7 @@ const VideoCall = ({
             )}
           </div>
 
-          <div className="p-4 border-t bg-background flex items-center justify-center gap-3 flex-wrap">
+          <div className="p-4 border-t bg-background flex items-center justify-center gap-3 flex-wrap shrink-0">
             {roomUrl && isMobile && (
               <Button
                 variant="outline"
