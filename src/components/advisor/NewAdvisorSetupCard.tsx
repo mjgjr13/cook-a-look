@@ -112,11 +112,11 @@ const NewAdvisorSetupCard = ({
                   <Button
                     size="sm"
                     onClick={onToggleVisibility}
-                    disabled={!canGoLive}
+                    disabled={!canGoLive || isPending}
                     className="shrink-0"
                   >
                     <Eye className="w-4 h-4 mr-1" />
-                    Go Live
+                    {isPending ? "Pending Approval" : "Go Live"}
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" asChild className="shrink-0">
@@ -131,7 +131,11 @@ const NewAdvisorSetupCard = ({
             </motion.div>
           ))}
 
-          {!canGoLive && (
+          {isPending ? (
+            <p className="text-sm text-muted-foreground text-center pt-2">
+              Your application is under review. Get these steps done now and you'll be able to go live as soon as you're approved.
+            </p>
+          ) : !canGoLive && (
             <p className="text-sm text-muted-foreground text-center pt-2">
               Complete all required steps above to make your profile visible.
             </p>
