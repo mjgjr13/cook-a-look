@@ -533,6 +533,7 @@ const AccountSettings = () => {
                             max={100}
                             step={5}
                             value={profile?.in_person_surcharge ?? 0}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => {
                               const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
                               updateProfile("in_person_surcharge", v);
