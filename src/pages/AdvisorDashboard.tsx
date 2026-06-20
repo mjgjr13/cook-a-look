@@ -290,6 +290,13 @@ const AdvisorDashboard = () => {
         />
       )}
 
+      <FinishSetupPromptModal
+        isOpen={showFinishSetupModal}
+        onClose={() => setShowFinishSetupModal(false)}
+        completionStatus={completionStatus}
+        isPending={roles.isPendingAdvisor}
+      />
+
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8">
           {/* Header */}
