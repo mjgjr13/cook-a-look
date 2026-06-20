@@ -277,16 +277,6 @@ const VideoCall = ({
                 Flip camera
               </Button>
             )}
-            {roomUrl && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open in new tab
-              </Button>
-            )}
             <Button
               variant="destructive"
               size="icon"
