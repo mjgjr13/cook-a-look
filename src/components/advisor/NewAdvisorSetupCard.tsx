@@ -13,6 +13,7 @@ interface NewAdvisorSetupCardProps {
   hasAvailability: boolean;
   portfolioCount: number;
   onToggleVisibility: () => void;
+  isPending?: boolean;
 }
 
 const NewAdvisorSetupCard = ({
@@ -22,6 +23,7 @@ const NewAdvisorSetupCard = ({
   hasAvailability,
   portfolioCount,
   onToggleVisibility,
+  isPending = false,
 }: NewAdvisorSetupCardProps) => {
   // Hide card if already visible OR if they've published before (use Settings toggle instead)
   if (isListed || hasBeenVisibleBefore) return null;
