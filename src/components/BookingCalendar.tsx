@@ -108,7 +108,7 @@ const BookingCalendar = ({
 
   // Load advisor's preset meeting locations (auth-gated via RPC)
   useEffect(() => {
-    if (!advisorId || !UUID_REGEX.test(advisorId) || !inPersonAvailable || !user) return;
+    if (!advisorId || !UUID_REGEX.test(advisorId) || !inPersonAvailable) return;
     supabase
       .from("advisor_meeting_locations")
       .select("id, name, address, city")
