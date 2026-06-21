@@ -219,14 +219,14 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
       };
       
       // If going visible for the first time, mark as having been visible
-      if (newValue && !advisorProfile.has_been_visible_before) {
+      if (newValue && !profile.has_been_visible_before) {
         updatePayload.has_been_visible_before = true;
       }
 
       const { error: updateError } = await supabase
         .from("advisor_profiles")
         .update(updatePayload)
-        .eq("id", advisorProfile.id);
+        .eq("id", profile.id);
 
       if (updateError) throw updateError;
 
