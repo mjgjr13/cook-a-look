@@ -332,6 +332,7 @@ const AccountSettings = () => {
   // Tabs - rewards tab is removed entirely (clients use dashboard rewards card)
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
+    ...(isAdvisor ? [{ id: "availability", label: "Availability", icon: Calendar }] : []),
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "security", label: "Security", icon: Shield },
   ];
