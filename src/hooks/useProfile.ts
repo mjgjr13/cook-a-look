@@ -89,9 +89,12 @@ export const useProfile = (): UseProfileResult => {
       const advisorProfileData = advisorProfileResult.data;
       const isAdmin = adminResult.data === true;
 
-      // Determine approval status from advisor_profiles.application_status (source of truth)
-      // This ensures isApprovedAdvisor remains true even when visibility (is_listed) is OFF
-      const isAdminApproved = advisorProfileData?.application_status === "approved";
+      // Determine approval status: either advisor_profiles.application_status='approved'
+      // OR the legacy profiles.advisor_approved flag (covers older advisors that may
+      // not yet have an advisor_profiles row).
+      const isAdminApproved =
+        advisorProfileData?.application_status === "approved" ||
+        profileData?.advisor_approved === true;
 
       if (profileData) {
         setProfile(profileData as UserProfile);
@@ -99,7 +102,10 @@ export const useProfile = (): UseProfileResult => {
           isAdmin,
           isAdvisor: profileData.is_advisor === true,
           isApprovedAdvisor: profileData.is_advisor === true && isAdminApproved,
-          isPendingAdvisor: profileData.is_advisor === true && advisorProfileData?.application_status === "submitted",
+          isPendingAdvisor:
+            profileData.is_advisor === true &&
+            !isAdminApproved &&
+            advisorProfileData?.application_status === "submitted",
         });
       } else {
         // No profile yet - this can happen during signup
