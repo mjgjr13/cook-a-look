@@ -689,6 +689,45 @@ const AccountSettings = () => {
             </motion.div>
           )}
 
+          {/* Availability Tab (advisors only) */}
+          {activeTab === "availability" && isAdvisor && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-background border border-border p-6 space-y-6"
+            >
+              <div className="flex items-start gap-3">
+                <Calendar className="w-6 h-6 text-gold mt-1" />
+                <div>
+                  <h2 className="font-serif text-xl font-medium">Availability</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Set your weekly working hours, breaks, and date-specific overrides.
+                    Clients can only book within the windows you define.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/30 p-4 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="font-medium text-sm">
+                    {completionStatus.hasAvailability
+                      ? "Your weekly hours are set."
+                      : "You haven't set any weekly hours yet."}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Open the availability editor to add hours, breaks, and date overrides.
+                  </p>
+                </div>
+                <Button onClick={() => navigate("/advisor-availability")}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Manage Availability
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+
+
           {/* Notifications Tab */}
           {activeTab === "notifications" && (
             <motion.div
