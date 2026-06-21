@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Save, User, Bell, Shield, CreditCard, DollarSign, Loader2, Plus, Minus } from "lucide-react";
+import { ArrowLeft, Save, User, Bell, Shield, CreditCard, DollarSign, Loader2, Plus, Minus, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
