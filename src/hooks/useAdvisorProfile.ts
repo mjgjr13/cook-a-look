@@ -163,8 +163,29 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
 
   // Toggle visibility function
   const toggleVisibility = async (newValue: boolean): Promise<{ success: boolean; error?: string }> => {
-    if (!advisorProfile) {
-      return { success: false, error: "No advisor profile found" };
+    if (!user) {
+      return { success: false, error: "Not signed in" };
+    }
+    // Self-heal: if the advisor was approved before they had an advisor_profiles
+    // row, create one on demand so the visibility toggle works.
+    let profile = advisorProfile;
+    if (!profile) {
+      const { data: created, error: createErr } = await supabase
+        .from("advisor_profiles")
+        .insert({
+          user_id: user.id,
+          application_status: "approved",
+          onboarding_status: "complete",
+          is_listed: false,
+          is_published: false,
+        })
+        .select("*")
+        .single();
+      if (createErr || !created) {
+        return { success: false, error: createErr?.message || "No advisor profile found" };
+      }
+      profile = created as AdvisorProfile;
+      setAdvisorProfile(profile);
     }
 
     // Block hiding if there are pending bookings
