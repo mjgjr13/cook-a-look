@@ -1,44 +1,35 @@
-## What's happening
+## Context
 
-Your custom domain has a TLS/SSL problem — not a code problem. From my checks:
+Your `index.html` already references the correct glasses logo for the favicon (SVG + 16/32/192/512 PNGs + apple-touch-icon). The browser tab shows it correctly. Google's search result, however, still shows the old Lovable logo because Google cached the favicon from an earlier crawl (before your favicon was set) and hasn't refreshed it.
 
-- DNS for both `cookalook.com` and `www.cookalook.com` correctly points to Lovable (`185.158.133.1`).
-- `https://www.cookalook.com` currently returns **HTTP 200** from my server (the site itself is healthy and published).
-- `https://cookalook.com` (the apex, no `www`) fails the TLS handshake immediately — **no SSL certificate has been issued for the apex**.
-- Your browser is showing `ERR_SSL_PROTOCOL_ERROR` on `www.cookalook.com`, which usually means either a stale/cached cert in your browser, an HSTS entry forcing HTTPS against a host whose cert is still provisioning, or a Cloudflare edge that hasn't picked up the new cert yet.
+This is a crawler-cache problem, not a code bug. The fix is to (1) make sure every URL variant Google might fetch returns the glasses, (2) bust caches, and (3) nudge Google to recrawl.
 
-Google most likely indexed `https://cookalook.com` (the apex), so search-result clicks land on the broken version, and HSTS then makes the `www` variant fail in the same browser session.
+## What I'll change
 
-There are **no code changes that can fix this** — it lives in Project Settings → Domains and at your DNS/registrar. Here is the plan.
+1. **Add a root `/favicon.ico` fallback.** Many crawlers (Google included) request `/favicon.ico` at the site root regardless of `<link>` tags. There's currently no file there. I'll generate a multi-resolution `.ico` (16/32/48) from the glasses SVG and place it at `public/favicon.ico`.
 
-## Plan
+2. **Add an explicit `<link rel="shortcut icon" href="/favicon.ico">`** in `index.html` so the ICO is advertised alongside the SVG/PNG.
 
-### 1. Fix the apex domain in Lovable (you do this — I can't)
-- Open **Project Settings → Project → Domains**.
-- Find `cookalook.com` (without `www`). Expected outcomes:
-  - **Not listed** → click **Connect Domain**, add `cookalook.com`, complete the flow.
-  - **Status = Failed / Action required / Offline** → click **Retry** / **Complete Setup**.
-  - **Status = Verifying / Setting up** → wait; SSL is still being issued.
-- Confirm `www.cookalook.com` is also listed and **Active**. Set one of them as **Primary** (recommended: `www.cookalook.com`); the other will 301-redirect to it.
+3. **Bump the cache-busting query string** on every favicon link from `?v=5` to `?v=6` so Google sees changed URLs on the next crawl.
 
-### 2. Clear the browser-side SSL/HSTS cache (you do this)
-While certs finish provisioning, your own browser is poisoned:
-- Chrome: open `chrome://net-internals/#hsts`, under "Delete domain security policies" enter `cookalook.com`, click Delete. Repeat for `www.cookalook.com`.
-- Then quit and reopen Chrome and try `https://www.cookalook.com` again.
-- Also test in an incognito window and on mobile data to rule out local caching.
+4. **Tell you the manual step Google requires.** Code alone cannot force Google to refresh a cached favicon. After deploy, you need to:
+   - Open Google Search Console → URL Inspection → enter `https://www.cookalook.com/` → "Request indexing".
+   - Optionally also inspect `https://www.cookalook.com/favicon.ico` directly.
+   - Google typically refreshes the SERP favicon within a few days to a few weeks after recrawl. There's no faster path.
 
-### 3. Verify
-Once both domains show **Active** in Lovable Domains and your browser cache is cleared, both of these should load:
-- `https://cookalook.com` → redirects to www
-- `https://www.cookalook.com` → loads the site
+## What I will NOT change
 
-### 4. Help Google catch up (optional, after step 3 works)
-- In Google Search Console, submit `https://www.cookalook.com/sitemap.xml` and request re-indexing of the homepage so Google replaces the broken apex URL in its index with the working canonical one.
-- Your `index.html` and sitemap already use `https://www.cookalook.com` as the canonical, so once the apex redirects correctly, Google will consolidate naturally over time.
+- The glasses SVG/PNG artwork itself — it's already correct.
+- The `index.html` head structure, beyond the two lines above.
+- Anything in the app UI, routes, or backend.
 
-## What I will do in build mode
-Nothing yet — this is an infrastructure/DNS issue, not a code issue. If after step 1 the apex still won't provision (status stuck on Failed for more than an hour), let me know and we can:
-- Re-verify there are no conflicting A / AAAA / CAA records at your registrar that block Let's Encrypt.
-- Contact Lovable support with the domain name and a screenshot of Domains + your registrar's DNS panel.
+## Files touched
 
-Approve this plan and then complete step 1 in Project Settings → Domains; ping me with the status it shows and I'll take it from there.
+- `public/favicon.ico` (new, generated from the existing glasses SVG)
+- `index.html` (add `shortcut icon` link, bump `?v=5` → `?v=6`)
+
+## Expected outcome
+
+- Browser tab: unchanged (still glasses).
+- Direct request to `https://www.cookalook.com/favicon.ico`: now returns the glasses ICO instead of 404.
+- Google search result: still shows Lovable logo until Google recrawls; then updates to glasses. You must request reindexing in Search Console to speed this up.
