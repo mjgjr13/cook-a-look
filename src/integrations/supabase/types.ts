@@ -620,6 +620,9 @@ export type Database = {
           refund_percentage: number | null
           refund_processed_at: string | null
           refund_status: string | null
+          reminder_1h_sent_at: string | null
+          reminder_24h_sent_at: string | null
+          review_request_sent_at: string | null
           slot_id: string
           status: string | null
           suggested_location: Json | null
@@ -646,6 +649,9 @@ export type Database = {
           refund_percentage?: number | null
           refund_processed_at?: string | null
           refund_status?: string | null
+          reminder_1h_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
+          review_request_sent_at?: string | null
           slot_id: string
           status?: string | null
           suggested_location?: Json | null
@@ -672,6 +678,9 @@ export type Database = {
           refund_percentage?: number | null
           refund_processed_at?: string | null
           refund_status?: string | null
+          reminder_1h_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
+          review_request_sent_at?: string | null
           slot_id?: string
           status?: string | null
           suggested_location?: Json | null
