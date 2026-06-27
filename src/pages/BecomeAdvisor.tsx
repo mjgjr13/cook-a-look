@@ -783,8 +783,9 @@ const BecomeAdvisor = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-16 bg-card">
+      <section className="py-16 bg-card" aria-labelledby="advisor-benefits-heading">
         <div className="container mx-auto px-6 lg:px-8">
+          <h2 id="advisor-benefits-heading" className="sr-only">Benefits of becoming a Cook A Look advisor</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {benefits.map((benefit, index) => (
               <motion.div
