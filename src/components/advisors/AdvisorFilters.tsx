@@ -323,6 +323,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               <button
                 onClick={() => toggleArrayFilter("sessionTypes", type)}
                 className="ml-1 hover:bg-muted rounded-full p-0.5"
+                aria-label="Remove filter"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -335,6 +336,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               <button
                 onClick={() => toggleArrayFilter("styles", style)}
                 className="ml-1 hover:bg-muted rounded-full p-0.5"
+                aria-label="Remove filter"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -347,6 +349,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               <button
                 onClick={() => toggleArrayFilter("clientFocus", focus)}
                 className="ml-1 hover:bg-muted rounded-full p-0.5"
+                aria-label="Remove filter"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -359,6 +362,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               <button
                 onClick={() => toggleArrayFilter("useCases", useCase)}
                 className="ml-1 hover:bg-muted rounded-full p-0.5"
+                aria-label="Remove filter"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -378,6 +382,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                   updateFilter("maxPrice", "");
                 }}
                 className="ml-1 hover:bg-muted rounded-full p-0.5"
+                aria-label="Remove price filter"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -391,6 +396,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
               <button
                 onClick={() => updateFilter("sortBy", "featured")}
                 className="ml-1 hover:bg-muted rounded-full p-0.5"
+                aria-label="Reset sort"
               >
                 <X className="w-3 h-3" />
               </button>
