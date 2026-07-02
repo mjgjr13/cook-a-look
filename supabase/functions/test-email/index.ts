@@ -1,14 +1,9 @@
-// Temporary diagnostic function: sends a single test email via Resend to ADMIN_EMAIL.
-// Requires header x-cron-secret matching CRON_SECRET so it isn't publicly abusable.
+// Temporary diagnostic function: sends a single test email via Resend.
+// Deleted after verification. Not linked from the app.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok");
-
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
-    return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
-  }
 
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL");
