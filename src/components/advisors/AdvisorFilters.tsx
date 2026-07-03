@@ -14,9 +14,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Search, SlidersHorizontal, ArrowUpDown, X, Video, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import standardized category options (merged styles + occasions live in STYLE_CATEGORY_OPTIONS)
 import { CLIENT_FOCUS_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
@@ -49,6 +57,7 @@ interface AdvisorFiltersProps {
 
 const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFiltersProps) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     onFiltersChange({ ...filters, [key]: value });
@@ -91,6 +100,149 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
     activeFilterCount > 0 ||
     filters.sortBy !== "featured";
 
+  const filterFields = (
+    <>
+      {/* Sort */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">Sort By</Label>
+        <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
+          <SelectTrigger className="w-full gap-2">
+            <ArrowUpDown className="w-4 h-4" />
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent className="bg-background">
+            {sortOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Session Type */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">Session Type</Label>
+        <div className="flex gap-2">
+          <button
+            onClick={() => toggleArrayFilter("sessionTypes", "virtual")}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 px-3 py-2 border text-sm font-sans transition-colors",
+              filters.sessionTypes.includes("virtual")
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:border-primary/50"
+            )}
+          >
+            <Video className="w-4 h-4" />
+            Virtual
+          </button>
+          <button
+            onClick={() => toggleArrayFilter("sessionTypes", "in-person")}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 px-3 py-2 border text-sm font-sans transition-colors",
+              filters.sessionTypes.includes("in-person")
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:border-primary/50"
+            )}
+          >
+            <MapPin className="w-4 h-4" />
+            In-Person
+          </button>
+        </div>
+      </div>
+
+      {/* Styles & Occasions (merged) */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">Styles & Occasions</Label>
+        <div className="flex flex-wrap gap-2">
+          {styleCategories.map((style) => (
+            <button
+              key={style}
+              onClick={() => toggleArrayFilter("styles", style)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-sans border transition-colors",
+                filters.styles.includes(style)
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/50"
+              )}
+            >
+              {style}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Client Focus */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">Client Focus</Label>
+        <div className="flex flex-wrap gap-2">
+          {CLIENT_FOCUS_OPTIONS.map((focus) => (
+            <button
+              key={focus}
+              onClick={() => toggleArrayFilter("clientFocus", focus)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-sans border transition-colors",
+                filters.clientFocus.includes(focus)
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/50"
+              )}
+            >
+              {focus}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Price Range */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">Price Range</Label>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+            <Input
+              type="number"
+              placeholder="Min"
+              value={filters.minPrice}
+              onChange={(e) => updateFilter("minPrice", e.target.value)}
+              className="pl-7"
+              min="0"
+            />
+          </div>
+          <span className="text-muted-foreground">—</span>
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+            <Input
+              type="number"
+              placeholder="Max"
+              value={filters.maxPrice}
+              onChange={(e) => updateFilter("maxPrice", e.target.value)}
+              className="pl-7"
+              min="0"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Apply/Clear buttons */}
+      <div className="flex gap-2 pt-2 border-t border-border">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            clearFilters();
+            setFiltersOpen(false);
+          }}
+          className="flex-1"
+        >
+          Clear All
+        </Button>
+        <Button size="sm" onClick={() => setFiltersOpen(false)} className="flex-1">
+          Apply
+        </Button>
+      </div>
+    </>
+  );
+
   return (
     <div className="mb-12 p-6 bg-background border border-border">
       {/* Clean single-row toolbar */}
@@ -107,169 +259,44 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
         </div>
 
         {/* Filters Dropdown */}
-        <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-2 w-full sm:w-auto">
-              <SlidersHorizontal className="w-4 h-4" />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-4 bg-background" align="end">
-            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-              {/* Sort */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Sort By</Label>
-                <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
-                  <SelectTrigger className="w-full gap-2">
-                    <ArrowUpDown className="w-4 h-4" />
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background">
-                    {sortOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Session Type */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Session Type</Label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => toggleArrayFilter("sessionTypes", "virtual")}
-                    className={cn(
-                      "flex flex-1 items-center justify-center gap-2 px-3 py-2 border text-sm font-sans transition-colors",
-                      filters.sessionTypes.includes("virtual")
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                    )}
-                  >
-                    <Video className="w-4 h-4" />
-                    Virtual
-                  </button>
-                  <button
-                    onClick={() => toggleArrayFilter("sessionTypes", "in-person")}
-                    className={cn(
-                      "flex flex-1 items-center justify-center gap-2 px-3 py-2 border text-sm font-sans transition-colors",
-                      filters.sessionTypes.includes("in-person")
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                    )}
-                  >
-                    <MapPin className="w-4 h-4" />
-                    In-Person
-                  </button>
-                </div>
-              </div>
-
-              {/* Styles & Occasions (merged) */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Styles & Occasions</Label>
-                <div className="flex flex-wrap gap-2">
-                  {styleCategories.map((style) => (
-                    <button
-                      key={style}
-                      onClick={() => toggleArrayFilter("styles", style)}
-                      className={cn(
-                        "px-3 py-1.5 text-xs font-sans border transition-colors",
-                        filters.styles.includes(style)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                      )}
-                    >
-                      {style}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Client Focus */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Client Focus</Label>
-                <div className="flex flex-wrap gap-2">
-                  {CLIENT_FOCUS_OPTIONS.map((focus) => (
-                    <button
-                      key={focus}
-                      onClick={() => toggleArrayFilter("clientFocus", focus)}
-                      className={cn(
-                        "px-3 py-1.5 text-xs font-sans border transition-colors",
-                        filters.clientFocus.includes(focus)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                      )}
-                    >
-                      {focus}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-
-              {/* Price Range */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Price Range</Label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={filters.minPrice}
-                      onChange={(e) => updateFilter("minPrice", e.target.value)}
-                      className="pl-7"
-                      min="0"
-                    />
-                  </div>
-                  <span className="text-muted-foreground">—</span>
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={filters.maxPrice}
-                      onChange={(e) => updateFilter("maxPrice", e.target.value)}
-                      className="pl-7"
-                      min="0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-
-
-
-              {/* Apply/Clear buttons */}
-              <div className="flex gap-2 pt-2 border-t border-border">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    clearFilters();
-                    setFiltersOpen(false);
-                  }}
-                  className="flex-1"
-                >
-                  Clear All
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setFiltersOpen(false)}
-                  className="flex-1"
-                >
-                  Apply
-                </Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {isMobile ? (
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[85vw] bg-background overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Filters</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-6 mt-6">{filterFields}</div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2 w-full sm:w-auto">
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-4 bg-background" align="end">
+              <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">{filterFields}</div>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       {/* Active Filters Display */}

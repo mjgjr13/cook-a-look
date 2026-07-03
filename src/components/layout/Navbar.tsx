@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -185,46 +186,51 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-background border-b border-border overflow-hidden"
-          >
-            <div className="container mx-auto px-4 sm:px-6 py-5 space-y-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setIsOpen(false)}
-                  className={`block py-2 text-lg font-sans ${
-                    isActive(link.path) ? "text-foreground font-medium" : "text-muted-foreground"
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              ))}
-              {!user && (
-                <div className="flex flex-col gap-3 pt-4 border-t border-border">
-                  <Button variant="ghost" asChild>
-                    <Link to="/signin" onClick={() => setIsOpen(false)}>
-                      Sign In
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <Link to="/signup" onClick={() => setIsOpen(false)}>
-                      Create Account
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mobile Menu - portaled to body so it isn't trapped inside a stacking
+          context created by an ancestor's transform (e.g. framer-motion on
+          the hero section), which previously left it rendered but invisible */}
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-x-0 top-16 bottom-0 z-[100] bg-background overflow-y-auto"
+            >
+              <div className="container mx-auto px-4 sm:px-6 py-5 space-y-3">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setIsOpen(false)}
+                    className={`block py-2 text-lg font-sans ${
+                      isActive(link.path) ? "text-foreground font-medium" : "text-muted-foreground"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                {!user && (
+                  <div className="flex flex-col gap-3 pt-4 border-t border-border">
+                    <Button variant="ghost" asChild>
+                      <Link to="/signin" onClick={() => setIsOpen(false)}>
+                        Sign In
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link to="/signup" onClick={() => setIsOpen(false)}>
+                        Create Account
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </nav>
   );
 };

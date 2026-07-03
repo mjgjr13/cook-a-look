@@ -71,7 +71,7 @@ const benefits = [
   {
     icon: Trophy,
     title: "Loyalty Rewards",
-    description: "After 9 bookings in a month, additional bookings drop to a 10% fee.",
+    description: "Pay a reduced 10% platform fee (down from 15%) on every booking after your 9th completed booking in a calendar month.",
   },
 ];
 
@@ -232,7 +232,13 @@ const BecomeAdvisor = () => {
 
 
     setIsSubmitting(true);
-    
+
+    // When already signed in, the account's real email is the source of truth -
+    // the Email field isn't shown/collected in that case (see !authUser check above),
+    // and downstream calls (e.g. send-advisor-confirmation) require this to match
+    // the authenticated caller's email exactly.
+    const resolvedEmail = (authUser?.email || formData.email).trim().toLowerCase();
+
     try {
       let userId: string;
 
@@ -458,7 +464,7 @@ const BecomeAdvisor = () => {
 
         const insertData: ProfileInsert = {
           user_id: userId,
-          email: formData.email.trim().toLowerCase(),
+          email: resolvedEmail,
           full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
           is_advisor: true,
           advisor_approved: false,
@@ -502,7 +508,7 @@ const BecomeAdvisor = () => {
           user_id: userId,
           first_name: formData.firstName.trim(),
           last_name: formData.lastName.trim(),
-          email: formData.email.trim().toLowerCase(),
+          email: resolvedEmail,
           phone: formData.phone || null,
           specialty: formData.clientFocus.slice(0, 3).join(", ") || "Style Consultant",
           experience: formData.experience?.trim() || null,
@@ -529,24 +535,13 @@ const BecomeAdvisor = () => {
         });
       }
 
-      // Step 5: Add user role (for role-based access)
-      await supabase
-        .from("user_roles")
-        .upsert({
-          user_id: userId,
-          role: "user" as const,
-        }, {
-          onConflict: "user_id,role",
-          ignoreDuplicates: true,
-        });
-
       console.log("Advisor signup complete, sending confirmation email...");
 
       // Send confirmation email
       try {
         await supabase.functions.invoke("send-advisor-confirmation", {
           body: {
-            email: formData.email.trim().toLowerCase(),
+            email: resolvedEmail,
             firstName: formData.firstName.trim(),
             specialty: formData.clientFocus.slice(0, 3).join(", ") || "Style Consultant",
           },
@@ -626,8 +621,10 @@ const BecomeAdvisor = () => {
     if (currentStep === 1) {
       stepErrors.firstName = validateField('firstName', formData.firstName);
       stepErrors.lastName = validateField('lastName', formData.lastName);
-      stepErrors.email = validateField('email', formData.email);
-      stepErrors.password = validateField('password', formData.password);
+      if (!authUser) {
+        stepErrors.email = validateField('email', formData.email);
+        stepErrors.password = validateField('password', formData.password);
+      }
       stepErrors.bio = validateField('bio', formData.bio);
       
       // Validate consultation type - at least one must be selected
@@ -697,12 +694,13 @@ const BecomeAdvisor = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return formData.firstName && formData.lastName && formData.email && formData.password && 
+        return formData.firstName && formData.lastName &&
+               (authUser || (formData.email && formData.password)) &&
                formData.bio && formData.experience && formData.location &&
                formData.phone && formData.phone.trim().length >= 5 &&
                formData.languages && formData.languages.length > 0 &&
                (formData.virtual || formData.inPerson) &&
-               !errors.firstName && !errors.lastName && !errors.email && !errors.password && 
+               !errors.firstName && !errors.lastName && !errors.email && !errors.password &&
                !errors.bio && !errors.experience && !errors.location && !errors.phone && !errors.languages;
       case 2:
         // Require profile photo AND instagram
@@ -909,51 +907,53 @@ const BecomeAdvisor = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address *</Label>
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className={errors.email ? "border-destructive" : ""}
-                          required
-                        />
-                        {errors.email && (
-                          <p className="text-xs text-destructive">{errors.email}</p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Password *</Label>
-                        <div className="relative">
+                    {!authUser && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email Address *</Label>
                           <Input
-                            id="password"
-                            name="password"
-                            type={showPassword ? "text" : "password"}
-                            value={formData.password}
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
                             onChange={handleInputChange}
-                            className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                            className={errors.email ? "border-destructive" : ""}
                             required
                           />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            aria-label={showPassword ? "Hide password" : "Show password"}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-
+                          {errors.email && (
+                            <p className="text-xs text-destructive">{errors.email}</p>
+                          )}
                         </div>
-                        {errors.password ? (
-                          <p className="text-xs text-destructive">{errors.password}</p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
-                        )}
+                        <div className="space-y-2">
+                          <Label htmlFor="password">Password *</Label>
+                          <div className="relative">
+                            <Input
+                              id="password"
+                              name="password"
+                              type={showPassword ? "text" : "password"}
+                              value={formData.password}
+                              onChange={handleInputChange}
+                              className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+
+                          </div>
+                          {errors.password ? (
+                            <p className="text-xs text-destructive">{errors.password}</p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number *</Label>
@@ -1401,7 +1401,7 @@ const BecomeAdvisor = () => {
                         </div>
                         <div>
                           <span className="text-muted-foreground">Email:</span>
-                          <p className="font-medium">{formData.email}</p>
+                          <p className="font-medium">{authUser?.email || formData.email}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Client Focus:</span>

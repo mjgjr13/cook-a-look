@@ -3,6 +3,7 @@ import Layout from "@/components/layout/Layout";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useLookbookItems, LookbookItem } from "@/hooks/useLookbookItems";
 import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
 import Seo from "@/components/Seo";
@@ -105,6 +106,7 @@ const fallbackItems: LookbookItem[] = [
 
 const Lookbook = () => {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [selectedItem, setSelectedItem] = useState<LookbookItem | null>(null);
   const { data: dbItems, isLoading } = useLookbookItems();
 
   // Use database items if available, otherwise use fallback
@@ -211,7 +213,11 @@ const Lookbook = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.05 }}
-                className="break-inside-avoid group relative overflow-hidden bg-card border border-border"
+                onClick={() => setSelectedItem(item)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && setSelectedItem(item)}
+                className="break-inside-avoid group relative overflow-hidden bg-card border border-border cursor-pointer"
               >
                 <div
                   className={`relative ${
@@ -261,6 +267,29 @@ const Lookbook = () => {
           )}
         </div>
       </section>
+
+      <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          {selectedItem && (
+            <>
+              <DialogTitle className="sr-only">{selectedItem.title}</DialogTitle>
+              <img
+                src={selectedItem.image_url}
+                alt={selectedItem.title}
+                className="w-full max-h-[75vh] object-contain bg-black"
+              />
+              <div className="p-6">
+                <Badge variant="secondary" className="mb-2 font-sans text-xs">
+                  {selectedItem.category}
+                </Badge>
+                <h2 className="font-serif text-xl font-medium">{selectedItem.title}</h2>
+                <p className="font-sans text-sm text-muted-foreground">{selectedItem.description}</p>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <AdvisorChatbot />
     </Layout>
   );

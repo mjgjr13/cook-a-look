@@ -139,7 +139,7 @@ const FeaturedAdvisors = () => {
                       onClick={(e) => e.stopPropagation()}
                       asChild
                     >
-                      <Link to={`/advisors/${advisor.id}`}>Book Now</Link>
+                      <Link to={`/advisors/${advisor.id}`}>View Profile</Link>
                     </Button>
                   </div>
                 </div>
