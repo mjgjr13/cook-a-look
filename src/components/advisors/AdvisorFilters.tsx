@@ -326,18 +326,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
             </Badge>
           ))}
 
-          {filters.useCases.map((useCase) => (
-            <Badge key={useCase} variant="secondary" className="gap-1 pr-1">
-              {useCase}
-              <button
-                onClick={() => toggleArrayFilter("useCases", useCase)}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-                aria-label="Remove filter"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          ))}
+
 
           {(filters.minPrice || filters.maxPrice) && (
             <Badge variant="secondary" className="gap-1 pr-1">

@@ -92,12 +92,16 @@ const Advisors = () => {
         (filters.sessionTypes.includes("virtual") && advisor.virtual_available) ||
         (filters.sessionTypes.includes("in-person") && advisor.in_person_available);
 
-      // Style filter - match any selected style
+      // Style & Occasion filter - match against BOTH style_tags and use_cases (merged taxonomy)
       const matchesStyle =
         filters.styles.length === 0 ||
-        filters.styles.some((style) => 
-          styleTags.some((tag) => tag.toLowerCase().includes(style.toLowerCase()))
-        );
+        filters.styles.some((style) => {
+          const needle = style.toLowerCase();
+          return (
+            styleTags.some((tag) => tag.toLowerCase().includes(needle)) ||
+            useCases.some((uc: string) => uc.toLowerCase().includes(needle))
+          );
+        });
 
       // Client focus filter - match any selected demographic
       const matchesClientFocus =
@@ -106,19 +110,12 @@ const Advisors = () => {
           demographics.some((demo) => demo.toLowerCase().includes(focus.toLowerCase()))
         );
 
-      // Use cases filter - match any selected use case
-      const matchesUseCases =
-        filters.useCases.length === 0 ||
-        filters.useCases.some((uc) => 
-          useCases.some((advisorUc: string) => advisorUc.toLowerCase().includes(uc.toLowerCase()))
-        );
-
       // Price range filter
       const minPrice = filters.minPrice ? parseFloat(filters.minPrice) : 0;
       const maxPrice = filters.maxPrice ? parseFloat(filters.maxPrice) : Infinity;
       const matchesPrice = price >= minPrice && price <= maxPrice;
 
-      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesUseCases && matchesPrice;
+      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesPrice;
     });
 
     // Sort results
