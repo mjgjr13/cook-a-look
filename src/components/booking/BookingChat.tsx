@@ -89,10 +89,14 @@ const BookingChat = ({ bookingId, currentUserId, otherParticipant }: BookingChat
     };
   }, [bookingId, toast]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive.
+  // Radix ScrollArea scrolls via its inner viewport, not the root element.
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const viewport = scrollRef.current?.querySelector<HTMLDivElement>(
+      "[data-radix-scroll-area-viewport]"
+    );
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
     }
   }, [messages]);
 
@@ -102,11 +106,15 @@ const BookingChat = ({ bookingId, currentUserId, otherParticipant }: BookingChat
     const messageContent = newMessage.trim();
     setIsSending(true);
     
-    const { error } = await supabase.from("booking_messages").insert({
-      booking_id: bookingId,
-      sender_id: currentUserId,
-      message: messageContent,
-    });
+    const { data: inserted, error } = await supabase
+      .from("booking_messages")
+      .insert({
+        booking_id: bookingId,
+        sender_id: currentUserId,
+        message: messageContent,
+      })
+      .select()
+      .single();
 
     if (error) {
       console.error("Error sending message:", error);
@@ -116,6 +124,13 @@ const BookingChat = ({ bookingId, currentUserId, otherParticipant }: BookingChat
         variant: "destructive",
       });
     } else {
+      // Show the sent message immediately instead of waiting for the
+      // realtime round-trip (the realtime handler dedupes by id).
+      if (inserted) {
+        setMessages((prev) =>
+          prev.some((m) => m.id === inserted.id) ? prev : [...prev, inserted]
+        );
+      }
       setNewMessage("");
       
       // Send email notification to the other participant (fire and forget)

@@ -30,7 +30,7 @@ async function sendEmail(to: string[], subject: string, html: string, icsContent
   }
 
   const payload: Record<string, unknown> = {
-    from: "Cook A Look <onboarding@resend.dev>",
+    from: "Cook A Look <notify@cookalook.com>",
     to,
     subject,
     html,

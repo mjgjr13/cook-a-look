@@ -9,6 +9,7 @@ import {
   SwitchCamera,
   Maximize2,
   Minimize2,
+  ExternalLink,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,7 @@ const VideoCall = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [provider, setProvider] = useState<"daily" | "jitsi_fallback" | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
@@ -65,6 +67,7 @@ const VideoCall = ({
         if (error) throw error;
         if (!data?.roomUrl) throw new Error("No room URL returned");
         if (cancelled) return;
+        setProvider(data.provider === "daily" ? "daily" : "jitsi_fallback");
         setRoomUrl(data.roomUrl);
       } catch (error) {
         console.error("Failed to create video room:", error);
@@ -84,8 +87,9 @@ const VideoCall = ({
   }, [bookingId, onClose, toast, consentGiven]);
 
   // 2. Mount Daily.co prebuilt UI in-app — never opens an external tab.
+  // Jitsi fallback rooms are rendered as a plain iframe instead (see below).
   useEffect(() => {
-    if (!roomUrl || !dailyContainerRef.current) return;
+    if (!roomUrl || provider !== "daily" || !dailyContainerRef.current) return;
 
     let destroyed = false;
     (async () => {
@@ -125,7 +129,7 @@ const VideoCall = ({
       dailyFrameRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomUrl]);
+  }, [roomUrl, provider]);
 
   const handleEndCall = () => {
     try {
@@ -285,13 +289,20 @@ const VideoCall = ({
               <div className="flex items-center justify-center h-full bg-secondary">
                 <p className="text-muted-foreground">Unable to load video call</p>
               </div>
+            ) : provider === "jitsi_fallback" ? (
+              <iframe
+                src={roomUrl}
+                title="Video call"
+                className="w-full h-full border-0"
+                allow="camera; microphone; fullscreen; display-capture; autoplay"
+              />
             ) : (
               <div ref={dailyContainerRef} className="w-full h-full" />
             )}
           </div>
 
           <div className="p-4 border-t bg-background flex items-center justify-center gap-3 flex-wrap shrink-0">
-            {roomUrl && isMobile && (
+            {roomUrl && isMobile && provider === "daily" && (
               <Button
                 variant="outline"
                 onClick={handleFlipCamera}
@@ -304,6 +315,16 @@ const VideoCall = ({
                   <SwitchCamera className="w-4 h-4 mr-2" />
                 )}
                 Flip camera
+              </Button>
+            )}
+            {roomUrl && (
+              <Button
+                variant="outline"
+                onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
+                aria-label="Open call in new tab"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open in new tab
               </Button>
             )}
             {roomUrl && (

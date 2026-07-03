@@ -27,6 +27,7 @@ const SignUp = () => {
   });
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -64,7 +65,7 @@ const SignUp = () => {
 
     try {
       const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
-      const { error } = await signUp(formData.email, formData.password, fullName);
+      const { error, session } = await signUp(formData.email, formData.password, fullName);
 
       if (error) {
         // Handle specific error cases with user-friendly messages
@@ -99,9 +100,16 @@ const SignUp = () => {
         },
       }).catch(console.error);
 
+      if (!session) {
+        // Email confirmation is required before a session exists - don't send
+        // the user into ProtectedRoute, which would just bounce them to /signin.
+        setAwaitingConfirmation(true);
+        return;
+      }
+
       toast({
         title: "Account created!",
-        description: "Welcome to Cook A Look. Check your email for confirmation.",
+        description: "Welcome to Cook A Look.",
       });
 
       navigate("/dashboard");
@@ -122,6 +130,40 @@ const SignUp = () => {
         <div className="min-h-[80vh] flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      </Layout>
+    );
+  }
+
+  if (awaitingConfirmation) {
+    return (
+      <Layout>
+        <Seo
+          title="Confirm Your Email | Cook A Look"
+          description="Confirm your email to finish creating your Cook A Look account."
+          path="/signup"
+          noindex
+        />
+        <section className="py-24 bg-background min-h-[80vh] flex items-center">
+          <div className="container mx-auto px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="max-w-md mx-auto text-center"
+            >
+              <h1 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+                Check Your Email
+              </h1>
+              <p className="font-sans text-muted-foreground">
+                We've sent a confirmation link to <span className="text-foreground font-medium">{formData.email}</span>.
+                Click it to activate your account, then sign in below.
+              </p>
+              <Button variant="hero" size="lg" className="w-full mt-8" asChild>
+                <Link to="/signin">Go to Sign In</Link>
+              </Button>
+            </motion.div>
+          </div>
+        </section>
       </Layout>
     );
   }

@@ -171,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
       `;
 
     const emailResponse = await resend.emails.send({
-      from: "Cook A Look <onboarding@resend.dev>",
+      from: "Cook A Look <notify@cookalook.com>",
       to: [email],
       subject,
       html,

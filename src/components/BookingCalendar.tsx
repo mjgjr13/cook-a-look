@@ -132,7 +132,7 @@ const BookingCalendar = ({
       setIsLoadingSlots(true);
       setSelectedSlot(null);
       try {
-        const dateStr = selectedDate.toISOString().split("T")[0];
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
         const { data: dynamicSlots, error } = await supabase.rpc("get_available_booking_slots", {
           p_advisor_id: advisorId,
           p_date: dateStr,
@@ -166,12 +166,16 @@ const BookingCalendar = ({
     const currentUser = session?.user ?? null;
     setUser(currentUser);
     if (!currentUser) {
-      const bookingState = selectedDate && selectedSlot
-        ? `&bookingDate=${selectedDate.toISOString()}&bookingSlot=${encodeURIComponent(JSON.stringify(selectedSlot))}`
-        : "";
+      const params = new URLSearchParams();
+      if (selectedDate && selectedSlot) {
+        params.set("bookingDate", selectedDate.toISOString());
+        params.set("bookingSlot", JSON.stringify(selectedSlot));
+      }
+      const qs = params.toString();
+      const redirectTarget = `/advisors/${encodeURIComponent(advisorId)}${qs ? `?${qs}` : ""}`;
       toast({ title: "Sign in required", description: "Please sign in to book a consultation." });
       onClose();
-      navigate(`/signin?redirect=/advisors/${encodeURIComponent(advisorId)}${bookingState}`);
+      navigate(`/signin?redirect=${encodeURIComponent(redirectTarget)}`);
       return;
     }
     if (!selectedDate || !selectedSlot) {

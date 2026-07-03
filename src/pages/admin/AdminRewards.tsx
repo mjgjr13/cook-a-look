@@ -121,10 +121,12 @@ const AdminRewards = () => {
     setSavingSettings(true);
     try {
       for (const [key, value] of Object.entries(editedSettings)) {
-        await supabase
+        const { error } = await supabase
           .from("reward_settings")
           .update({ setting_value: value, updated_at: new Date().toISOString() })
           .eq("setting_key", key);
+
+        if (error) throw error;
       }
 
       toast({
@@ -177,36 +179,53 @@ const AdminRewards = () => {
           description: `${manualAmount} points have been awarded to the user.`,
         });
       } else {
-        // First get current credit balance
-        const { data: currentRewards } = await supabase
+        // First get current credit balance (maybeSingle: the user may
+        // not have a rewards row yet)
+        const { data: currentRewards, error: fetchError } = await supabase
           .from("user_rewards")
           .select("site_credit_cents")
           .eq("user_id", manualUserId)
-          .single();
-        
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        const amountCents = Math.round(parseFloat(manualAmount) * 100);
         const currentCredit = currentRewards?.site_credit_cents || 0;
-        const newCredit = currentCredit + parseInt(manualAmount) * 100;
+        const newCredit = currentCredit + amountCents;
 
-        // Update credit
-        const { error } = await supabase
-          .from("user_rewards")
-          .update({
+        if (currentRewards) {
+          // Update existing rewards row
+          const { error } = await supabase
+            .from("user_rewards")
+            .update({
+              site_credit_cents: newCredit,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", manualUserId);
+
+          if (error) throw error;
+        } else {
+          // No rewards row yet — create one for this user
+          const { error } = await supabase.from("user_rewards").insert({
+            user_id: manualUserId,
             site_credit_cents: newCredit,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", manualUserId);
+            current_tier: "explorer",
+          });
 
-        if (error) throw error;
+          if (error) throw error;
+        }
 
         // Log the credit
-        await supabase.from("site_credits_log").insert({
+        const { error: logError } = await supabase.from("site_credits_log").insert({
           user_id: manualUserId,
           action_type: "admin_issue",
-          amount_cents: parseInt(manualAmount) * 100,
+          amount_cents: amountCents,
           balance_after_cents: newCredit,
           description: manualDescription || "Manual admin credit",
           created_by: currentUser?.id || null,
         });
+
+        if (logError) throw logError;
 
         toast({
           title: "Credit issued",

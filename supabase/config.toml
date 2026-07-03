@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.verify-payment]
 verify_jwt = true
 
+[functions.stripe-webhook]
+verify_jwt = false
+
 [functions.create-video-room]
 verify_jwt = false
 

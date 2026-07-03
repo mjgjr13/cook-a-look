@@ -20,7 +20,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       "Authorization": `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
-      from: "Cook A Look <onboarding@resend.dev>",
+      from: "Cook A Look <notify@cookalook.com>",
       to: [to],
       subject,
       html,
@@ -50,8 +50,8 @@ serve(async (req) => {
   try {
     const { bookingId, messagePreview }: ChatNotificationRequest = await req.json();
 
-    if (!bookingId) {
-      return new Response(JSON.stringify({ error: "Missing bookingId" }), {
+    if (!bookingId || typeof messagePreview !== "string") {
+      return new Response(JSON.stringify({ error: "Missing bookingId or messagePreview" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -126,6 +126,21 @@ serve(async (req) => {
 
     if (!recipient?.email) {
       console.log("No recipient email found, skipping notification");
+      return new Response(JSON.stringify({ success: true, skipped: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Respect the suppression list (unsubscribes, bounces, complaints)
+    const { data: suppressed } = await supabaseAdmin
+      .from("suppressed_emails")
+      .select("id")
+      .in("email", [recipient.email, recipient.email.toLowerCase()])
+      .limit(1);
+
+    if (suppressed && suppressed.length > 0) {
+      console.log("Recipient email is suppressed, skipping notification");
       return new Response(JSON.stringify({ success: true, skipped: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

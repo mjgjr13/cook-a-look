@@ -73,6 +73,7 @@ const AdvisorDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoBooking, setActiveVideoBooking] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [modalTab, setModalTab] = useState<"details" | "chat">("details");
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showFinishSetupModal, setShowFinishSetupModal] = useState(false);
   const [earnings, setEarnings] = useState({ available: 0, pending: 0, total: 0 });
@@ -247,8 +248,10 @@ const AdvisorDashboard = () => {
     );
   }
 
+  // A session stays "upcoming" (and joinable) until its end time — otherwise
+  // the Start Call button would vanish the moment the session starts.
   const upcomingBookings = bookings.filter(
-    (b) => b.status === "confirmed" && new Date(b.slot.start_time) > new Date()
+    (b) => b.status === "confirmed" && new Date(b.slot.end_time) > new Date()
   );
   const todayBookings = upcomingBookings.filter(b => {
     const bookingDate = new Date(b.slot.start_time).toDateString();
@@ -281,6 +284,7 @@ const AdvisorDashboard = () => {
         userRole="advisor"
         currentUserId={profile?.user_id || undefined}
         onJoinCall={(id) => setActiveVideoBooking(id)}
+        initialTab={modalTab}
       />
 
       {showOnboardingModal && (
@@ -660,19 +664,25 @@ const AdvisorDashboard = () => {
                           Start Call
                         </Button>
                       ) : (
-                        <Button 
-                          variant="hero" 
+                        <Button
+                          variant="hero"
                           size="sm"
-                          onClick={() => setSelectedBooking(booking)}
+                          onClick={() => {
+                            setModalTab("chat");
+                            setSelectedBooking(booking);
+                          }}
                         >
                           <MessageCircle className="w-4 h-4 mr-1" />
                           Open Chat
                         </Button>
                       )}
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
-                        onClick={() => setSelectedBooking(booking)}
+                        onClick={() => {
+                          setModalTab("details");
+                          setSelectedBooking(booking);
+                        }}
                       >
                         View Details
                         <ChevronRight className="w-4 h-4 ml-1" />

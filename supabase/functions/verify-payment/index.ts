@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { confirmPaidCheckoutSession } from "../_shared/confirmPayment.ts";
 
 // Validate Stripe session ID format
 const isValidStripeSessionId = (id: string): boolean => {
@@ -55,26 +56,6 @@ serve(async (req) => {
       });
     }
 
-    // Check if this session has already been processed (prevent replay attacks)
-    const { data: existingPayment } = await supabaseClient
-      .from("payments")
-      .select("id")
-      .eq("stripe_checkout_session_id", sessionId)
-      .single();
-
-    if (existingPayment) {
-      // Already processed - return success but don't create duplicate
-      console.log("Payment already processed for session:", sessionId);
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: "Payment already processed",
-        alreadyProcessed: true 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-    
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -84,22 +65,12 @@ serve(async (req) => {
       expand: ["payment_intent", "line_items"],
     });
 
-    if (session.payment_status !== "paid") {
-      return new Response(JSON.stringify({ error: "Payment not completed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
-
-    const advisorId = session.metadata?.advisor_id;
-    const slotId = session.metadata?.slot_id;
-    const bookingId = session.metadata?.booking_id;
     const clientUserId = session.metadata?.client_user_id;
+    if (!clientUserId) throw new Error("Missing metadata");
 
-    if (!advisorId || !slotId || !clientUserId || !bookingId) {
-      throw new Error("Missing metadata");
-    }
-
+    // SECURITY: only the client who initiated this checkout can confirm it -
+    // checked up front, before touching payment records, so a guessed/leaked
+    // session ID can't be used to read or trigger someone else's booking.
     if (clientUserId !== authData.user.id) {
       console.error("User mismatch:", { clientUserId, callerId: authData.user.id });
       return new Response(JSON.stringify({ error: "Unauthorized access to this payment" }), {
@@ -108,51 +79,24 @@ serve(async (req) => {
       });
     }
 
-    const { data: clientProfile } = await supabaseClient
-      .from("profiles")
-      .select("id")
-      .eq("user_id", clientUserId)
-      .single();
-    if (!clientProfile) throw new Error("Client profile not found");
+    if (session.payment_status !== "paid") {
+      return new Response(JSON.stringify({ error: "Payment not completed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
-    // Confirm the pending booking created at checkout time through the guarded RPC.
-    const { error: confirmError } = await supabaseClient.rpc("confirm_paid_booking", {
-      p_booking_id: bookingId,
-      p_client_id: clientProfile.id,
-    });
-    if (confirmError) throw confirmError;
-
-    // Record the payment with platform fee + 48h escrow
-    const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
-    const taxAmount = session.total_details?.amount_tax ? session.total_details.amount_tax / 100 : 0;
-    const baseAmount = totalAmount - taxAmount;
-    const platformFee = Number((baseAmount * 0.15).toFixed(2));
-    const advisorPayout = Number((baseAmount * 0.85).toFixed(2));
-    const escrowReleaseAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-
-    await supabaseClient.from("payments").insert({
-      booking_id: bookingId,
-      client_id: clientProfile.id,
-      advisor_id: advisorId,
-      amount: baseAmount,
-      tax_amount: taxAmount,
-      total_amount: totalAmount,
-      platform_fee: platformFee,
-      advisor_payout: advisorPayout,
-      stripe_checkout_session_id: sessionId,
-      stripe_payment_intent_id: typeof session.payment_intent === "string"
-        ? session.payment_intent
-        : session.payment_intent?.id,
-      status: "completed",
-      escrow_status: "held",
-      escrow_release_at: escrowReleaseAt,
-    });
+    // This is the fast path for the success page; the stripe-webhook function
+    // performs the same idempotent confirmation as a backstop if the browser
+    // never gets here (closed tab, crash, lost network after payment).
+    const result = await confirmPaidCheckoutSession(supabaseClient, session);
 
     return new Response(JSON.stringify({
       success: true,
-      bookingId,
-      totalPaid: totalAmount,
-      taxPaid: taxAmount,
+      bookingId: result.bookingId,
+      totalPaid: result.totalPaid,
+      taxPaid: result.taxPaid,
+      alreadyProcessed: result.alreadyProcessed,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

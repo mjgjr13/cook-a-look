@@ -35,6 +35,7 @@ interface BookingDetailsModalProps {
   userRole: "client" | "advisor" | "admin";
   currentUserId?: string;
   onJoinCall?: (bookingId: string) => void;
+  initialTab?: "details" | "chat";
 }
 
 const BookingDetailsModal = ({
@@ -44,13 +45,17 @@ const BookingDetailsModal = ({
   userRole,
   currentUserId,
   onJoinCall,
+  initialTab = "details",
 }: BookingDetailsModalProps) => {
   if (!booking) return null;
 
   const startTime = new Date(booking.slot.start_time);
   const isPast = startTime <= new Date();
-  const isUpcoming = booking.status === "confirmed" && !isPast;
-  const canJoinCall = isUpcoming && booking.slot.is_virtual && onJoinCall;
+  // Joining stays possible until the session ends, so a participant who is a
+  // few minutes late (or rejoins mid-session) still has a working button.
+  const isOver = new Date(booking.slot.end_time) <= new Date();
+  const canJoinCall =
+    booking.status === "confirmed" && !isOver && booking.slot.is_virtual && onJoinCall;
   const isCancelled = booking.status === "cancelled";
 
   const otherParticipant = userRole === "client" ? booking.advisor : booking.client;
@@ -66,7 +71,10 @@ const BookingDetailsModal = ({
           <DialogTitle className="font-serif text-2xl">Session Details</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="details" className="w-full">
+        <Tabs
+          defaultValue={initialTab === "chat" && canChat ? "chat" : "details"}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="chat" disabled={!canChat}>

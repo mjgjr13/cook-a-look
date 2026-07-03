@@ -44,6 +44,7 @@ const Dashboard = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeVideoBooking, setActiveVideoBooking] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [modalTab, setModalTab] = useState<"details" | "chat">("details");
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
   // Check for pending reviews
@@ -188,11 +189,13 @@ const Dashboard = () => {
     );
   }
 
+  // A session stays "upcoming" (and joinable) until its end time — otherwise
+  // the Join Call button would vanish the moment the session starts.
   const upcomingBookings = bookings.filter(
-    (b) => b.status === "confirmed" && b.slot && new Date(b.slot.start_time) > new Date()
+    (b) => b.status === "confirmed" && b.slot && new Date(b.slot.end_time) > new Date()
   );
   const pastBookings = bookings.filter(
-    (b) => b.slot && new Date(b.slot.start_time) <= new Date()
+    (b) => b.slot && new Date(b.slot.end_time) <= new Date()
   );
 
   return (
@@ -227,6 +230,7 @@ const Dashboard = () => {
         userRole="client"
         currentUserId={profile?.user_id || undefined}
         onJoinCall={handleJoinCall}
+        initialTab={modalTab}
       />
 
       <section className="py-16 bg-card min-h-screen">
@@ -341,19 +345,25 @@ const Dashboard = () => {
                           Join Call
                         </Button>
                       ) : (
-                        <Button 
-                          variant="hero" 
+                        <Button
+                          variant="hero"
                           size="sm"
-                          onClick={() => setSelectedBooking(booking)}
+                          onClick={() => {
+                            setModalTab("chat");
+                            setSelectedBooking(booking);
+                          }}
                         >
                           <MessageCircle className="w-4 h-4 mr-1" />
                           Open Chat
                         </Button>
                       )}
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
-                        onClick={() => setSelectedBooking(booking)}
+                        onClick={() => {
+                          setModalTab("details");
+                          setSelectedBooking(booking);
+                        }}
                       >
                         View Details
                         <ChevronRight className="w-4 h-4 ml-1" />

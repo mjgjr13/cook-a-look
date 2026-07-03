@@ -59,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
     const safeSpecialty = escapeHtml(specialty || "");
 
     const emailResponse = await resend.emails.send({
-      from: "Cook A Look <noreply@cookalookcom.lovable.app>",
+      from: "Cook A Look <notify@cookalook.com>",
       to: [email],
       subject: "Welcome to Cook A Look - Application Received!",
       html: `

@@ -97,15 +97,23 @@ export const useProfile = (): UseProfileResult => {
         profileData?.advisor_approved === true;
 
       if (profileData) {
+        // Pending = applied but not yet approved. The advisor_profiles row uses
+        // "pending" (edge function / admin flows); older code used "submitted".
+        // The client signup flow doesn't create an advisor_profiles row at all,
+        // so also fall back to the legacy profiles.advisor_status flag.
+        const isPendingAdvisor =
+          profileData.is_advisor === true &&
+          !isAdminApproved &&
+          (advisorProfileData?.application_status === "pending" ||
+            advisorProfileData?.application_status === "submitted" ||
+            (!advisorProfileData && profileData.advisor_status === "pending"));
+
         setProfile(profileData as UserProfile);
         setRoles({
           isAdmin,
           isAdvisor: profileData.is_advisor === true,
           isApprovedAdvisor: profileData.is_advisor === true && isAdminApproved,
-          isPendingAdvisor:
-            profileData.is_advisor === true &&
-            !isAdminApproved &&
-            advisorProfileData?.application_status === "submitted",
+          isPendingAdvisor,
         });
       } else {
         // No profile yet - this can happen during signup

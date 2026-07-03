@@ -27,6 +27,7 @@ import {
   Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   advisorApplicationSchema, 
   validateFile,
@@ -104,6 +105,7 @@ interface FormErrors {
 const BecomeAdvisor = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -180,22 +182,25 @@ const BecomeAdvisor = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate password before other fields
-    const passwordError = validateField('password', formData.password);
-    if (passwordError) {
-      setErrors((prev) => ({ ...prev, password: passwordError }));
-      toast({
-        title: "Validation Error",
-        description: passwordError,
-        variant: "destructive",
-      });
-      return;
+    // Password is only needed to create a new account - skip if already signed in
+    if (!authUser) {
+      const passwordError = validateField('password', formData.password);
+      if (passwordError) {
+        setErrors((prev) => ({ ...prev, password: passwordError }));
+        toast({
+          title: "Validation Error",
+          description: passwordError,
+          variant: "destructive",
+        });
+        return;
+      }
     }
-    
+
     // Validate all fields before submission
     try {
       advisorApplicationSchema.parse({
         ...formData,
+        email: authUser?.email || formData.email,
         agreeTerms: formData.agreeTerms as true,
       });
     } catch (err) {
@@ -229,79 +234,78 @@ const BecomeAdvisor = () => {
     setIsSubmitting(true);
     
     try {
-      // Step 1: Create the Supabase Auth user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-        options: {
-          data: {
-            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-          },
-        },
-      });
+      let userId: string;
 
-      if (signUpError) {
-        console.error("Signup error:", signUpError);
-        
-        // Check for existing user error - offer to sign in and upgrade
-        if (signUpError.message.includes("already registered") || 
-            signUpError.message.includes("already exists") ||
-            signUpError.message.includes("User already registered")) {
-          toast({
-            title: "Email Already Registered",
-            description: "Please sign in first, then apply to become an advisor from your dashboard.",
-            variant: "destructive",
-          });
-          navigate("/signin?redirect=/become-advisor");
-        } else {
-          toast({
-            title: "Account Creation Failed",
-            description: signUpError.message,
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-
-      if (!signUpData.user) {
-        toast({
-          title: "Account Creation Failed",
-          description: "Unable to create account. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const userId = signUpData.user.id;
-      console.log("User created:", userId);
-
-      // Step 2: Get the session (user should be signed in after signup with auto-confirm)
-      let { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        // Try signing in if session wasn't automatically established
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+      if (authUser) {
+        // Already signed in (e.g. returning after confirming their email) -
+        // skip account creation entirely and use the existing session.
+        userId = authUser.id;
+      } else {
+        // Step 1: Create the Supabase Auth user
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
+          options: {
+            data: {
+              full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+            },
+          },
         });
 
-        if (signInError) {
-          console.error("Auto sign-in error:", signInError);
-          toast({
-            title: "Sign In Required",
-            description: "Account created but sign-in failed. Please sign in to complete your application.",
-            variant: "destructive",
-          });
-          navigate("/signin?redirect=/advisor");
+        if (signUpError) {
+          console.error("Signup error:", signUpError);
+
+          // Check for existing user error - offer to sign in and upgrade
+          if (signUpError.message.includes("already registered") ||
+              signUpError.message.includes("already exists") ||
+              signUpError.message.includes("User already registered")) {
+            toast({
+              title: "Email Already Registered",
+              description: "Please sign in first, then apply to become an advisor from your dashboard.",
+              variant: "destructive",
+            });
+            navigate("/signin?redirect=/become-advisor");
+          } else {
+            toast({
+              title: "Account Creation Failed",
+              description: signUpError.message,
+              variant: "destructive",
+            });
+          }
           return;
         }
-        
-        // Get session again after sign in
-        const { data: newSession } = await supabase.auth.getSession();
-        sessionData = newSession;
-      }
 
-      console.log("Session established, uploading profile photo and updating profile...");
+        if (!signUpData.user) {
+          toast({
+            title: "Account Creation Failed",
+            description: "Unable to create account. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        userId = signUpData.user.id;
+        console.log("User created:", userId);
+
+        // Step 2: Check whether a session was actually established. This
+        // project requires email confirmation, so signUp() normally returns
+        // no session - retrying signInWithPassword here would just fail the
+        // same way (email not confirmed yet). Writing profile/application
+        // data with no session would silently no-op under RLS instead of
+        // erroring, so stop here rather than losing the form data quietly.
+        const { data: sessionData } = await supabase.auth.getSession();
+
+        if (!sessionData.session) {
+          toast({
+            title: "Check your email",
+            description: "We've created your account - confirm your email, then come back to this page and sign in to finish your application.",
+          });
+          navigate("/signin?redirect=/become-advisor");
+          return;
+        }
+
+        console.log("Session established, uploading profile photo and updating profile...");
+      }
 
       // Step 3: Upload profile photo if provided
       let avatarUrl: string | null = null;

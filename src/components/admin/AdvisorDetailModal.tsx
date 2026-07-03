@@ -136,17 +136,30 @@ export const AdvisorDetailModal = ({
       // Fetch earnings
       const { data: paymentsData } = await supabase
         .from("payments")
-        .select("amount, advisor_payout, status, escrow_status")
+        .select("amount, advisor_payout, status, escrow_status, escrow_release_at, booking:bookings(slot:availability_slots(start_time))")
         .eq("advisor_id", advisorId);
 
       if (paymentsData) {
+        const now = new Date();
+        const escrowReleaseHours = 48;
         const completedPayments = paymentsData.filter(p => p.status === "completed");
         const total = completedPayments.reduce(
           (sum, p) => sum + Number(p.advisor_payout || p.amount * 0.85),
           0
         );
+        // Mirrors the advisor-facing earnings calculation (AdvisorEarnings.tsx):
+        // escrow_status is never flipped to 'released' in the DB, so availability
+        // is derived from the 48h window after the session instead.
         const available = completedPayments
-          .filter(p => p.escrow_status === "released")
+          .filter(p => {
+            if (p.escrow_status === "released") return true;
+            const meetingStartTime = p.booking?.slot?.start_time ? new Date(p.booking.slot.start_time) : null;
+            if (meetingStartTime) {
+              return now >= new Date(meetingStartTime.getTime() + escrowReleaseHours * 60 * 60 * 1000);
+            }
+            if (p.escrow_release_at) return now >= new Date(p.escrow_release_at);
+            return false;
+          })
           .reduce((sum, p) => sum + Number(p.advisor_payout || p.amount * 0.85), 0);
 
         setEarnings({
