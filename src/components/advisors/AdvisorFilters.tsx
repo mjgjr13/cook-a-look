@@ -165,6 +165,11 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                     )}
                   >
                     <MapPin className="w-4 h-4" />
+                    In-Person
+                  </button>
+                </div>
+              </div>
+
               {/* Styles & Occasions (merged) */}
               <div>
                 <Label className="text-sm font-medium mb-3 block">Styles & Occasions</Label>
@@ -207,26 +212,6 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                 </div>
               </div>
 
-              {/* Use Cases */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Use Cases</Label>
-                <div className="flex flex-wrap gap-2">
-                  {USE_CASE_OPTIONS.map((useCase) => (
-                    <button
-                      key={useCase}
-                      onClick={() => toggleArrayFilter("useCases", useCase)}
-                      className={cn(
-                        "px-3 py-1.5 text-xs font-sans border transition-colors",
-                        filters.useCases.includes(useCase)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                      )}
-                    >
-                      {useCase}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Price Range */}
               <div>
