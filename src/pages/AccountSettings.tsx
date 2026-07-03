@@ -587,14 +587,17 @@ const AccountSettings = () => {
 
                   <Separator />
 
-                  {/* Style Categories, Client Focus & Use Cases */}
+                  {/* Merged Styles & Occasions + Client Focus */}
                   <div className="space-y-6">
                     <CategorySelect
-                      label="Style Categories"
-                      description="What style categories best describe your expertise?"
+                      label="Styles & Occasions"
+                      description="Select the styles and occasions you specialize in"
                       options={STYLE_CATEGORY_OPTIONS}
                       selected={profile?.style_tags || []}
-                      onChange={(selected) => updateProfile("style_tags", selected)}
+                      onChange={(selected) => {
+                        updateProfile("style_tags", selected);
+                        updateProfile("use_cases", selected);
+                      }}
                     />
 
                     <CategorySelect
@@ -603,14 +606,6 @@ const AccountSettings = () => {
                       options={CLIENT_FOCUS_OPTIONS}
                       selected={profile?.target_demographics || []}
                       onChange={(selected) => updateProfile("target_demographics", selected)}
-                    />
-
-                    <CategorySelect
-                      label="What Occasions Do You Style For?"
-                      description="Select the use cases you help clients with"
-                      options={USE_CASE_OPTIONS}
-                      selected={profile?.use_cases || []}
-                      onChange={(selected) => updateProfile("use_cases", selected)}
                     />
                   </div>
 

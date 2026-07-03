@@ -1241,14 +1241,18 @@ const BecomeAdvisor = () => {
                       )}
                     </div>
 
-                    {/* Style Categories - Optional */}
+                    {/* Style Categories & Occasions (merged) - Optional */}
                     <CategorySelect
-                      label="Style Categories"
-                      description="What style categories best describe your expertise? (Optional)"
+                      label="Styles & Occasions"
+                      description="Select the styles and occasions you specialize in (Optional)"
                       options={STYLE_CATEGORY_OPTIONS}
                       selected={formData.styleCategories}
                       onChange={(selected) => {
-                        setFormData({ ...formData, styleCategories: selected });
+                        setFormData({
+                          ...formData,
+                          styleCategories: selected,
+                          useCases: selected,
+                        });
                       }}
                     />
 
@@ -1260,17 +1264,6 @@ const BecomeAdvisor = () => {
                       selected={formData.clientFocus}
                       onChange={(selected) => {
                         setFormData({ ...formData, clientFocus: selected });
-                      }}
-                    />
-
-                    {/* Use Cases Selection - Optional */}
-                    <CategorySelect
-                      label="What Occasions Do You Style For?"
-                      description="Select the use cases you help clients with (Optional)"
-                      options={USE_CASE_OPTIONS}
-                      selected={formData.useCases}
-                      onChange={(selected) => {
-                        setFormData({ ...formData, useCases: selected });
                       }}
                     />
                   </motion.div>

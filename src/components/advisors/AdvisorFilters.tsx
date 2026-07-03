@@ -18,19 +18,10 @@ import { Label } from "@/components/ui/label";
 import { Search, SlidersHorizontal, ArrowUpDown, X, Video, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Import standardized category options
-import { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS } from "@/components/advisor/CategorySelect";
+// Import standardized category options (merged styles + occasions live in STYLE_CATEGORY_OPTIONS)
+import { CLIENT_FOCUS_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 
-// Style categories for filtering (legacy - will be replaced with use cases)
-const styleCategories = [
-  "Casual",
-  "Athletic",
-  "Wedding",
-  "Business",
-  "Formal",
-  "Streetwear",
-  "Vintage",
-];
+const styleCategories = STYLE_CATEGORY_OPTIONS;
 
 // Sort options
 const sortOptions = [
@@ -179,10 +170,9 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                 </div>
               </div>
 
-
-              {/* Style Categories */}
+              {/* Styles & Occasions (merged) */}
               <div>
-                <Label className="text-sm font-medium mb-3 block">Style</Label>
+                <Label className="text-sm font-medium mb-3 block">Styles & Occasions</Label>
                 <div className="flex flex-wrap gap-2">
                   {styleCategories.map((style) => (
                     <button
@@ -222,26 +212,6 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                 </div>
               </div>
 
-              {/* Use Cases */}
-              <div>
-                <Label className="text-sm font-medium mb-3 block">Use Cases</Label>
-                <div className="flex flex-wrap gap-2">
-                  {USE_CASE_OPTIONS.map((useCase) => (
-                    <button
-                      key={useCase}
-                      onClick={() => toggleArrayFilter("useCases", useCase)}
-                      className={cn(
-                        "px-3 py-1.5 text-xs font-sans border transition-colors",
-                        filters.useCases.includes(useCase)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                      )}
-                    >
-                      {useCase}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Price Range */}
               <div>
@@ -356,18 +326,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
             </Badge>
           ))}
 
-          {filters.useCases.map((useCase) => (
-            <Badge key={useCase} variant="secondary" className="gap-1 pr-1">
-              {useCase}
-              <button
-                onClick={() => toggleArrayFilter("useCases", useCase)}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-                aria-label="Remove filter"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          ))}
+
 
           {(filters.minPrice || filters.maxPrice) && (
             <Badge variant="secondary" className="gap-1 pr-1">
