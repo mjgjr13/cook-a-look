@@ -13,30 +13,24 @@ export const CLIENT_FOCUS_OPTIONS = [
   "Curvy",
 ] as const;
 
-export const USE_CASE_OPTIONS = [
-  "School",
-  "Office / Work",
-  "Wedding",
-  "Date Night",
-  "Black Tie / Formal",
-  "Everyday Casual",
-  "Closet Refresh",
-  "Sustainable",
-] as const;
-
+// Merged style + occasion taxonomy — one unified list of the most relevant categories.
 export const STYLE_CATEGORY_OPTIONS = [
-  "Casual",
-  "Athletic",
+  "Everyday Casual",
+  "Business / Work",
   "Wedding",
-  "Business",
-  "Formal",
+  "Formal / Black Tie",
+  "Date Night",
   "Streetwear",
+  "Athletic",
   "Vintage",
 ] as const;
 
+// Kept as an alias so existing filters/reads that reference USE_CASE_OPTIONS keep working.
+export const USE_CASE_OPTIONS = STYLE_CATEGORY_OPTIONS;
+
 export type ClientFocusOption = typeof CLIENT_FOCUS_OPTIONS[number];
-export type UseCaseOption = typeof USE_CASE_OPTIONS[number];
 export type StyleCategoryOption = typeof STYLE_CATEGORY_OPTIONS[number];
+export type UseCaseOption = StyleCategoryOption;
 
 interface CategorySelectProps {
   label: string;
