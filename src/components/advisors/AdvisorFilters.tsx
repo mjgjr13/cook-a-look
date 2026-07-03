@@ -18,19 +18,10 @@ import { Label } from "@/components/ui/label";
 import { Search, SlidersHorizontal, ArrowUpDown, X, Video, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Import standardized category options
-import { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS } from "@/components/advisor/CategorySelect";
+// Import standardized category options (merged styles + occasions live in STYLE_CATEGORY_OPTIONS)
+import { CLIENT_FOCUS_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 
-// Style categories for filtering (legacy - will be replaced with use cases)
-const styleCategories = [
-  "Casual",
-  "Athletic",
-  "Wedding",
-  "Business",
-  "Formal",
-  "Streetwear",
-  "Vintage",
-];
+const styleCategories = STYLE_CATEGORY_OPTIONS;
 
 // Sort options
 const sortOptions = [
@@ -174,15 +165,9 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
                     )}
                   >
                     <MapPin className="w-4 h-4" />
-                    In-Person
-                  </button>
-                </div>
-              </div>
-
-
-              {/* Style Categories */}
+              {/* Styles & Occasions (merged) */}
               <div>
-                <Label className="text-sm font-medium mb-3 block">Style</Label>
+                <Label className="text-sm font-medium mb-3 block">Styles & Occasions</Label>
                 <div className="flex flex-wrap gap-2">
                   {styleCategories.map((style) => (
                     <button
