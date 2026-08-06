@@ -20,7 +20,8 @@ async function sendEmail(to: string, subject: string, html: string) {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok");
   const cronSecret = Deno.env.get("CRON_SECRET");
-  if (req.headers.get("x-cron-secret") !== cronSecret) {
+  const provided = req.headers.get("x-cron-secret");
+  if (!cronSecret || !provided || provided !== cronSecret) {
     return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
   }
 
