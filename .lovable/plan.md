@@ -1,35 +1,24 @@
-## Context
+# Fix white screen on the published site
 
-Your `index.html` already references the correct glasses logo for the favicon (SVG + 16/32/192/512 PNGs + apple-touch-icon). The browser tab shows it correctly. Google's search result, however, still shows the old Lovable logo because Google cached the favicon from an earlier crawl (before your favicon was set) and hasn't refreshed it.
+## What's happening
 
-This is a crawler-cache problem, not a code bug. The fix is to (1) make sure every URL variant Google might fetch returns the glasses, (2) bust caches, and (3) nudge Google to recrawl.
+The preview renders fine. The published site (cookalook.lovable.app and the custom domain) loads the page shell but the app crashes immediately on startup with:
 
-## What I'll change
+```text
+supabaseUrl is required.
+```
 
-1. **Add a root `/favicon.ico` fallback.** Many crawlers (Google included) request `/favicon.ico` at the site root regardless of `<link>` tags. There's currently no file there. I'll generate a multi-resolution `.ico` (16/32/48) from the glasses SVG and place it at `public/favicon.ico`.
+The backend connection values are present in the sandbox environment but were not baked into the published build, so the app can't reach the backend and React renders nothing — a white screen.
 
-2. **Add an explicit `<link rel="shortcut icon" href="/favicon.ico">`** in `index.html` so the ICO is advertised alongside the SVG/PNG.
+## Fix
 
-3. **Bump the cache-busting query string** on every favicon link from `?v=5` to `?v=6` so Google sees changed URLs on the next crawl.
+1. Re-publish the project so a fresh build is produced with the backend environment values injected.
+2. Re-check the published URL and confirm the homepage renders and advisor data loads (no `supabaseUrl is required` error in the console).
+3. If the fresh build still ships without those values, add a safe fallback in the backend client so the public project URL and publishable key (both non-secret, already public in the browser bundle) are used when the build-time variables are missing. This makes the published app resilient to a missing build environment.
+4. Re-verify the published site and the custom domain after the change.
 
-4. **Tell you the manual step Google requires.** Code alone cannot force Google to refresh a cached favicon. After deploy, you need to:
-   - Open Google Search Console → URL Inspection → enter `https://www.cookalook.com/` → "Request indexing".
-   - Optionally also inspect `https://www.cookalook.com/favicon.ico` directly.
-   - Google typically refreshes the SERP favicon within a few days to a few weeks after recrawl. There's no faster path.
+## Technical notes
 
-## What I will NOT change
-
-- The glasses SVG/PNG artwork itself — it's already correct.
-- The `index.html` head structure, beyond the two lines above.
-- Anything in the app UI, routes, or backend.
-
-## Files touched
-
-- `public/favicon.ico` (new, generated from the existing glasses SVG)
-- `index.html` (add `shortcut icon` link, bump `?v=5` → `?v=6`)
-
-## Expected outcome
-
-- Browser tab: unchanged (still glasses).
-- Direct request to `https://www.cookalook.com/favicon.ico`: now returns the glasses ICO instead of 404.
-- Google search result: still shows Lovable logo until Google recrawls; then updates to glasses. You must request reindexing in Search Console to speed this up.
+- `src/integrations/supabase/client.ts` reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from `import.meta.env`. Both are set in `.env` locally, and `.env` is gitignored, so the deploy build depends on the platform injecting them.
+- Step 3 fallback would be constants in that file guarded by `??`, keeping the env values as the primary source. No secret values are involved — the publishable/anon key is safe in client code.
+- No database, RLS, or edge function changes are needed.
