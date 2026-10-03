@@ -234,13 +234,15 @@ const BecomeAdvisor = () => {
       }
     }
 
-    // Require liveness-verified selfie (no skip allowed)
-    if (!formData.selfieFile || !formData.livenessVerified) {
+    // Require completed identity verification (no skip allowed)
+    const verificationError = getVerificationError();
+    if (verificationError) {
       toast({
-        title: "Liveness verification required",
-        description: "Please complete the camera liveness check before submitting.",
+        title: "Verification required",
+        description: verificationError,
         variant: "destructive",
       });
+      setCurrentStep(3);
       return;
     }
 
@@ -557,10 +559,11 @@ const BecomeAdvisor = () => {
       if (!applicationError && (selfieStoragePath || idDocumentStoragePath)) {
         const { error: pathUpdateError } = await supabase
           .from("advisor_applications")
+          // Cast until generated types include these columns (after the migration is applied).
           .update({
             selfie_storage_path: selfieStoragePath,
             id_document_storage_path: idDocumentStoragePath,
-          })
+          } as Record<string, string | null>)
           .eq("user_id", userId);
         if (pathUpdateError) {
           console.error("Failed to record verification storage paths (non-blocking):", pathUpdateError);
@@ -702,6 +705,14 @@ const BecomeAdvisor = () => {
       if (!formData.profilePhotoPreview) {
         stepErrors.profilePhotoFile = "Profile photo is required";
       }
+    } else if (currentStep === 3) {
+      // Identity verification is required (no skip): consent, a live camera
+      // selfie, and a government ID.
+      const verificationError = getVerificationError();
+      if (verificationError) {
+        toast({ title: "Verification required", description: verificationError, variant: "destructive" });
+        return;
+      }
     } else if (currentStep === 4) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
@@ -733,6 +744,16 @@ const BecomeAdvisor = () => {
   
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
+  // Returns a user-facing message for the first missing verification item, or null when complete.
+  const getVerificationError = (): string | null => {
+    if (!biometricConsentGiven) return "Please review and accept the identity verification consent to continue.";
+    if (!formData.selfieFile) return "Please take your live photo with your camera.";
+    if (!formData.livenessVerified)
+      return "Please take your photo with the live camera check rather than uploading one. If your computer's camera isn't working, open this page on your phone to finish your application.";
+    if (!formData.idFile) return "Please upload or photograph your government-issued ID.";
+    return null;
+  };
+
   const canProceed = () => {
     switch (currentStep) {
       case 1:
@@ -748,8 +769,7 @@ const BecomeAdvisor = () => {
         // Require profile photo AND instagram
         return formData.instagram && formData.profilePhotoPreview && !errors.instagram && !errors.portfolio;
       case 3:
-        // MVP: Verification is optional - always allow proceeding
-        return true;
+        return getVerificationError() === null;
       case 4: {
         const priceNum = parseFloat(formData.price);
         return formData.agreeTerms && formData.price && !isNaN(priceNum) && priceNum >= 25;
