@@ -2,17 +2,25 @@
 // This provides origin-restricted CORS instead of wildcard to improve security
 
 // Allowed origins for CORS - production and development environments
+export const SITE_URL = "https://www.cookalook.com";
+
 const ALLOWED_ORIGINS = [
-  "https://cookalook.lovable.app",
-  "https://cookalookcom.lovable.app",
+  SITE_URL,
+  "https://cookalook.com",
   "https://id-preview--1c46abdc-cec7-4209-a14b-719c7e387fb4.lovable.app",
   "https://1c46abdc-cec7-4209-a14b-719c7e387fb4.lovableproject.com",
-  "https://www.cookalook.com",
-  "https://cookalook.com",
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:8080",
 ];
+
+/**
+ * Returns the request origin if it is allowlisted, otherwise the production site URL.
+ * Use this when building redirect URLs (e.g. Stripe success/cancel URLs).
+ */
+export function getSafeOrigin(requestOrigin: string | null): string {
+  return requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : SITE_URL;
+}
 
 /**
  * Get CORS headers with origin validation
