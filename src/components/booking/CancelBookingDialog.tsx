@@ -87,13 +87,22 @@ export function CancelBookingDialog({
       const { error: fnErr } = await supabase.functions.invoke("process-booking-cancellation", {
         body: { bookingId },
       });
-      if (fnErr) {
-        toast({
-          title: "Booking cancelled",
-          description: "Refund is pending review.",
-        });
+      // The refund may have succeeded even if the function reported an error
+      // afterwards (e.g. a notification email failed), so check the booking.
+      const { data: after } = await supabase
+        .from("bookings")
+        .select("refund_status")
+        .eq("id", bookingId)
+        .maybeSingle();
+      const refundStatus = after?.refund_status ?? null;
+      if (refundStatus === "succeeded") {
+        toast({ title: "Booking cancelled", description: "Your refund has been issued. It usually appears within 5–10 business days." });
+      } else if (refundStatus === "none") {
+        toast({ title: "Booking cancelled", description: "Per the cancellation policy, no refund is due for this booking." });
+      } else if (fnErr || refundStatus === "failed") {
+        toast({ title: "Booking cancelled", description: "Your refund is being reviewed by our team. We'll email you shortly." });
       } else {
-        toast({ title: "Booking cancelled", description: "Refund is processing." });
+        toast({ title: "Booking cancelled", description: "Your refund is processing." });
       }
       onOpenChange(false);
       onCancelled?.();

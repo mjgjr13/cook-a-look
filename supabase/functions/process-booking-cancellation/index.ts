@@ -121,48 +121,53 @@ serve(async (req) => {
       p_details: refundResult.details,
     });
 
-    // Emails (best-effort)
-    const clientUserId = (booking.client as { user_id?: string } | null)?.user_id;
-    const advisorUserId = (booking.advisor as { user_id?: string } | null)?.user_id;
-    let clientEmail: string | null = null;
-    let advisorEmail: string | null = null;
-    if (clientUserId) {
-      const { data } = await admin.auth.admin.getUserById(clientUserId);
-      clientEmail = data.user?.email ?? null;
-    }
-    if (advisorUserId) {
-      const { data } = await admin.auth.admin.getUserById(advisorUserId);
-      advisorEmail = data.user?.email ?? null;
-    }
+    // Emails (best-effort): the refund has already been recorded above, so an
+    // email failure must not turn this into an error response for the client.
+    try {
+      const clientUserId = (booking.client as { user_id?: string } | null)?.user_id;
+      const advisorUserId = (booking.advisor as { user_id?: string } | null)?.user_id;
+      let clientEmail: string | null = null;
+      let advisorEmail: string | null = null;
+      if (clientUserId) {
+        const { data } = await admin.auth.admin.getUserById(clientUserId);
+        clientEmail = data.user?.email ?? null;
+      }
+      if (advisorUserId) {
+        const { data } = await admin.auth.admin.getUserById(advisorUserId);
+        advisorEmail = data.user?.email ?? null;
+      }
 
-    const pct = booking.refund_percentage ?? 0;
-    const refundDollars = ((booking.refund_amount_cents ?? 0) / 100).toFixed(2);
-    const currency = (payment?.currency ?? "usd").toUpperCase();
-    const cancelledBy = booking.cancelled_by ?? "system";
+      const pct = booking.refund_percentage ?? 0;
+      const refundDollars = ((booking.refund_amount_cents ?? 0) / 100).toFixed(2);
+      const currency = (payment?.currency ?? "usd").toUpperCase();
+      const cancelledBy = booking.cancelled_by ?? "system";
 
-    if (clientEmail) {
-      const subject =
-        cancelledBy === "advisor"
-          ? "Your Cook A Look booking was cancelled — full refund issued"
-          : "Your Cook A Look booking has been cancelled";
-      const html = `
-        <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#FAF8F5;color:#1f1f1f;">
-          <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:24px;margin:0 0 16px;">Booking Cancelled</h1>
-          <p>Your consultation has been cancelled${cancelledBy === "advisor" ? " by your advisor" : ""}.</p>
-          <p><strong>Refund:</strong> ${pct}% — ${refundDollars} ${currency}</p>
-          <p style="color:#555;font-size:14px;">${refundResult.status === "succeeded" ? "Your refund has been issued and will appear on your statement within 5–10 business days." : refundResult.status === "voided" ? "The pending charge has been released — no funds were captured." : refundResult.status === "failed" ? "Your refund is being reviewed by our team — we'll be in touch shortly." : refundResult.status === "none" ? "Per the cancellation policy, no refund is due." : "Your refund is processing."}</p>
-        </div>`;
-      await sendEmail(clientEmail, subject, html);
-    }
-    if (advisorEmail) {
-      const html = `
-        <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#FAF8F5;color:#1f1f1f;">
-          <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:24px;margin:0 0 16px;">Booking Cancelled</h1>
-          <p>The booking has been cancelled${cancelledBy === "client" ? " by the client" : cancelledBy === "advisor" ? " (by you)" : ""}.</p>
-          <p>Client refund: ${pct}% (${refundDollars} ${currency}).</p>
-          <p style="color:#555;font-size:14px;">The time slot has been freed.</p>
-        </div>`;
-      await sendEmail(advisorEmail, "Booking cancelled — Cook A Look", html);
+      if (clientEmail) {
+        const subject =
+          cancelledBy === "advisor"
+            ? "Your Cook A Look booking was cancelled — full refund issued"
+            : "Your Cook A Look booking has been cancelled";
+        const html = `
+          <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#FAF8F5;color:#1f1f1f;">
+            <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:24px;margin:0 0 16px;">Booking Cancelled</h1>
+            <p>Your consultation has been cancelled${cancelledBy === "advisor" ? " by your advisor" : ""}.</p>
+            <p><strong>Refund:</strong> ${pct}% — ${refundDollars} ${currency}</p>
+            <p style="color:#555;font-size:14px;">${refundResult.status === "succeeded" ? "Your refund has been issued and will appear on your statement within 5–10 business days." : refundResult.status === "voided" ? "The pending charge has been released — no funds were captured." : refundResult.status === "failed" ? "Your refund is being reviewed by our team — we'll be in touch shortly." : refundResult.status === "none" ? "Per the cancellation policy, no refund is due." : "Your refund is processing."}</p>
+          </div>`;
+        await sendEmail(clientEmail, subject, html);
+      }
+      if (advisorEmail) {
+        const html = `
+          <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#FAF8F5;color:#1f1f1f;">
+            <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:24px;margin:0 0 16px;">Booking Cancelled</h1>
+            <p>The booking has been cancelled${cancelledBy === "client" ? " by the client" : cancelledBy === "advisor" ? " (by you)" : ""}.</p>
+            <p>Client refund: ${pct}% (${refundDollars} ${currency}).</p>
+            <p style="color:#555;font-size:14px;">The time slot has been freed.</p>
+          </div>`;
+        await sendEmail(advisorEmail, "Booking cancelled — Cook A Look", html);
+      }
+    } catch (emailErr) {
+      console.error("cancellation_email_failed", emailErr instanceof Error ? emailErr.message : String(emailErr));
     }
 
     return new Response(JSON.stringify({ ok: true, refund_status: refundResult.status, refund_id: refundResult.refund_id ?? null }), {

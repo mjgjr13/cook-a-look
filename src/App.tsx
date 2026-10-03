@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,30 +12,30 @@ import Index from "./pages/Index";
 import Advisors from "./pages/Advisors";
 import AdvisorProfile from "./pages/AdvisorProfile";
 import Lookbook from "./pages/Lookbook";
-import BecomeAdvisor from "./pages/BecomeAdvisor";
+const BecomeAdvisor = lazy(() => import("./pages/BecomeAdvisor"));
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import AdvisorDashboard from "./pages/AdvisorDashboard";
-import BookingSuccess from "./pages/BookingSuccess";
-import AdvisorAvailability from "./pages/AdvisorAvailability";
-import AccountSettings from "./pages/AccountSettings";
-import AdvisorEarnings from "./pages/AdvisorEarnings";
-import TermsOfUse from "./pages/TermsOfUse";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AdvisorDashboard = lazy(() => import("./pages/AdvisorDashboard"));
+const BookingSuccess = lazy(() => import("./pages/BookingSuccess"));
+const AdvisorAvailability = lazy(() => import("./pages/AdvisorAvailability"));
+const AccountSettings = lazy(() => import("./pages/AccountSettings"));
+const AdvisorEarnings = lazy(() => import("./pages/AdvisorEarnings"));
+const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 import NotFound from "./pages/NotFound";
-import OgPreview from "./pages/OgPreview";
-import Brand from "./pages/Brand";
-import AdminLookbook from "./pages/admin/AdminLookbook";
-import AdminBookings from "./pages/admin/AdminBookings";
-import AdminAdvisors from "./pages/admin/AdminAdvisors";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminRewards from "./pages/admin/AdminRewards";
-import AdminDisputes from "./pages/admin/AdminDisputes";
-import AdminCancellations from "./pages/admin/AdminCancellations";
+const OgPreview = lazy(() => import("./pages/OgPreview"));
+const Brand = lazy(() => import("./pages/Brand"));
+const AdminLookbook = lazy(() => import("./pages/admin/AdminLookbook"));
+const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
+const AdminAdvisors = lazy(() => import("./pages/admin/AdminAdvisors"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminRewards = lazy(() => import("./pages/admin/AdminRewards"));
+const AdminDisputes = lazy(() => import("./pages/admin/AdminDisputes"));
+const AdminCancellations = lazy(() => import("./pages/admin/AdminCancellations"));
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
+          {/* Less-visited pages (dashboards, admin, legal, advisor signup) load on demand to keep the first page load small. */}
+          <Suspense fallback={<div className="min-h-[60vh]" aria-busy="true" />}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
@@ -144,6 +147,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

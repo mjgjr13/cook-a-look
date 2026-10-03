@@ -158,7 +158,7 @@ const handler = async (req: Request): Promise<Response> => {
                   <li>Earn rewards with every booking</li>
                 </ul>
                 <p style="text-align: center;">
-                  <a href="https://cookalookcom.lovable.app/advisors" class="cta">Browse Advisors</a>
+                  <a href="https://www.cookalook.com/advisors" class="cta">Browse Advisors</a>
                 </p>
               </div>
               <div class="footer">

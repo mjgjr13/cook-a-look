@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { getCorsHeaders, getSafeOrigin, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
 const isValidUUID = (str: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -73,11 +73,13 @@ serve(async (req) => {
     // Fetch advisor with capabilities + surcharge
     const { data: advisor, error: advisorError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, price_per_session, is_advisor, advisor_approved, virtual_available, in_person_available, in_person_surcharge")
+      .select("id, full_name, price_per_session, is_advisor, advisor_approved, is_demo, virtual_available, in_person_available, in_person_surcharge")
       .eq("id", advisorId)
       .single();
     if (advisorError || !advisor) throw new Error("Advisor not found");
     if (!advisor.is_advisor || !advisor.advisor_approved) throw new Error("Invalid advisor");
+    // Sample (demo) profiles can't be booked or paid for - the site shows a waitlist instead.
+    if (advisor.is_demo) throw new Error("This is a sample profile and can't be booked yet");
     if (!advisor.price_per_session || advisor.price_per_session <= 0) throw new Error("Advisor has not set a valid price");
 
     if (meetingType === "virtual" && !advisor.virtual_available) throw new Error("Advisor does not offer virtual sessions");
@@ -181,7 +183,7 @@ serve(async (req) => {
     let customerId: string | undefined;
     if (customers.data.length > 0) customerId = customers.data[0].id;
 
-    const origin = req.headers.get("origin") || "https://cookalook.lovable.app";
+    const origin = getSafeOrigin(req.headers.get("origin"));
     const sessionTypeLabel = meetingType === "in_person" ? "in-person" : "virtual";
     const descriptionParts = [
       `${sessionDate} at ${sessionTime}`,

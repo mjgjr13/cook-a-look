@@ -3,12 +3,15 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw } from "lucide-react";
+import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import BookingCalendar from "@/components/BookingCalendar";
 import AdvisorReviews from "@/components/reviews/AdvisorReviews";
 import Seo from "@/components/Seo";
+import SampleAdvisorWaitlistDialog from "@/components/booking/SampleAdvisorWaitlistDialog";
+import { withSampleContent } from "@/lib/sampleAdvisors";
 
 // Fallback images for when no portfolio images exist
 import inspiration1 from "@/assets/inspiration-1.jpg";
@@ -39,12 +42,13 @@ interface AdvisorData {
   portfolio_url: string | null;
   verified: boolean | null;
   in_person_surcharge: number | null;
+  is_demo?: boolean | null;
 }
 
 const AdvisorProfile = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [advisor, setAdvisor] = useState<AdvisorData | null>(null);
+  const [advisor, setAdvisor] = useState<(AdvisorData & { isSample: boolean }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -73,7 +77,7 @@ const AdvisorProfile = () => {
         }
 
         if (data && data.length > 0) {
-          setAdvisor(data[0] as AdvisorData);
+          setAdvisor(withSampleContent(data[0] as AdvisorData));
         } else {
           setError("Advisor not found");
         }
@@ -90,15 +94,21 @@ const AdvisorProfile = () => {
 
   // Auto-open booking calendar if redirected back from sign-in with booking state
   useEffect(() => {
-    if (!loading && advisor && initialBookingDate) {
+    if (!loading && advisor && initialBookingDate && !advisor.isSample) {
       setCalendarOpen(true);
       // Clean up URL params
       setSearchParams({}, { replace: true });
     }
   }, [loading, advisor, initialBookingDate]);
 
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+
   const handleBookConsultation = () => {
-    setCalendarOpen(true);
+    if (advisor?.isSample) {
+      setWaitlistOpen(true);
+    } else {
+      setCalendarOpen(true);
+    }
   };
 
   if (loading) {
@@ -153,7 +163,10 @@ const AdvisorProfile = () => {
   const displayExperience = advisor.experience_years ? `${advisor.experience_years}+ years` : "N/A";
   const displayLanguages = advisor.languages?.length ? advisor.languages : ["English"];
   const displaySpecialties = advisor.style_tags?.length ? advisor.style_tags : [];
-  const displayImages = advisor.portfolio_images?.length ? advisor.portfolio_images : fallbackImages;
+  const hasPortfolio = !!advisor.portfolio_images?.length;
+  const displayImages = hasPortfolio ? advisor.portfolio_images! : fallbackImages;
+  const isSample = advisor.isSample;
+  const firstName = displayName.split(" ")[0];
 
   const personJsonLd = {
     "@context": "https://schema.org",
@@ -173,7 +186,7 @@ const AdvisorProfile = () => {
         name: "Personal Styling Consultation",
       },
     },
-    ...(displayReviews > 0 && {
+    ...(displayReviews > 0 && !isSample && {
       aggregateRating: {
         "@type": "AggregateRating",
         ratingValue: displayRating,
@@ -190,7 +203,8 @@ const AdvisorProfile = () => {
         path={`/advisors/${advisor.id}`}
         ogImage={advisor.avatar_url || undefined}
         ogType="profile"
-        jsonLd={personJsonLd}
+        jsonLd={isSample ? undefined : personJsonLd}
+        noindex={isSample}
       />
       <section className="py-5 pb-28 lg:py-8 lg:pb-8 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -213,8 +227,10 @@ const AdvisorProfile = () => {
               <div className="relative mx-auto aspect-[5/6] max-h-[410px] w-full overflow-hidden mb-4 lg:mx-0 lg:aspect-[4/5] lg:max-h-none lg:mb-6 bg-muted">
                 {advisor.avatar_url ? (
                   <img
-                    src={advisor.avatar_url}
-                    alt={displayName}
+                    src={optimizedImageUrl(advisor.avatar_url, 800, 1000, 75)}
+                    onError={fallbackToOriginal(advisor.avatar_url)}
+                    alt={`${displayName}, style advisor`}
+                    fetchPriority="high"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -279,13 +295,22 @@ const AdvisorProfile = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="lg:col-span-2"
             >
-              <div className="flex items-center gap-2 mb-2 text-sm sm:text-base">
-                <Star className="w-5 h-5 fill-gold text-gold" />
-                <span className="font-sans font-medium">{displayRating.toFixed(1)}</span>
-                <span className="font-sans text-muted-foreground">
-                  ({displayReviews} reviews)
-                </span>
-              </div>
+              {isSample ? (
+                <div className="mb-3 inline-flex items-center gap-1.5 border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-sans uppercase tracking-wider text-foreground">
+                  <Sparkles className="w-3.5 h-3.5 text-gold" aria-hidden="true" />
+                  Sample profile
+                </div>
+              ) : displayReviews > 0 ? (
+                <div className="flex items-center gap-2 mb-2 text-sm sm:text-base">
+                  <Star className="w-5 h-5 fill-gold text-gold" aria-hidden="true" />
+                  <span className="font-sans font-medium">{displayRating.toFixed(1)}</span>
+                  <span className="font-sans text-muted-foreground">
+                    ({displayReviews} {displayReviews === 1 ? "review" : "reviews"})
+                  </span>
+                </div>
+              ) : (
+                <p className="mb-2 text-sm font-sans uppercase tracking-wider text-gold">New advisor</p>
+              )}
 
               <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium leading-tight mb-2">
                 {displayName}
@@ -329,25 +354,54 @@ const AdvisorProfile = () => {
                 </div>
               )}
 
-              <div className="hidden sm:block mb-4 p-4 bg-secondary/40 border border-border">
-                <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3">Booking with Cook A Look is protected</p>
-                <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-sans text-muted-foreground">
-                  <li className="flex items-start gap-2"><ShieldCheck className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Identity-verified advisor</span></li>
-                  <li className="flex items-start gap-2"><Lock className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Payment held in escrow 48h</span></li>
-                  <li className="flex items-start gap-2"><Camera className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Sessions recorded for disputes</span></li>
-                  <li className="flex items-start gap-2"><RefreshCw className="w-4 h-4 mt-0.5 text-gold shrink-0" /><span>Refund if the advisor no-shows</span></li>
-                </ul>
-                <Link to="/terms-of-use" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
+              {isSample && (
+                <div className="mb-4 p-4 border border-gold/40 bg-gold/5">
+                  <p className="font-sans text-sm text-foreground">
+                    <strong className="font-medium">This is a sample profile.</strong>{" "}
+                    It shows what an advisor profile on Cook A Look looks like while we onboard our first advisors.
+                    Join the waitlist and we'll let you know when real advisors are taking bookings.
+                  </p>
+                </div>
+              )}
+
+              <div className="mb-4 p-4 sm:p-5 bg-background border border-border">
+                <h2 className="font-serif text-lg font-medium mb-3">How a session works</h2>
+                <ol className="space-y-2 text-sm font-sans text-muted-foreground">
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pick a date, time, and session length (1–3 hours){advisor.in_person_available && advisor.virtual_available ? ", by video or in person" : advisor.in_person_available ? ", in person" : ", by video"}.</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You'll see the full price before you pay.</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Get a confirmation email{advisor.virtual_available ? " with your video link" : ""}, and message {firstName} from your dashboard before the session.</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>{advisor.virtual_available ? "Join the video call right from your dashboard. No app to install." : "Meet at the agreed location and get personal styling advice."}</span></li>
+                </ol>
               </div>
+
+              {!isSample && (
+                <div className="mb-4 p-4 bg-secondary/40 border border-border">
+                  <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3">Booking with Cook A Look is protected</p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm font-sans text-muted-foreground">
+                    {advisor.verified && (
+                      <li className="flex items-start gap-2"><ShieldCheck className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Identity-verified advisor</span></li>
+                    )}
+                    <li className="flex items-start gap-2"><Lock className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Payment held in escrow until 48h after your session</span></li>
+                    {advisor.virtual_available && (
+                      <li className="flex items-start gap-2"><Camera className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Video sessions recorded for dispute protection</span></li>
+                    )}
+                    <li className="flex items-start gap-2"><RefreshCw className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Refund if the advisor no-shows</span></li>
+                  </ul>
+                  <Link to="/terms" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
+                </div>
+              )}
 
               <div className="hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
                 <div>
                   <span className="font-sans text-2xl font-medium">${displayPrice}</span>
                   <span className="font-sans text-muted-foreground">/hour</span>
+                  {advisor.in_person_available && advisor.in_person_surcharge && advisor.in_person_surcharge > 0 ? (
+                    <p className="font-sans text-xs text-muted-foreground mt-1">+${advisor.in_person_surcharge} for in-person sessions</p>
+                  ) : null}
                 </div>
                 <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={handleBookConsultation}>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Book Consultation
+                  <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
+                  {isSample ? "Join the Waitlist" : "Book a Session"}
                 </Button>
               </div>
             </motion.div>
@@ -361,8 +415,8 @@ const AdvisorProfile = () => {
               <p className="font-sans text-lg font-medium leading-tight">${displayPrice}<span className="text-sm font-normal text-muted-foreground">/hour</span></p>
             </div>
             <Button variant="hero" size="lg" className="shrink-0" onClick={handleBookConsultation}>
-              <Calendar className="w-4 h-4 mr-2" />
-              Book
+              <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
+              {isSample ? "Join Waitlist" : "Book a Session"}
             </Button>
           </div>
         </div>
@@ -382,7 +436,9 @@ const AdvisorProfile = () => {
               Style Inspiration
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-              A glimpse into the looks and styling work by {displayName.split(' ')[0]}
+              {hasPortfolio
+                ? `A glimpse into the looks and styling work by ${firstName}`
+                : "Looks to spark ideas for your session"}
             </p>
           </motion.div>
 
@@ -398,7 +454,9 @@ const AdvisorProfile = () => {
               >
                 <img
                   src={image}
-                  alt={`Inspiration ${index + 1}`}
+                  alt={hasPortfolio ? `Styling work by ${displayName}, image ${index + 1}` : `Style inspiration ${index + 1}`}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors duration-300" />
@@ -422,15 +480,28 @@ const AdvisorProfile = () => {
               Client Reviews
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-              What clients say about working with {displayName.split(' ')[0]}
+              What clients say about working with {firstName}
             </p>
           </motion.div>
 
           <div className="max-w-2xl mx-auto">
-            <AdvisorReviews advisorId={id || ""} />
+            {isSample ? (
+              <p className="text-center font-sans text-muted-foreground">
+                Sample profiles don't have reviews. Reviews on real advisor profiles come only from clients who completed a booked session.
+              </p>
+            ) : (
+              <AdvisorReviews advisorId={id || ""} />
+            )}
           </div>
         </div>
       </section>
+
+      <SampleAdvisorWaitlistDialog
+        isOpen={waitlistOpen}
+        onClose={() => setWaitlistOpen(false)}
+        advisorId={advisor.id}
+        advisorName={displayName}
+      />
 
       {/* Booking Calendar Dialog */}
       <BookingCalendar

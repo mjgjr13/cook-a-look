@@ -95,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <div style="text-align: center; margin: 32px 0;">
-            <a href="https://cookalookcom.lovable.app/advisor" style="display: inline-block; background: #c9a96e; color: white; padding: 12px 32px; text-decoration: none; border-radius: 4px; font-weight: 600;">Visit Your Dashboard</a>
+            <a href="https://www.cookalook.com/advisor" style="display: inline-block; background: #c9a96e; color: white; padding: 12px 32px; text-decoration: none; border-radius: 4px; font-weight: 600;">Visit Your Dashboard</a>
           </div>
           
           <p style="color: #666; font-size: 14px;">In the meantime, you can start completing your profile and setting up your availability. This will help you get bookings faster once approved!</p>

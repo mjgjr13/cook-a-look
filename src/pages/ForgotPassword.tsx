@@ -56,9 +56,13 @@ const ForgotPassword = () => {
       );
 
       if (resetError) {
+        const rateLimited =
+          resetError.status === 429 || /rate limit|security purposes|too many/i.test(resetError.message);
         toast({
-          title: "Error",
-          description: resetError.message,
+          title: rateLimited ? "Please wait a moment" : "Couldn't send the reset link",
+          description: rateLimited
+            ? "For your security we limit how often reset emails can be sent. Please try again in a few minutes."
+            : "Something went wrong on our side. Please try again, or email info@cookalook.com for help.",
           variant: "destructive",
         });
         return;

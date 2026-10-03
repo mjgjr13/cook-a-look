@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Calendar, Video, ArrowRight, Loader2, ShieldCheck, RefreshCw } from "lucide-react";
+import { CheckCircle, Calendar, Video, ArrowRight, Loader2, ShieldCheck, RefreshCw, MapPin, MessageSquare } from "lucide-react";
+import Seo from "@/components/Seo";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +27,7 @@ const BookingSuccess = () => {
   } | null>(null);
 
   const sessionId = searchParams.get("session_id");
+  const [meetingType, setMeetingType] = useState<string | null>(null);
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -48,6 +50,15 @@ const BookingSuccess = () => {
         if (error) throw error;
 
         setBookingDetails(data);
+
+        if (data?.bookingId) {
+          const { data: booking } = await supabase
+            .from("bookings")
+            .select("meeting_type")
+            .eq("id", data.bookingId)
+            .maybeSingle();
+          setMeetingType(booking?.meeting_type ?? null);
+        }
 
         // Send confirmation emails
         if (data.bookingId) {
@@ -90,6 +101,7 @@ const BookingSuccess = () => {
 
   return (
     <Layout>
+      <Seo title="Booking Confirmed | Cook A Look" description="Your Cook A Look styling session is booked." path="/booking-success" noindex />
       <section className="py-24 bg-card min-h-[70vh] flex items-center">
         <div className="container mx-auto px-6 lg:px-8">
           <motion.div
@@ -140,9 +152,20 @@ const BookingSuccess = () => {
                   <span>Check your email for a calendar invite with session details</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <Video className="w-5 h-5 mt-0.5 text-primary" />
-                  <span>Join the video call at your scheduled time from your dashboard</span>
+                  <MessageSquare className="w-5 h-5 mt-0.5 text-primary" />
+                  <span>Message your advisor from your dashboard to share what you'd like help with</span>
                 </li>
+                {meetingType === "in_person" ? (
+                  <li className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 mt-0.5 text-primary" />
+                    <span>Meet your advisor at the agreed location. If you suggested a new spot, they'll confirm it or offer one of theirs</span>
+                  </li>
+                ) : (
+                  <li className="flex items-start gap-3">
+                    <Video className="w-5 h-5 mt-0.5 text-primary" />
+                    <span>Join the video call at your scheduled time from your dashboard. No app needed</span>
+                  </li>
+                )}
                 <li className="flex items-start gap-3">
                   <ShieldCheck className="w-5 h-5 mt-0.5 text-primary" />
                   <span>Your payment is held in escrow for 48 hours after the session</span>

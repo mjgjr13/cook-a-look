@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { Video, Lock, ShieldCheck } from "lucide-react";
 
 const HeroSection = () => {
   return (
@@ -46,8 +47,9 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-sans text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg"
           >
-            Connect with world-class style advisors who will transform your
-            wardrobe and elevate your personal style to new heights.
+            Book a one-on-one session with a personal style advisor, by video
+            from anywhere or in person, and leave with a wardrobe plan that
+            feels like you.
           </motion.p>
 
           <motion.div
@@ -63,6 +65,17 @@ const HeroSection = () => {
               <Link to="/lookbook">Explore Lookbook</Link>
             </Button>
           </motion.div>
+
+          <motion.ul
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-x-6 gap-y-2 text-sm font-sans text-muted-foreground"
+          >
+            <li className="flex items-center gap-2"><Video className="w-4 h-4 text-gold" aria-hidden="true" />Video or in-person sessions</li>
+            <li className="flex items-center gap-2"><Lock className="w-4 h-4 text-gold" aria-hidden="true" />Secure checkout with Stripe</li>
+            <li className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-gold" aria-hidden="true" />Payment protected until after your session</li>
+          </motion.ul>
         </div>
       </div>
     </section>

@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Star, Video, MapPin, Loader2 } from "lucide-react";
+import { Star, Video, MapPin, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
+import { withSampleContent } from "@/lib/sampleAdvisors";
 
 interface FeaturedAdvisor {
   id: string;
@@ -16,6 +18,7 @@ interface FeaturedAdvisor {
   in_person_available: boolean | null;
   location: string | null;
   target_demographics: string[] | null;
+  is_demo?: boolean | null;
 }
 
 const useFeaturedAdvisors = () => {
@@ -28,9 +31,12 @@ const useFeaturedAdvisors = () => {
       if (error) throw error;
       if (!advisorsData || advisorsData.length === 0) return [];
 
-      // Sort by review count (highest first) and take top 4
+      // Real advisors first (by review count), then sample profiles; take top 4
       return (advisorsData as FeaturedAdvisor[])
-        .sort((a, b) => (b.review_count || 0) - (a.review_count || 0))
+        .map(withSampleContent)
+        .sort((a, b) =>
+          a.isSample !== b.isSample ? (a.isSample ? 1 : -1) : (b.review_count || 0) - (a.review_count || 0)
+        )
         .slice(0, 4);
     }
   });
@@ -54,13 +60,13 @@ const FeaturedAdvisors = () => {
           className="text-center mb-16"
         >
           <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">
-            Top Rated
+            Meet the Advisors
           </p>
           <h2 className="font-serif text-4xl md:text-5xl font-medium mb-4">
             Featured Style Advisors
           </h2>
           <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-            Our most sought-after consultants, ready to elevate your style
+            Book a one-on-one session by video or in person, at a time that suits you
           </p>
         </motion.div>
 
@@ -80,24 +86,39 @@ const FeaturedAdvisors = () => {
                 className="group bg-background border border-border overflow-hidden hover-lift cursor-pointer"
                 onClick={() => handleCardClick(advisor.id)}
               >
-                <div className="relative aspect-[4/5] overflow-hidden">
+                <div className="relative aspect-[4/5] overflow-hidden bg-muted">
                   <img
-                    src={advisor.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(advisor.full_name || 'Advisor')}&background=C9A961&color=1A1A1A&size=400&bold=true`}
-                    alt={advisor.full_name || 'Style Advisor'}
+                    src={optimizedImageUrl(advisor.avatar_url, 560, 700) || `https://ui-avatars.com/api/?name=${encodeURIComponent(advisor.full_name || 'Advisor')}&background=C9A961&color=1A1A1A&size=400&bold=true`}
+                    onError={fallbackToOriginal(advisor.avatar_url)}
+                    alt={`${advisor.full_name || 'Style Advisor'}, style advisor`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
                   />
+                  {advisor.isSample && (
+                    <div className="absolute top-3 left-3 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
+                      <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
+                      Sample profile
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Star className="w-4 h-4 fill-gold text-gold" />
-                    <span className="font-sans text-sm font-medium">
-                      {advisor.rating?.toFixed(1) || '5.0'}
-                    </span>
-                    <span className="font-sans text-sm text-muted-foreground">
-                      ({advisor.review_count || 0} reviews)
-                    </span>
-                  </div>
+                  {advisor.isSample ? (
+                    <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-2">Sample profile</p>
+                  ) : advisor.review_count && advisor.review_count > 0 ? (
+                    <div className="flex items-center gap-2 mb-2">
+                      <Star className="w-4 h-4 fill-gold text-gold" aria-hidden="true" />
+                      <span className="font-sans text-sm font-medium">
+                        {(advisor.rating ?? 0).toFixed(1)}
+                      </span>
+                      <span className="font-sans text-sm text-muted-foreground">
+                        ({advisor.review_count} {advisor.review_count === 1 ? "review" : "reviews"})
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="font-sans text-xs uppercase tracking-wider text-gold mb-2">New advisor</p>
+                  )}
 
                   <h3 className="font-serif text-xl font-medium mb-1">
                     {advisor.full_name}

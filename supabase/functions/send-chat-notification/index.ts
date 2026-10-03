@@ -164,8 +164,8 @@ serve(async (req) => {
     const senderName = escapeHtml(sender?.full_name || "your contact");
 
     const dashboardUrl = recipientRole === "advisor" 
-      ? "https://cookalookcom.lovable.app/advisor" 
-      : "https://cookalookcom.lovable.app/dashboard";
+      ? "https://www.cookalook.com/advisor" 
+      : "https://www.cookalook.com/dashboard";
 
     const emailHtml = `
       <!DOCTYPE html>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import { isSampleAdvisor } from "@/lib/sampleAdvisors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -133,6 +134,8 @@ const AdminAdvisors = () => {
   // Delete/suspend confirm state
   const [advisorToDelete, setAdvisorToDelete] = useState<ActiveAdvisor | null>(null);
   const [advisorToSuspend, setAdvisorToSuspend] = useState<ActiveAdvisor | null>(null);
+  // Sample advisors to remove from the site (one, or all when bulk-removing)
+  const [samplesToRemove, setSamplesToRemove] = useState<ActiveAdvisor[] | null>(null);
 
   useEffect(() => {
     loadData();
@@ -197,6 +200,7 @@ const AdminAdvisors = () => {
             application_status: ap?.application_status ?? 
               (p.advisor_approved ? "approved" : "pending"),
             is_suspended: p.advisor_status === "suspended",
+            is_demo: isSampleAdvisor(p),
           };
         });
 
@@ -403,6 +407,35 @@ const AdminAdvisors = () => {
     } catch (err) {
       console.error("Error unsuspending advisor:", err);
       toast.error("Failed to unsuspend advisor");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Removes sample advisors from the public site by turning off their advisor
+  // listing. Nothing is deleted, so this can be undone from the database.
+  const handleRemoveSamples = async () => {
+    if (!samplesToRemove?.length) return;
+    setIsProcessing(true);
+    try {
+      const ids = samplesToRemove.map((a) => a.id);
+      const userIds = samplesToRemove.map((a) => a.user_id).filter(Boolean) as string[];
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_advisor: false, advisor_approved: false })
+        .in("id", ids);
+      if (error) throw error;
+      if (userIds.length) {
+        await supabase.from("advisor_profiles").update({ is_listed: false }).in("user_id", userIds);
+      }
+      toast.success(
+        ids.length === 1 ? "Sample advisor removed from the site." : `${ids.length} sample advisors removed from the site.`
+      );
+      setSamplesToRemove(null);
+      loadData();
+    } catch (err) {
+      console.error("Error removing sample advisors:", err);
+      toast.error("Failed to remove sample advisors");
     } finally {
       setIsProcessing(false);
     }
@@ -830,16 +863,41 @@ const AdminAdvisors = () => {
               {/* Demo Advisors */}
               {demoAdvisors.length > 0 && (
                 <div>
-                  <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-500" />
-                    Demo / Test Advisors ({demoAdvisors.length})
-                  </h3>
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="font-medium text-lg flex items-center gap-2">
+                      <User className="w-5 h-5 text-blue-500" />
+                      Sample Advisors ({demoAdvisors.length})
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                      onClick={() => setSamplesToRemove(demoAdvisors)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Remove all sample advisors
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Sample profiles are labeled "Sample profile" on the site, show no ratings, and send visitors to the
+                    waitlist instead of checkout. Remove them once real advisors are live.
+                  </p>
                   <div className="space-y-3">
-                    {demoAdvisors.map((advisor) => 
-                      renderAdvisorRow(advisor, (
-                        <Badge variant="outline">Demo</Badge>
-                      ))
-                    )}
+                    {demoAdvisors.map((advisor) => (
+                      <div key={advisor.id} className="flex items-center gap-2">
+                        <div className="flex-1 min-w-0">
+                          {renderAdvisorRow(advisor, <Badge variant="outline">Sample</Badge>)}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSamplesToRemove([advisor])}
+                          title="Remove this sample advisor from the site"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1074,6 +1132,38 @@ const AdminAdvisors = () => {
               className="bg-orange-500 hover:bg-orange-600"
             >
               {isProcessing ? "Processing..." : "Suspend Advisor"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Sample Advisors Dialog */}
+      <AlertDialog open={!!samplesToRemove} onOpenChange={(open) => !open && setSamplesToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {samplesToRemove && samplesToRemove.length > 1
+                ? `Remove all ${samplesToRemove.length} sample advisors?`
+                : `Remove ${samplesToRemove?.[0]?.full_name ?? "this sample advisor"}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {samplesToRemove && samplesToRemove.length > 1
+                ? "They will disappear from the advisors page, homepage, and search."
+                : "This profile will disappear from the advisors page, homepage, and search."}{" "}
+              No accounts or data are deleted, so this can be undone later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isProcessing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleRemoveSamples();
+              }}
+              disabled={isProcessing}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isProcessing ? "Removing..." : "Yes, remove"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
+import { SAMPLE_ADVISOR_IDS } from "@/lib/sampleAdvisors";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Image, Calendar, DollarSign, Loader2, Star, MapPin, Gift, ShieldAlert, Palette, RefreshCw } from "lucide-react";
+import { Users, Image, Calendar, DollarSign, Loader2, MapPin, Gift, ShieldAlert, Palette, RefreshCw } from "lucide-react";
 import AdminInbox from "@/components/admin/AdminInbox";
 
 interface DemoAdvisor {
@@ -42,7 +43,7 @@ const AdminDashboard = () => {
           .from("profiles")
           .select("id, full_name, specialty, avatar_url, location, rating, is_demo")
           .eq("is_advisor", true)
-          .eq("is_demo", true)
+          .or(`is_demo.eq.true,id.in.(${SAMPLE_ADVISOR_IDS.join(",")})`)
           .order("full_name"),
       ]);
 
@@ -151,11 +152,11 @@ const AdminDashboard = () => {
         {/* Demo Advisors Section */}
         {demoAdvisors.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Demo Advisors</h2>
+            <h2 className="text-xl font-semibold mb-4">Sample Advisors</h2>
             <Card>
               <CardHeader>
                 <CardDescription>
-                  These are demo/test advisors used for showcasing the platform
+                  Sample profiles shown to visitors (labeled, no ratings, booking goes to the waitlist). Remove them from Advisors → Active.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -184,12 +185,6 @@ const AdminDashboard = () => {
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {advisor.location}
-                            </span>
-                          )}
-                          {advisor.rating && (
-                            <span className="flex items-center gap-1">
-                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                              {advisor.rating.toFixed(1)}
                             </span>
                           )}
                         </div>

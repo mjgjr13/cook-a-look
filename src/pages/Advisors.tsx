@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, CheckCircle } from "lucide-react";
+import { Star, Video, MapPin, CheckCircle, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilters";
 import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
 import Seo from "@/components/Seo";
+import { withSampleContent } from "@/lib/sampleAdvisors";
 interface AdvisorData {
   id: string;
   full_name: string | null;
@@ -35,7 +37,7 @@ const badgeColors = {
 };
 
 const Advisors = () => {
-  const [advisors, setAdvisors] = useState<AdvisorData[]>([]);
+  const [advisors, setAdvisors] = useState<(AdvisorData & { isSample: boolean })[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: "",
@@ -58,7 +60,7 @@ const Advisors = () => {
           console.error('Error fetching advisors:', error);
           setAdvisors([]);
         } else {
-          setAdvisors((data || []) as AdvisorData[]);
+          setAdvisors(((data || []) as AdvisorData[]).map(withSampleContent));
         }
       } catch (err) {
         console.error('Error:', err);
@@ -132,8 +134,9 @@ const Advisors = () => {
         break;
       case "featured":
       default:
-        // Featured sorting: prioritize by rating and review count
+        // Featured sorting: real advisors before sample profiles, then by rating and review count
         result = [...result].sort((a, b) => {
+          if (a.isSample !== b.isSample) return a.isSample ? 1 : -1;
           const aScore = (a.rating || 0) * 10 + (a.review_count || 0);
           const bScore = (b.rating || 0) * 10 + (b.review_count || 0);
           return bScore - aScore;
@@ -239,16 +242,24 @@ const Advisors = () => {
                   <div className="relative aspect-[3/4] overflow-hidden bg-muted">
                     {advisor.avatar_url ? (
                       <img
-                        src={advisor.avatar_url}
-                        alt={displayName}
+                        src={optimizedImageUrl(advisor.avatar_url, 480, 640)}
+                        onError={fallbackToOriginal(advisor.avatar_url)}
+                        alt={`${displayName}, style advisor`}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading={index < 4 ? "eager" : "lazy"}
+                        decoding="async"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-muted to-muted/50">
                         <span className="text-4xl font-serif">{displayName.charAt(0)}</span>
                       </div>
                     )}
-                    {(advisor.verified || advisor.advisor_approved) && (
+                    {advisor.isSample ? (
+                      <div className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
+                        <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
+                        Sample profile
+                      </div>
+                    ) : (advisor.verified || advisor.advisor_approved) && (
                       <div className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 ${badgeColors.verified}`}>
                         <CheckCircle className="w-3 h-3" />
                         Verified
@@ -257,15 +268,21 @@ const Advisors = () => {
                   </div>
 
                   <div className="p-2.5 sm:p-3 lg:p-4 min-w-0">
-                    <div className="flex items-center gap-1 mb-1">
-                      <Star className="w-3 h-3 fill-gold text-gold" />
-                      <span className="font-sans text-xs font-medium">
-                        {displayRating.toFixed(1)}
-                      </span>
-                      <span className="font-sans text-xs text-muted-foreground">
-                        ({displayReviews})
-                      </span>
-                    </div>
+                    {advisor.isSample ? (
+                      <p className="font-sans text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Sample</p>
+                    ) : displayReviews > 0 ? (
+                      <div className="flex items-center gap-1 mb-1">
+                        <Star className="w-3 h-3 fill-gold text-gold" aria-hidden="true" />
+                        <span className="font-sans text-xs font-medium">
+                          {displayRating.toFixed(1)}
+                        </span>
+                        <span className="font-sans text-xs text-muted-foreground">
+                          ({displayReviews})
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="font-sans text-[11px] uppercase tracking-wider text-gold mb-1">New advisor</p>
+                    )}
 
                     <h2 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1 leading-snug">
                       {displayName}
@@ -304,13 +321,13 @@ const Advisors = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-xs h-7 shrink-0 px-2"
+                        className="text-xs h-8 shrink-0 px-2.5"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/advisors/${advisor.id}`);
                         }}
                       >
-                        View
+                        {advisor.isSample ? "View" : "Book"}
                       </Button>
                     </div>
                   </div>
@@ -323,9 +340,20 @@ const Advisors = () => {
             <div className="text-center py-16">
               <p className="font-sans text-muted-foreground">
                 {advisors.length === 0 
-                  ? "No advisors available at this time. Check back soon!"
-                  : "No advisors found matching your criteria. Try adjusting your filters."}
+                  ? "We're onboarding our first advisors. Check back soon!"
+                  : "No advisors match those filters yet. Try removing a filter or widening the price range."}
               </p>
+              {advisors.length > 0 && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() =>
+                    setFilters({ searchTerm: "", styles: [], clientFocus: [], useCases: [], sessionTypes: [], minPrice: "", maxPrice: "", sortBy: "featured" })
+                  }
+                >
+                  Clear all filters
+                </Button>
+              )}
             </div>
           )}
         </div>
