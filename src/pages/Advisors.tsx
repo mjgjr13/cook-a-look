@@ -7,6 +7,7 @@ import { Star, Video, MapPin, CheckCircle, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilters";
 import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
 import Seo from "@/components/Seo";
@@ -241,8 +242,9 @@ const Advisors = () => {
                   <div className="relative aspect-[3/4] overflow-hidden bg-muted">
                     {advisor.avatar_url ? (
                       <img
-                        src={advisor.avatar_url}
-                        alt={displayName}
+                        src={optimizedImageUrl(advisor.avatar_url, 480, 640)}
+                        onError={fallbackToOriginal(advisor.avatar_url)}
+                        alt={`${displayName}, style advisor`}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading={index < 4 ? "eager" : "lazy"}
                         decoding="async"

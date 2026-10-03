@@ -4,6 +4,7 @@ import { Star, Video, MapPin, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 
 interface FeaturedAdvisor {
@@ -87,8 +88,9 @@ const FeaturedAdvisors = () => {
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
                   <img
-                    src={advisor.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(advisor.full_name || 'Advisor')}&background=C9A961&color=1A1A1A&size=400&bold=true`}
-                    alt={advisor.full_name || 'Style Advisor'}
+                    src={optimizedImageUrl(advisor.avatar_url, 560, 700) || `https://ui-avatars.com/api/?name=${encodeURIComponent(advisor.full_name || 'Advisor')}&background=C9A961&color=1A1A1A&size=400&bold=true`}
+                    onError={fallbackToOriginal(advisor.avatar_url)}
+                    alt={`${advisor.full_name || 'Style Advisor'}, style advisor`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                     decoding="async"

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import BookingCalendar from "@/components/BookingCalendar";
 import AdvisorReviews from "@/components/reviews/AdvisorReviews";
 import Seo from "@/components/Seo";
@@ -225,8 +226,10 @@ const AdvisorProfile = () => {
               <div className="relative mx-auto aspect-[5/6] max-h-[410px] w-full overflow-hidden mb-4 lg:mx-0 lg:aspect-[4/5] lg:max-h-none lg:mb-6 bg-muted">
                 {advisor.avatar_url ? (
                   <img
-                    src={advisor.avatar_url}
-                    alt={displayName}
+                    src={optimizedImageUrl(advisor.avatar_url, 800, 1000, 75)}
+                    onError={fallbackToOriginal(advisor.avatar_url)}
+                    alt={`${displayName}, style advisor`}
+                    fetchPriority="high"
                     className="w-full h-full object-cover"
                   />
                 ) : (
