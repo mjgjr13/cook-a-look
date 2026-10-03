@@ -1,6 +1,7 @@
 // Generates public/sitemap.xml. Runs predev/prebuild.
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { SAMPLE_ADVISOR_IDS } from "../src/lib/sampleAdvisors";
 
 const BASE_URL = "https://www.cookalook.com";
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://chjmyzzczwattluqpbat.supabase.co";
@@ -42,8 +43,12 @@ async function fetchAdvisorIds(): Promise<string[]> {
       body: "{}",
     });
     if (!res.ok) return [];
-    const rows = (await res.json()) as { id: string }[];
-    return rows.map((r) => r.id).filter(Boolean);
+    const rows = (await res.json()) as { id: string; is_demo?: boolean | null }[];
+    // Sample (demo) profiles are kept out of search results.
+    return rows
+      .filter((r) => !r.is_demo && !SAMPLE_ADVISOR_IDS.includes(r.id))
+      .map((r) => r.id)
+      .filter(Boolean);
   } catch {
     return [];
   }

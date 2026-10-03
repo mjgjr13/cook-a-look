@@ -203,7 +203,8 @@ const AdvisorProfile = () => {
         path={`/advisors/${advisor.id}`}
         ogImage={advisor.avatar_url || undefined}
         ogType="profile"
-        jsonLd={personJsonLd}
+        jsonLd={isSample ? undefined : personJsonLd}
+        noindex={isSample}
       />
       <section className="py-5 pb-28 lg:py-8 lg:pb-8 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
