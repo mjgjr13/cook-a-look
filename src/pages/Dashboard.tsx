@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Video, Clock, Settings, LogOut, ChevronRight, RefreshCw, AlertTriangle, MapPin, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { withSampleContent } from "@/lib/sampleAdvisors";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
@@ -93,7 +94,6 @@ const Dashboard = () => {
 
     try {
       setLoadError(null);
-      console.log("[Dashboard] Loading bookings for profile:", profile.id);
       
       // Fetch client bookings
       const { data: bookingsData, error } = await supabase
@@ -106,11 +106,38 @@ const Dashboard = () => {
         .eq("client_id", profile.id)
         .order("created_at", { ascending: false });
 
-      console.log("[Dashboard] Bookings query result:", { data: bookingsData, error });
 
       if (error) throw error;
-      
-      setBookings(bookingsData || []);
+
+      // Clients can't read other users' rows in `profiles` (RLS), so the
+      // advisor join comes back empty. Fill in public advisor details via the
+      // public profile RPC instead.
+      const rows = (bookingsData || []) as Booking[];
+      const missing = [...new Set(rows.filter((b) => !b.advisor?.full_name).map((b) => b.advisor_id))];
+      if (missing.length) {
+        const results = await Promise.all(
+          missing.map((id) => supabase.rpc("get_advisor_public_profile", { advisor_profile_id: id }))
+        );
+        const byId = new Map<string, NonNullable<Booking["advisor"]>>();
+        results.forEach(({ data }, i) => {
+          const a = Array.isArray(data) ? data[0] : null;
+          if (a) {
+            const shown = withSampleContent(a as { id: string; full_name: string | null });
+            byId.set(missing[i], {
+              id: missing[i],
+              full_name: shown.full_name || "your advisor",
+              specialty: (a as { specialty?: string }).specialty || "",
+              avatar_url: (a as { avatar_url?: string }).avatar_url || "",
+              user_id: "",
+            });
+          }
+        });
+        rows.forEach((b) => {
+          if (!b.advisor?.full_name && byId.has(b.advisor_id)) b.advisor = byId.get(b.advisor_id);
+        });
+      }
+
+      setBookings(rows);
     } catch (error) {
       console.error("Dashboard load error:", error);
       setLoadError(error instanceof Error ? error.message : "An error occurred");
