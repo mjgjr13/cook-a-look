@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Video, Clock, Settings, LogOut, ChevronRight, RefreshCw, AlertTriangle, MapPin, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { isVirtualBooking } from "@/lib/bookingUtils";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
@@ -21,6 +22,7 @@ interface Booking {
   created_at: string;
   advisor_id: string;
   client_id: string;
+  meeting_type?: string | null;
   slot: {
     start_time: string;
     end_time: string;
@@ -337,7 +339,7 @@ const Dashboard = () => {
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
-                        {booking.slot.is_virtual ? (
+                        {isVirtualBooking(booking) ? (
                           <Video className="w-6 h-6 text-primary" />
                         ) : (
                           <MapPin className="w-6 h-6 text-primary" />
@@ -345,7 +347,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <p className="font-serif font-medium">
-                          {booking.slot.is_virtual ? "Virtual" : "In-Person"} Session with {booking.advisor?.full_name}
+                          {isVirtualBooking(booking) ? "Virtual" : "In-Person"} Session with {booking.advisor?.full_name}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(booking.slot.start_time).toLocaleDateString("en-US", {
@@ -362,7 +364,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      {booking.slot.is_virtual ? (
+                      {isVirtualBooking(booking) ? (
                         <Button 
                           variant="hero" 
                           size="sm"

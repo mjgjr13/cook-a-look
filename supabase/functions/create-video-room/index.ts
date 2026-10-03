@@ -44,8 +44,13 @@ serve(async (req) => {
       return jsonResponse({ error: "This is an in-person booking — no video room available." }, 400);
     }
 
-    if ((booking as { status?: string }).status === "cancelled") {
+    const status = (booking as { status?: string }).status;
+    if (status === "cancelled") {
       return jsonResponse({ error: "This booking has been cancelled." }, 400);
+    }
+    // Only paid bookings get a room - "pending" means checkout was never completed.
+    if (status !== "confirmed" && status !== "completed") {
+      return jsonResponse({ error: "This booking isn't confirmed yet." }, 400);
     }
 
     const clientUserId = (booking.client as { user_id?: string } | null)?.user_id;

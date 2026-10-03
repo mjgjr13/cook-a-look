@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { isVirtualBooking } from "@/lib/bookingUtils";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
@@ -44,6 +45,7 @@ interface Booking {
   id: string;
   status: string;
   created_at: string;
+  meeting_type?: string | null;
   slot: {
     start_time: string;
     end_time: string;
@@ -629,7 +631,7 @@ const AdvisorDashboard = () => {
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
-                        {booking.slot.is_virtual ? (
+                        {isVirtualBooking(booking) ? (
                           <Video className="w-6 h-6 text-primary" />
                         ) : (
                           <MapPin className="w-6 h-6 text-primary" />
@@ -637,7 +639,7 @@ const AdvisorDashboard = () => {
                       </div>
                       <div>
                         <p className="font-serif font-medium">
-                          {booking.slot.is_virtual ? "Virtual" : "In-Person"} Session with {booking.client?.full_name || "Client"}
+                          {isVirtualBooking(booking) ? "Virtual" : "In-Person"} Session with {booking.client?.full_name || "Client"}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(booking.slot.start_time).toLocaleDateString("en-US", {
@@ -654,7 +656,7 @@ const AdvisorDashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      {booking.slot.is_virtual ? (
+                      {isVirtualBooking(booking) ? (
                         <Button 
                           variant="hero" 
                           size="sm"
