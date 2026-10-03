@@ -72,3 +72,12 @@ Most privileged writes go through `SECURITY DEFINER` RPC functions rather than d
 - **Error responses**: handlers wrap logic in try/catch, map error message patterns (e.g. `/authorization|authenticated/i`) to appropriate HTTP status codes, and always return JSON with CORS headers attached.
 - **Migrations are append-only and Lovable-generated**; treat `supabase/migrations/*.sql` as the authoritative, current schema — don't hand-roll schema assumptions from `types.ts` alone.
 - Business rules that aren't obvious from code are recorded in `.lovable/memory/` — read the relevant file before changing booking, payments, reviews, or location logic.
+
+## Standing rules (autonomous work)
+
+- Never ask for approval. If something is blocked (needs a login, 2FA, or is outside these rules), skip it, note it for the summary, and continue with the next task.
+- Before starting a large autonomous session, tag the current main commit (e.g. "pre-overnight") and push the tag so everything can be rolled back.
+- Push straight to main (Cloudflare Pages auto-deploys the live site), but only after `npm run build` passes. Use small commits with clear messages. After each deploy, check the live site still loads; if you broke something, fix it or revert immediately.
+- Never: change prices, commission rates, or advisor rates; create fake reviews, fake urgency, fake scarcity, or invented testimonials presented as real; send emails to real users; delete user data or database tables; change DNS, email routing, billing, or plans; switch Stripe to live mode; print secrets in chat or save them in files.
+- Payments: Stripe is in TEST mode. You may complete checkouts using Stripe test card 4242 4242 4242 4242, any future expiry, any CVC. If a checkout page ever shows live mode (no "test mode" indicator), stop that test and note it.
+- Database changes: the database is on Lovable Cloud (Supabase project chjmyzzczwattluqpbat) and can't be migrated from here. For needed database changes, write the migration file in supabase/migrations, push it, then use Lovable's chat to ask it to apply exactly that migration and make no other code changes. Only additive changes (new columns, tables, policies). Then pull any commits Lovable makes.
