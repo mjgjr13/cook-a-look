@@ -24,8 +24,6 @@ const staticEntries: Entry[] = [
   { path: "/become-advisor", changefreq: "monthly", priority: "0.7" },
   { path: "/signin", changefreq: "yearly", priority: "0.3" },
   { path: "/signup", changefreq: "yearly", priority: "0.3" },
-  { path: "/forgot-password", changefreq: "yearly", priority: "0.2" },
-  { path: "/reset-password", changefreq: "yearly", priority: "0.2" },
   { path: "/terms", changefreq: "yearly", priority: "0.3" },
   { path: "/privacy", changefreq: "yearly", priority: "0.3" },
 ];

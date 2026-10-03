@@ -37,18 +37,6 @@
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.cookalook.com/forgot-password</loc>
-    <lastmod>2026-10-03</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  <url>
-    <loc>https://www.cookalook.com/reset-password</loc>
-    <lastmod>2026-10-03</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  <url>
     <loc>https://www.cookalook.com/terms</loc>
     <lastmod>2026-10-03</lastmod>
     <changefreq>yearly</changefreq>
