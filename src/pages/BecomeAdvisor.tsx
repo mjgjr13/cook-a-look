@@ -181,6 +181,18 @@ const BecomeAdvisor = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canProceed()) {
+      // Shows the specific missing field (rate) or the terms reminder.
+      const priceNum = parseFloat(formData.price);
+      toast({
+        title: "Almost there",
+        description: !formData.price || isNaN(priceNum) || priceNum < 25
+          ? "Please set an hourly rate (minimum $25/hour)."
+          : "Please agree to the Advisor Terms to submit your application.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Password is only needed to create a new account - skip if already signed in
     if (!authUser) {
@@ -1494,7 +1506,6 @@ const BecomeAdvisor = () => {
                     type="button" 
                     variant="hero" 
                     onClick={nextStep}
-                    disabled={!canProceed()}
                   >
                     Continue
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -1504,7 +1515,7 @@ const BecomeAdvisor = () => {
                     type="submit" 
                     variant="hero" 
                     size="lg"
-                    disabled={!canProceed() || isSubmitting}
+                    disabled={isSubmitting}
                   >
                     {isSubmitting ? "Submitting..." : "Submit Application"}
                   </Button>
