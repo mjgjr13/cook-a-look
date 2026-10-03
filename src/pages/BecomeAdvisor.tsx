@@ -1558,16 +1558,20 @@ const BecomeAdvisor = () => {
                 )}
 
                 {currentStep < 4 ? (
-                  <Button 
-                    type="button" 
-                    variant="hero" 
+                  <Button
+                    // Distinct keys stop React reusing this <button> as the Submit button:
+                    // otherwise the click that moves to step 4 also submits the form.
+                    key="continue"
+                    type="button"
+                    variant="hero"
                     onClick={nextStep}
                   >
                     Continue
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
+                    key="submit"
                     type="submit" 
                     variant="hero" 
                     size="lg"
