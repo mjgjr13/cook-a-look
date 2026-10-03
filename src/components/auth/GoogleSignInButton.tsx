@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { GOOGLE_SIGN_IN_ENABLED } from "@/lib/featureFlags";
+import { getSafeRedirect } from "@/lib/safeRedirect";
 
 const GoogleIcon = () => (
   <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" aria-hidden="true">
@@ -13,29 +15,28 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const GoogleSignInButton = ({ label = "Continue with Google" }: { label?: string }) => {
+interface Props {
+  label?: string;
+  /** Relative path to return to after Google sign-in (e.g. an advisor profile mid-booking). */
+  redirectPath?: string | null;
+}
+
+const GoogleSignInButton = ({ label = "Continue with Google", redirectPath }: Props) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
     setLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        toast({
-          title: "Google sign-in failed",
-          description: result.error.message ?? "Please try again.",
-          variant: "destructive",
-        });
-        setLoading(false);
-      }
-      // On success (redirect or set session), the page will reload/redirect.
-    } catch (e) {
+    const path = getSafeRedirect(redirectPath) ?? "/dashboard";
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}${path}` },
+    });
+    // On success the browser navigates to Google, so we only handle errors here.
+    if (error) {
       toast({
         title: "Google sign-in failed",
-        description: e instanceof Error ? e.message : "Please try again.",
+        description: error.message || "Please try again, or use your email and password.",
         variant: "destructive",
       });
       setLoading(false);
@@ -43,16 +44,26 @@ const GoogleSignInButton = ({ label = "Continue with Google" }: { label?: string
   };
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full"
-      onClick={handleClick}
-      disabled={loading}
-    >
+    <Button type="button" variant="outline" className="w-full" onClick={handleClick} disabled={loading}>
       {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <GoogleIcon />}
       {label}
     </Button>
+  );
+};
+
+/** "or" divider + Google button. Renders nothing while Google sign-in is disabled. */
+export const GoogleSignInSection = (props: Props) => {
+  if (!GOOGLE_SIGN_IN_ENABLED) return null;
+  return (
+    <>
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground font-sans">or</span>
+        </div>
+      </div>
+      <GoogleSignInButton {...props} />
+    </>
   );
 };
 

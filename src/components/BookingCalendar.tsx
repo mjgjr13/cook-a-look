@@ -173,9 +173,10 @@ const BookingCalendar = ({
       }
       const qs = params.toString();
       const redirectTarget = `/advisors/${encodeURIComponent(advisorId)}${qs ? `?${qs}` : ""}`;
-      toast({ title: "Sign in required", description: "Please sign in to book a consultation." });
       onClose();
-      navigate(`/signin?redirect=${encodeURIComponent(redirectTarget)}`);
+      // Most visitors booking for the first time don't have an account yet, so
+      // send them to sign-up (which links to sign-in) with the booking preserved.
+      navigate(`/signup?redirect=${encodeURIComponent(redirectTarget)}`);
       return;
     }
     if (!selectedDate || !selectedSlot) {
@@ -501,24 +502,27 @@ const BookingCalendar = ({
                 </div>
               )}
 
-              <div className="flex justify-between items-center border-t border-border pt-3">
-                <span className="font-sans text-sm">Total</span>
-                <span className="font-sans font-medium">${total}</span>
+              <div className="border-t border-border pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-sans text-sm">Total</span>
+                  <span className="font-sans font-medium">${total}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Plus any applicable sales tax, shown at checkout before you pay.</p>
               </div>
               <Button variant="hero" className="w-full" onClick={handleBooking} disabled={isLoading}>
                 {isLoading ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
-                ) : user ? "Proceed to Payment" : "Sign in to Book"}
+                ) : user ? `Continue to Payment · $${total}` : "Continue to Book"}
               </Button>
-              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
-                Secure checkout via Stripe — Cook A Look never sees your card details.
-                Payment is held in escrow for 48 hours after your session.
-              </p>
               {!user && (
                 <p className="text-xs text-muted-foreground text-center mt-1">
-                  You'll need to sign in to complete your booking
+                  Next: create a free account or sign in. Your selected time is saved.
                 </p>
               )}
+              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+                Secure checkout via Stripe. Cook A Look never sees your card details.
+                Payment is held in escrow until 48 hours after your session.
+              </p>
             </div>
           )}
         </div>

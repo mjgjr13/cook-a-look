@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { signUpSchema, type SignUpFormData } from "@/lib/validations";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
+import { GoogleSignInSection } from "@/components/auth/GoogleSignInButton";
+import { getSafeRedirect } from "@/lib/safeRedirect";
 
 const SignUp = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectParam = getSafeRedirect(searchParams.get("redirect"));
+  const redirectTo = redirectParam || "/dashboard";
+  const isBookingFlow = !!redirectParam?.startsWith("/advisors/");
   const { signUp, user, isLoading: authLoading } = useAuth();
   
   const [formData, setFormData] = useState<SignUpFormData>({
@@ -32,9 +37,9 @@ const SignUp = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !authLoading) {
-      navigate("/dashboard");
+      navigate(redirectTo, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, redirectTo]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -112,7 +117,7 @@ const SignUp = () => {
         description: "Welcome to Cook A Look.",
       });
 
-      navigate("/dashboard");
+      navigate(redirectTo, { replace: true });
     } catch {
       toast({
         title: "Error",
@@ -189,8 +194,15 @@ const SignUp = () => {
                 Create Account
               </h1>
               <p className="font-sans text-muted-foreground">
-                Join Cook A Look and connect with style experts
+                {isBookingFlow
+                  ? "One quick step before you book. It's free and takes about 30 seconds."
+                  : "Join Cook A Look and connect with style experts"}
               </p>
+              {isBookingFlow && (
+                <p className="mt-4 text-sm font-sans text-foreground bg-secondary/60 border border-border px-3 py-2">
+                  Your selected time is saved. You'll go straight back to checkout after this.
+                </p>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -311,21 +323,13 @@ const SignUp = () => {
               </p>
             </form>
 
-            {/* Temporarily hidden: Google OAuth is broken post-migration (404s on /~oauth/initiate). Restore once a proper fix is in place.
-            <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-            <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground font-sans">or</span>
-            </div>
-            </div>
-            <GoogleSignInButton label="Sign up with Google" />
-            */}
+            <GoogleSignInSection label="Sign up with Google" redirectPath={redirectTo} />
 
 
             <p className="text-center mt-8 font-sans text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link
-                to="/signin"
+                to={redirectParam ? `/signin?redirect=${encodeURIComponent(redirectParam)}` : "/signin"}
                 className="text-foreground hover:text-gold transition-colors font-medium"
               >
                 Sign In
