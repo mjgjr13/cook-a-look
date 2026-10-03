@@ -598,6 +598,44 @@ export type Database = {
           },
         ]
       }
+      booking_waitlist: {
+        Row: {
+          advisor_id: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          note: string | null
+          source: string
+        }
+        Insert: {
+          advisor_id?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          note?: string | null
+          source?: string
+        }
+        Update: {
+          advisor_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          note?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_waitlist_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           advisor_id: string
