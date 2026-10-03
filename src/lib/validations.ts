@@ -16,7 +16,9 @@ export const nameSchema = z
   .trim()
   .min(1, { message: "Name is required" })
   .max(100, { message: "Name must be less than 100 characters" })
-  .regex(/^[a-zA-Z\s'-]+$/, { message: "Name can only contain letters, spaces, hyphens, and apostrophes" });
+  // Unicode letters so names like José, Zoë or Nguyễn are accepted. Empty is
+  // allowed here so the "Name is required" message from .min() is the one shown.
+  .regex(/^[\p{L}\p{M}\s'’.-]*$/u, { message: "Name can only contain letters, spaces, hyphens, and apostrophes" });
 
 export const signInSchema = z.object({
   email: emailSchema,
