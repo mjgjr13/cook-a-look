@@ -73,11 +73,13 @@ serve(async (req) => {
     // Fetch advisor with capabilities + surcharge
     const { data: advisor, error: advisorError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, price_per_session, is_advisor, advisor_approved, virtual_available, in_person_available, in_person_surcharge")
+      .select("id, full_name, price_per_session, is_advisor, advisor_approved, is_demo, virtual_available, in_person_available, in_person_surcharge")
       .eq("id", advisorId)
       .single();
     if (advisorError || !advisor) throw new Error("Advisor not found");
     if (!advisor.is_advisor || !advisor.advisor_approved) throw new Error("Invalid advisor");
+    // Sample (demo) profiles can't be booked or paid for - the site shows a waitlist instead.
+    if (advisor.is_demo) throw new Error("This is a sample profile and can't be booked yet");
     if (!advisor.price_per_session || advisor.price_per_session <= 0) throw new Error("Advisor has not set a valid price");
 
     if (meetingType === "virtual" && !advisor.virtual_available) throw new Error("Advisor does not offer virtual sessions");
