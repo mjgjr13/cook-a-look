@@ -45,6 +45,7 @@ import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
 import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
+import BiometricConsentScreen from "@/components/advisor/BiometricConsentScreen";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
@@ -107,6 +108,7 @@ const BecomeAdvisor = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const [biometricConsentGiven, setBiometricConsentGiven] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -353,11 +355,14 @@ const BecomeAdvisor = () => {
       }
 
       // Step 3b: Upload verification documents (selfie + government ID) to the private "verifications" bucket.
-      // We create long-lived signed URLs so the admin review screen can render the images directly.
+      // We create long-lived signed URLs so the admin review screen can render the images directly,
+      // and separately return the raw storage path so the retention/deletion job (see
+      // supabase/functions/delete-expired-verifications) can reliably remove the object later
+      // without having to parse it back out of a signed URL.
       const uploadVerificationDoc = async (
         file: File,
         kind: "selfie" | "id"
-      ): Promise<string | null> => {
+      ): Promise<{ url: string; path: string } | null> => {
         try {
           const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
           const path = `${userId}/${kind}_${Date.now()}.${ext}`;
@@ -377,7 +382,7 @@ const BecomeAdvisor = () => {
             return null;
           }
           console.log(`${kind} uploaded:`, path);
-          return signed.signedUrl;
+          return { url: signed.signedUrl, path };
         } catch (err) {
           console.error(`Error uploading ${kind}:`, err);
           return null;
@@ -385,12 +390,18 @@ const BecomeAdvisor = () => {
       };
 
       let selfieUrl: string | null = null;
+      let selfieStoragePath: string | null = null;
       let idDocumentUrl: string | null = null;
+      let idDocumentStoragePath: string | null = null;
       if (formData.selfieFile) {
-        selfieUrl = await uploadVerificationDoc(formData.selfieFile, "selfie");
+        const result = await uploadVerificationDoc(formData.selfieFile, "selfie");
+        selfieUrl = result?.url ?? null;
+        selfieStoragePath = result?.path ?? null;
       }
       if (formData.idFile) {
-        idDocumentUrl = await uploadVerificationDoc(formData.idFile, "id");
+        const result = await uploadVerificationDoc(formData.idFile, "id");
+        idDocumentUrl = result?.url ?? null;
+        idDocumentStoragePath = result?.path ?? null;
       }
 
       // Step 4: Wait for profile trigger to create base profile, then update it
@@ -524,6 +535,25 @@ const BecomeAdvisor = () => {
           selfie_url: selfieUrl,
           id_document_url: idDocumentUrl,
         });
+
+      // Best-effort, non-blocking: record the raw storage paths for the
+      // retention/deletion job (supabase/functions/delete-expired-verifications).
+      // Kept as a separate update rather than part of the insert above so that
+      // the core application submission can never fail because of this - e.g.
+      // if the selfie_storage_path/id_document_storage_path columns from
+      // migration 20260704000000 haven't been applied to this environment yet.
+      if (!applicationError && (selfieStoragePath || idDocumentStoragePath)) {
+        const { error: pathUpdateError } = await supabase
+          .from("advisor_applications")
+          .update({
+            selfie_storage_path: selfieStoragePath,
+            id_document_storage_path: idDocumentStoragePath,
+          })
+          .eq("user_id", userId);
+        if (pathUpdateError) {
+          console.error("Failed to record verification storage paths (non-blocking):", pathUpdateError);
+        }
+      }
 
       if (applicationError) {
         console.error("Application insert error:", applicationError);
@@ -1279,10 +1309,14 @@ const BecomeAdvisor = () => {
                     transition={{ duration: 0.3 }}
                     className="space-y-8"
                   >
+                    {!biometricConsentGiven ? (
+                      <BiometricConsentScreen onConsent={() => setBiometricConsentGiven(true)} />
+                    ) : (
+                      <>
                     <div className="bg-card border border-border p-4 mb-6">
                       <p className="font-sans text-sm text-muted-foreground">
                         <Shield className="w-4 h-4 inline mr-2" />
-                        Verification keeps our community safe and builds trust with clients. 
+                        Verification keeps our community safe and builds trust with clients.
                         Your documents are securely encrypted and never shared publicly.
                       </p>
                     </div>
@@ -1362,6 +1396,8 @@ const BecomeAdvisor = () => {
                         setFormData({ ...formData, idFile: null, idPreview: "" });
                       }}
                     />
+                      </>
+                    )}
                   </motion.div>
                 )}
 

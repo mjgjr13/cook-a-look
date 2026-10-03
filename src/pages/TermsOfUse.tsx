@@ -75,6 +75,17 @@ const TermsOfUse = () => {
                   services rendered. Any contract for services formed through the Platform is
                   exclusively between the Client and the Advisor.
                 </p>
+                <p className="text-muted-foreground leading-relaxed mt-4">
+                  <strong className="text-foreground">AI Style Concierge.</strong> The "Style
+                  Concierge" chat feature is an automated system powered by artificial
+                  intelligence, not a human advisor or employee of Cook A Look. It is disclosed as
+                  AI-powered in the chat interface itself. Its responses are generated
+                  automatically based on publicly listed advisor information and may be
+                  incomplete, outdated, or inaccurate; they do not constitute professional styling
+                  advice or a recommendation, endorsement, or guarantee of any Advisor by Cook A
+                  Look. You should independently review an Advisor's profile, reviews, and
+                  credentials before booking.
+                </p>
               </section>
 
               {/* 3. Eligibility & Accounts */}
@@ -111,7 +122,7 @@ const TermsOfUse = () => {
                   </p>
                   <p>
                     <strong>Platform Fees.</strong> Cook A Look charges Advisors a service fee of
-                    fifteen percent (15%) per completed booking, reduced to five percent (5%) for
+                    fifteen percent (15%) per completed booking, reduced to ten percent (10%) for
                     each additional booking in a calendar month after the Advisor's ninth (9th)
                     completed booking in that month. Fees may change with notice posted to the
                     Platform; continued use after a change constitutes acceptance.
@@ -348,10 +359,42 @@ const TermsOfUse = () => {
                   necessary rights to your User Content and that it does not violate any law or
                   third-party right.
                 </p>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed mb-3">
                   We may remove any User Content for any reason without notice. Feedback you
                   submit is non-confidential and may be used by us without restriction or
                   compensation.
+                </p>
+                <p className="text-muted-foreground leading-relaxed mb-3">
+                  <strong className="text-foreground">Reviews.</strong> Reviews reflect the
+                  opinions of the individual Client or Advisor who submitted them, not the
+                  opinions of, and are not verified, endorsed, or adopted by, Cook A Look. We do
+                  not pre-screen reviews before publication and are not responsible for their
+                  accuracy or truthfulness, though we may remove a review that violates these
+                  Terms (e.g., harassment, off-topic content, or fraud) or upon a successful legal
+                  claim. Manipulating reviews, including through fake accounts or paid reviews not
+                  disclosed as such, is prohibited under Section 11.
+                </p>
+                <p className="text-muted-foreground leading-relaxed mb-3">
+                  <strong className="text-foreground">Chat &amp; Messages.</strong> Messages sent
+                  through booking chat are between the Client and Advisor for that booking; Cook A
+                  Look does not review messages in the ordinary course but may access them to
+                  investigate disputes, safety reports, or suspected violations of these Terms, or
+                  as required by law. You are solely responsible for the content of your messages.
+                </p>
+                <p className="text-muted-foreground leading-relaxed mb-3">
+                  <strong className="text-foreground">Profile Content.</strong> Advisor profiles,
+                  including bios, specialties, experience claims, and portfolio items, are
+                  self-reported by the Advisor. Beyond the identity verification described in
+                  Section 3, Cook A Look does not independently verify professional claims,
+                  credentials, licenses, or portfolio authenticity, and disclaims all liability
+                  for inaccuracies in profile content.
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Section 230.</strong> To the fullest extent
+                  permitted by 47 U.S.C. § 230, Cook A Look is a provider of an interactive
+                  computer service and is not the "publisher or speaker" of, and disclaims
+                  liability for, information provided by another user, including reviews, chat
+                  messages, and profile content.
                 </p>
               </section>
 

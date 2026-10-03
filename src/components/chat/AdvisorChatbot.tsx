@@ -49,7 +49,8 @@ export const AdvisorChatbot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi! ✨ What kind of style help are you looking for today?",
+      content:
+        "Hi! ✨ I'm an AI concierge, not a human advisor. What kind of style help are you looking for today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -191,8 +192,13 @@ export const AdvisorChatbot = () => {
         {/* Header */}
         <div className="flex items-center justify-between border-b bg-primary px-4 py-3 text-primary-foreground">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            <span className="font-semibold text-sm">Style Concierge</span>
+            <Sparkles className="h-5 w-5" aria-hidden="true" />
+            <div className="flex flex-col leading-tight">
+              <span className="font-semibold text-sm">Style Concierge</span>
+              <span className="text-[10px] uppercase tracking-wide text-primary-foreground/70">
+                AI-powered, not a human advisor
+              </span>
+            </div>
           </div>
           <Button
             variant="ghost"
