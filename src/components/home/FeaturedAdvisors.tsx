@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Star, Video, MapPin, Loader2, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
@@ -71,12 +70,8 @@ const FeaturedAdvisors = () => {
         ) : advisors && advisors.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {advisors.map((advisor, index) => (
-              <motion.article
+              <article
                 key={advisor.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="group bg-background border border-border overflow-hidden transition-colors hover:border-foreground cursor-pointer"
                 onClick={() => handleCardClick(advisor.id)}
               >
@@ -158,7 +153,7 @@ const FeaturedAdvisors = () => {
                     </Button>
                   </div>
                 </div>
-              </motion.article>
+              </article>
             ))}
           </div>
         ) : (
