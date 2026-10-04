@@ -8,7 +8,7 @@ Cook A Look is a marketplace where vetted style advisors offer one-on-one fashio
 
 - [Home](/): Overview of the Cook A Look styling marketplace.
 - [Style Advisors](/advisors): Browse and filter professional style advisors.
-- [Lookbook](/lookbook): Curated gallery of outfits and style inspiration.
+- [Style Concierge](/style-concierge): AI style assistant that answers style questions and suggests matching advisors.
 - [Become an Advisor](/become-advisor): Apply to join Cook A Look as a style advisor.
 - [Sign In](/signin): Sign in to your Cook A Look account.
 - [Sign Up](/signup): Create a Cook A Look client account.

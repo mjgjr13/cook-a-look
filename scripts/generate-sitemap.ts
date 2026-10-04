@@ -21,7 +21,7 @@ const today = new Date().toISOString().slice(0, 10);
 const staticEntries: Entry[] = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/advisors", changefreq: "daily", priority: "0.9" },
-  { path: "/lookbook", changefreq: "weekly", priority: "0.8" },
+  { path: "/style-concierge", changefreq: "monthly", priority: "0.8" },
   { path: "/become-advisor", changefreq: "monthly", priority: "0.7" },
   { path: "/signin", changefreq: "yearly", priority: "0.3" },
   { path: "/signup", changefreq: "yearly", priority: "0.3" },

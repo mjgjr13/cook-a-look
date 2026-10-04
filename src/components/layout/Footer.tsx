@@ -21,10 +21,10 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/lookbook"
+                  to="/style-concierge"
                   className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"
                 >
-                  Lookbook
+                  Style Concierge
                 </Link>
               </li>
               <li>
@@ -74,7 +74,7 @@ const Footer = () => {
             </a>
             <div className="flex gap-4 md:justify-end">
               <a
-                href="https://www.instagram.com/cookalookofficial?igsh=amNzdmFiM2JzZmF3&utm_source=qr"
+                href="https://www.instagram.com/cookalookofficial/?utm_source=ig_web_button_share_sheet"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-foreground/80 hover:text-primary-foreground transition-colors"

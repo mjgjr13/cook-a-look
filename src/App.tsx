@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
@@ -11,7 +11,6 @@ import AdvisorRoute from "@/components/AdvisorRoute";
 import Index from "./pages/Index";
 import Advisors from "./pages/Advisors";
 import AdvisorProfile from "./pages/AdvisorProfile";
-import Lookbook from "./pages/Lookbook";
 const BecomeAdvisor = lazy(() => import("./pages/BecomeAdvisor"));
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -28,7 +27,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 import NotFound from "./pages/NotFound";
 const OgPreview = lazy(() => import("./pages/OgPreview"));
 const Brand = lazy(() => import("./pages/Brand"));
-const AdminLookbook = lazy(() => import("./pages/admin/AdminLookbook"));
+const StyleConcierge = lazy(() => import("./pages/StyleConcierge"));
 const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
 const AdminAdvisors = lazy(() => import("./pages/admin/AdminAdvisors"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -55,7 +54,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/advisors" element={<Advisors />} />
             <Route path="/advisors/:id" element={<AdvisorProfile />} />
-            <Route path="/lookbook" element={<Lookbook />} />
+            <Route path="/style-concierge" element={<StyleConcierge />} />
+            {/* The Lookbook was replaced by the Style Concierge */}
+            <Route path="/lookbook" element={<Navigate to="/style-concierge" replace />} />
             <Route path="/become-advisor" element={<BecomeAdvisor />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
@@ -111,11 +112,6 @@ const App = () => (
             <Route path="/admin/bookings" element={
               <AdminRoute>
                 <AdminBookings />
-              </AdminRoute>
-            } />
-            <Route path="/admin/lookbook" element={
-              <AdminRoute>
-                <AdminLookbook />
               </AdminRoute>
             } />
             <Route path="/admin/advisors" element={

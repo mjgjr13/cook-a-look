@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Image, Calendar, DollarSign, Loader2, MapPin, Gift, ShieldAlert, Palette, RefreshCw } from "lucide-react";
+import { Users, Calendar, DollarSign, Loader2, MapPin, Gift, ShieldAlert, Palette, RefreshCw } from "lucide-react";
 import AdminInbox from "@/components/admin/AdminInbox";
 
 interface DemoAdvisor {
@@ -26,7 +26,6 @@ const AdminDashboard = () => {
     totalAdvisors: 0,
     pendingApplications: 0,
     totalBookings: 0,
-    lookbookItems: 0,
   });
   const [demoAdvisors, setDemoAdvisors] = useState<DemoAdvisor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,11 +33,10 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch dashboard stats and demo advisors - AdminRoute already verified admin access
-      const [advisorsRes, applicationsRes, bookingsRes, lookbookRes, demoAdvisorsRes] = await Promise.all([
+      const [advisorsRes, applicationsRes, bookingsRes, demoAdvisorsRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact" }).eq("is_advisor", true),
         supabase.from("advisor_applications").select("id", { count: "exact" }).eq("status", "pending"),
         supabase.from("bookings").select("id", { count: "exact" }),
-        supabase.from("lookbook_items").select("id", { count: "exact" }),
         supabase
           .from("profiles")
           .select("id, full_name, specialty, avatar_url, location, rating, is_demo")
@@ -51,7 +49,6 @@ const AdminDashboard = () => {
         totalAdvisors: advisorsRes.count || 0,
         pendingApplications: applicationsRes.count || 0,
         totalBookings: bookingsRes.count || 0,
-        lookbookItems: lookbookRes.count || 0,
       });
 
       setDemoAdvisors((demoAdvisorsRes.data as DemoAdvisor[]) || []);
@@ -86,7 +83,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Grid - Clickable Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 md:grid-cols-3 mb-8">
           <Card 
             className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
             onClick={() => handleCardClick("/admin/advisors")}
@@ -134,19 +131,6 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card 
-            className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
-            onClick={() => handleCardClick("/admin/lookbook")}
-          >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Lookbook Items</CardTitle>
-              <Image className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.lookbookItems}</div>
-              <p className="text-xs text-primary mt-1">Click to manage →</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Demo Advisors Section */}
@@ -235,23 +219,6 @@ const AdminDashboard = () => {
             <CardContent>
               <Button asChild className="w-full">
                 <Link to="/admin/advisors">Manage Advisors</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Image className="h-5 w-5" />
-                Lookbook CMS
-              </CardTitle>
-              <CardDescription>
-                Add, edit, and organize lookbook inspiration content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/admin/lookbook">Manage Lookbook</Link>
               </Button>
             </CardContent>
           </Card>
