@@ -53,6 +53,7 @@ export type Database = {
           experience: string | null
           first_name: string
           id: string
+          id_document_storage_path: string | null
           id_document_url: string | null
           in_person: boolean | null
           instagram: string
@@ -63,12 +64,14 @@ export type Database = {
           portfolio: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          selfie_storage_path: string | null
           selfie_url: string | null
           specialty: string
           status: string
           tiktok: string | null
           updated_at: string
           user_id: string
+          verification_photos_deleted_at: string | null
           virtual: boolean | null
         }
         Insert: {
@@ -79,6 +82,7 @@ export type Database = {
           experience?: string | null
           first_name: string
           id?: string
+          id_document_storage_path?: string | null
           id_document_url?: string | null
           in_person?: boolean | null
           instagram: string
@@ -89,12 +93,14 @@ export type Database = {
           portfolio?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_storage_path?: string | null
           selfie_url?: string | null
           specialty: string
           status?: string
           tiktok?: string | null
           updated_at?: string
           user_id: string
+          verification_photos_deleted_at?: string | null
           virtual?: boolean | null
         }
         Update: {
@@ -105,6 +111,7 @@ export type Database = {
           experience?: string | null
           first_name?: string
           id?: string
+          id_document_storage_path?: string | null
           id_document_url?: string | null
           in_person?: boolean | null
           instagram?: string
@@ -115,12 +122,14 @@ export type Database = {
           portfolio?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_storage_path?: string | null
           selfie_url?: string | null
           specialty?: string
           status?: string
           tiktok?: string | null
           updated_at?: string
           user_id?: string
+          verification_photos_deleted_at?: string | null
           virtual?: boolean | null
         }
         Relationships: []
