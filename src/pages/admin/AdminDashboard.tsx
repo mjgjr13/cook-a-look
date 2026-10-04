@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
-import { SAMPLE_ADVISOR_IDS } from "@/lib/sampleAdvisors";
+import { SAMPLE_ADVISOR_IDS, TEST_BOOKABLE_SAMPLE_ADVISOR_IDS } from "@/lib/sampleAdvisors";
+import { TEST_ADVISOR_ACTS_AS_REAL } from "@/lib/featureFlags";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Calendar, DollarSign, Loader2, MapPin, Gift, ShieldAlert, Palette, RefreshCw } from "lucide-react";
+import { Users, Calendar, Loader2, MapPin } from "lucide-react";
 import AdminInbox from "@/components/admin/AdminInbox";
 
 interface DemoAdvisor {
@@ -76,7 +76,7 @@ const AdminDashboard = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="font-serif text-3xl md:text-4xl font-medium">Admin Dashboard</h1>
           <p className="text-muted-foreground">
             Monitor and manage your Cook A Look platform
           </p>
@@ -136,11 +136,11 @@ const AdminDashboard = () => {
         {/* Demo Advisors Section */}
         {demoAdvisors.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Sample Advisors</h2>
+            <h2 className="font-serif text-2xl mb-3">Sample advisors</h2>
             <Card>
               <CardHeader>
                 <CardDescription>
-                  Sample profiles shown to visitors (labeled, no ratings, booking goes to the waitlist). Remove them from Advisors → Active.
+                  Sample profiles are labeled on the site and send visitors to the waitlist. James Whitaker is the test advisor: bookable like a real advisor while Stripe is in test mode. Remove samples from Advisors → Active.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -159,7 +159,9 @@ const AdminDashboard = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-medium truncate">{advisor.full_name || "Demo Advisor"}</p>
-                          <Badge variant="outline" className="text-xs">Demo</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {TEST_ADVISOR_ACTS_AS_REAL && TEST_BOOKABLE_SAMPLE_ADVISOR_IDS.includes(advisor.id) ? "Test · bookable" : "Sample"}
+                          </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
                           {advisor.specialty || "Style Advisor"}
@@ -186,128 +188,18 @@ const AdminDashboard = () => {
           <AdminInbox />
         </div>
 
-        {/* Admin Modules */}
-        <h2 className="text-xl font-semibold mb-4">Management</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Booking Management
-              </CardTitle>
-              <CardDescription>
-                View and monitor all platform bookings
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/admin/bookings">Manage Bookings</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Advisor Management
-              </CardTitle>
-              <CardDescription>
-                Review applications, approve advisors, and manage profiles
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/admin/advisors">Manage Advisors</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Payments & Withdrawals
-              </CardTitle>
-              <CardDescription>
-                View revenue, platform fees, and process advisor withdrawals
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/admin/payments">Manage Payments</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="h-5 w-5" />
-                Rewards & Credits
-              </CardTitle>
-              <CardDescription>
-                Manage point values, tiers, credits, and view audit logs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/admin/rewards">Manage Rewards</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShieldAlert className="h-5 w-5" />
-                Dispute Resolution
-              </CardTitle>
-              <CardDescription>
-                Review disputes and access Daily.co session recordings
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/admin/disputes">Manage Disputes</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5" />
-                Cancellations & Refunds
-              </CardTitle>
-              <CardDescription>
-                View cancellations, override refund amounts, retry failed refunds
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/admin/cancellations">Manage Refunds</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Brand Assets
-              </CardTitle>
-              <CardDescription>
-                Download logos and press kit for promotional use
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link to="/brand">Open Press Kit</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Sections are in the admin menu above; only resources that aren't live here. */}
+        <h2 className="font-serif text-2xl mb-3">Resources</h2>
+        <Link
+          to="/brand"
+          className="flex items-center justify-between border border-border bg-card px-4 py-3 text-sm hover:border-foreground transition-colors"
+        >
+          <span>
+            <span className="font-semibold">Press kit</span>
+            <span className="text-muted-foreground"> · Logos and brand assets for promotional use</span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </Layout>
   );

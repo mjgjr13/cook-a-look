@@ -311,9 +311,7 @@ const AdvisorDashboard = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase">
-                  Advisor Dashboard
-                </p>
+                <p className="text-sm text-muted-foreground">Advisor dashboard</p>
                 {isPending && (
                   <Badge variant="outline" className="text-gold border-gold/50">
                     Pending Approval

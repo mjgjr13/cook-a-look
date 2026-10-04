@@ -148,7 +148,7 @@ const AdminCancellations = () => {
       <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="font-serif text-3xl font-medium">Cancellations & Refunds</h1>
+            <h1 className="font-serif text-3xl md:text-4xl font-medium">Cancellations & Refunds</h1>
             <p className="text-sm text-muted-foreground">Review every cancellation, override refund amounts, retry failures.</p>
           </div>
           <div className="flex gap-2">

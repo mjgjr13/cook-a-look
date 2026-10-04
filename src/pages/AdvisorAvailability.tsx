@@ -18,7 +18,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  ArrowLeft,
   Loader2,
   Clock,
   Eye,
@@ -346,14 +345,8 @@ const AdvisorAvailability = () => {
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/advisor")}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
               <div>
-                <p className="text-gold font-sans text-xs tracking-[0.3em] uppercase mb-1">
-                  Availability
-                </p>
-                <h1 className="font-serif text-2xl md:text-3xl font-medium">
+                <h1 className="font-serif text-3xl md:text-4xl font-medium">
                   Set your weekly hours
                 </h1>
               </div>

@@ -37,7 +37,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   Search,
   Eye,
   CheckCircle,
@@ -642,17 +641,8 @@ const AdminAdvisors = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/admin")}
-                className="gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
               <div>
-                <h1 className="font-serif text-3xl font-medium">Advisor Management</h1>
+                <h1 className="font-serif text-3xl md:text-4xl font-medium">Advisor Management</h1>
                 <p className="text-muted-foreground font-sans text-sm">
                   Review applications and manage advisor profiles
                 </p>

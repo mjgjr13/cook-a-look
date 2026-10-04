@@ -24,8 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  ArrowLeft, 
+import {  
   DollarSign, 
   TrendingUp, 
   Clock, 
@@ -307,14 +306,8 @@ const AdvisorEarnings = () => {
         <div className="container mx-auto px-6 lg:px-8 max-w-6xl">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/advisor")}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
             <div>
-              <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-1">
-                Earnings Dashboard
-              </p>
-              <h1 className="font-serif text-2xl md:text-3xl font-medium">
+              <h1 className="font-serif text-3xl md:text-4xl font-medium">
                 Your Earnings & Withdrawals
               </h1>
             </div>

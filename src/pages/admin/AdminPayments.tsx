@@ -23,8 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  ArrowLeft, 
+import {  
   DollarSign, 
   TrendingUp, 
   Clock,
@@ -248,14 +247,8 @@ const AdminPayments = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
               <div>
-                <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-1">
-                  Admin Panel
-                </p>
-                <h1 className="font-serif text-2xl md:text-3xl font-medium">
+                <h1 className="font-serif text-3xl md:text-4xl font-medium">
                   Payments & Withdrawals
                 </h1>
               </div>

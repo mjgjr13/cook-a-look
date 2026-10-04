@@ -356,11 +356,8 @@ const AccountSettings = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-1">
-                Account Settings
-              </p>
-              <h1 className="font-serif text-2xl md:text-3xl font-medium">
-                Manage Your Account
+              <h1 className="font-serif text-3xl md:text-4xl font-medium">
+                Account settings
               </h1>
             </div>
           </div>

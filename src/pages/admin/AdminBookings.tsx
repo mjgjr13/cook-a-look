@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Loader2, Search, Video, MapPin, ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
+import { Calendar, Loader2, Search, Video, MapPin, ArrowRight, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 
@@ -151,13 +151,7 @@ const AdminBookings = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <Button variant="ghost" asChild className="mb-4 -ml-2">
-            <Link to="/admin">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Admin
-            </Link>
-          </Button>
-          <h1 className="text-3xl font-bold">Booking Management</h1>
+          <h1 className="font-serif text-3xl md:text-4xl font-medium">Booking Management</h1>
           <p className="text-muted-foreground">
             View and monitor all platform bookings
           </p>

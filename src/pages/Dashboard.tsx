@@ -267,9 +267,7 @@ const Dashboard = () => {
         <div className="container mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
             <div>
-              <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-2">
-                Client Dashboard
-              </p>
+              <p className="text-sm text-muted-foreground mb-1">Your dashboard</p>
               <h1 className="font-serif text-3xl md:text-4xl font-medium">
                 Welcome, {profile?.full_name?.split(" ")[0] || "there"}
               </h1>

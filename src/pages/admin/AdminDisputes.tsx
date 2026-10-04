@@ -105,7 +105,7 @@ const AdminDisputes = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
+            <h1 className="font-serif text-3xl md:text-4xl font-medium flex items-center gap-2">
               <ShieldAlert className="h-7 w-7 text-primary" />
               Dispute Resolution
             </h1>
