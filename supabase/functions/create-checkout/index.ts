@@ -2,9 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, getSafeOrigin, handleCorsPreflightRequest } from "../_shared/cors.ts";
-
-// Sample advisors bookable in Stripe TEST mode only (keep in sync with src/lib/sampleAdvisors.ts).
-const TEST_BOOKABLE_SAMPLE_ADVISOR_IDS = ["d5717c49-9c09-49d5-b2ee-34b138f6be04"]; // James Whitaker
+import { isTestBookableAdvisor } from "../_shared/testMode.ts";
 
 const isValidUUID = (str: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -84,9 +82,7 @@ serve(async (req) => {
     // Sample (demo) profiles can't be booked or paid for - the site shows a waitlist instead.
     // Exception: designated test advisors stay bookable while Stripe uses TEST keys, so the
     // full booking/payment/video flow can be tested. Switching to live keys blocks them.
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-    const stripeTestMode = stripeKey.startsWith("sk_test_") || stripeKey.startsWith("rk_test_");
-    if (advisor.is_demo && !(stripeTestMode && TEST_BOOKABLE_SAMPLE_ADVISOR_IDS.includes(advisor.id))) {
+    if (advisor.is_demo && !isTestBookableAdvisor(advisor.id)) {
       throw new Error("This is a sample profile and can't be booked yet");
     }
     if (!advisor.price_per_session || advisor.price_per_session <= 0) throw new Error("Advisor has not set a valid price");

@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Video } from "lucide-react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { isJoinWindowOpen, joinOpensLabel, JOIN_WINDOW_MINUTES } from "@/lib/bookingUtils";
+import { TEST_BOOKABLE_SAMPLE_ADVISOR_IDS } from "@/lib/sampleAdvisors";
 
 interface Props extends Omit<ButtonProps, "onClick"> {
   startTime: string;
   label?: string;
   onJoin: () => void;
+  /** Advisor of the booking; test bookings with the designated test advisor can join anytime. */
+  advisorId?: string | null;
 }
 
 /**
@@ -14,8 +17,10 @@ interface Props extends Omit<ButtonProps, "onClick"> {
  * (15 minutes before the session), showing when it will open instead of
  * letting people click into a "room not available yet" error.
  */
-const JoinCallButton = ({ startTime, label = "Join Call", onJoin, ...props }: Props) => {
-  const [open, setOpen] = useState(() => isJoinWindowOpen(startTime));
+const JoinCallButton = ({ startTime, label = "Join Call", onJoin, advisorId, ...props }: Props) => {
+  // Matches the server: rooms for the test advisor's bookings open immediately (Stripe test mode only).
+  const isTestBooking = !!advisorId && TEST_BOOKABLE_SAMPLE_ADVISOR_IDS.includes(advisorId);
+  const [open, setOpen] = useState(() => isTestBooking || isJoinWindowOpen(startTime));
 
   useEffect(() => {
     if (open) return;

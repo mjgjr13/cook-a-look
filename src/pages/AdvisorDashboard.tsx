@@ -663,6 +663,7 @@ const AdvisorDashboard = () => {
                           size="sm"
                           label="Start Call"
                           startTime={booking.slot.start_time}
+                          advisorId={profile?.id}
                           onJoin={() => setActiveVideoBooking(booking.id)}
                         />
                       ) : (

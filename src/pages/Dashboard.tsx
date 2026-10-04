@@ -370,6 +370,7 @@ const Dashboard = () => {
                           variant="hero"
                           size="sm"
                           startTime={booking.slot.start_time}
+                          advisorId={booking.advisor_id}
                           onJoin={() => setActiveVideoBooking(booking)}
                         />
                       ) : (

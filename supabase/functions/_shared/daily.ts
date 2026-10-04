@@ -4,6 +4,7 @@
 // never breaks for the user. See .lovable/memory/technical/video-provider.md.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isTestBookableAdvisor } from "./testMode.ts";
 
 export interface VideoRoom {
   roomUrl: string;
@@ -47,14 +48,17 @@ export async function getOrCreateVideoRoomForBooking(
   try {
     const { data: booking } = await supabaseAdmin
       .from("bookings")
-      .select("slot:availability_slots(start_time, end_time)")
+      .select("advisor_id, slot:availability_slots(start_time, end_time)")
       .eq("id", bookingId)
       .maybeSingle();
     const slot = booking?.slot as { start_time?: string; end_time?: string } | null;
     if (slot?.end_time) {
       expSeconds = Math.floor(new Date(slot.end_time).getTime() / 1000) + 30 * 60;
     }
-    if (slot?.start_time) {
+    // Test bookings with the designated test advisor (Stripe test mode only) open
+    // immediately so the video flow can be tested without waiting for the slot.
+    const testBooking = isTestBookableAdvisor((booking as { advisor_id?: string } | null)?.advisor_id);
+    if (slot?.start_time && !testBooking) {
       // Allow joining up to 15 minutes early, but not days in advance.
       const candidate = Math.floor(new Date(slot.start_time).getTime() / 1000) - 15 * 60;
       if (candidate > nowSeconds && candidate < expSeconds) {
