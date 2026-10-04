@@ -107,3 +107,27 @@ export function withSampleContent<
     isSample: true,
   };
 }
+
+/**
+ * Sample advisors that can be booked end to end for testing, while Stripe is in
+ * TEST mode only (create-checkout enforces the test-mode check server-side).
+ * Must match TEST_BOOKABLE_SAMPLE_ADVISOR_IDS in supabase/functions/create-checkout.
+ */
+export const TEST_BOOKABLE_SAMPLE_ADVISOR_IDS = ["d5717c49-9c09-49d5-b2ee-34b138f6be04"]; // James Whitaker
+
+const TEST_BOOKING_KEY = "cal_test_booking";
+
+/**
+ * Test booking mode: visit any page with ?test-booking=1 to turn it on for this
+ * browser tab (?test-booking=0 turns it off). Public visitors never see it.
+ */
+export const syncTestBookingMode = (searchParams: URLSearchParams): boolean => {
+  try {
+    const param = searchParams.get("test-booking");
+    if (param === "1") sessionStorage.setItem(TEST_BOOKING_KEY, "1");
+    if (param === "0") sessionStorage.removeItem(TEST_BOOKING_KEY);
+    return sessionStorage.getItem(TEST_BOOKING_KEY) === "1";
+  } catch {
+    return searchParams.get("test-booking") === "1";
+  }
+};
