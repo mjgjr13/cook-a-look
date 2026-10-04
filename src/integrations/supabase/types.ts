@@ -49,6 +49,7 @@ export type Database = {
           admin_notes: string | null
           bio: string
           created_at: string
+          date_of_birth: string | null
           email: string
           experience: string | null
           first_name: string
@@ -78,6 +79,7 @@ export type Database = {
           admin_notes?: string | null
           bio: string
           created_at?: string
+          date_of_birth?: string | null
           email: string
           experience?: string | null
           first_name: string
@@ -107,6 +109,7 @@ export type Database = {
           admin_notes?: string | null
           bio?: string
           created_at?: string
+          date_of_birth?: string | null
           email?: string
           experience?: string | null
           first_name?: string
