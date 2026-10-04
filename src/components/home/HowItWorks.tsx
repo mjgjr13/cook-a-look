@@ -1,77 +1,36 @@
-import { motion } from "framer-motion";
-import { Search, Calendar, Sparkles } from "lucide-react";
-
 const steps = [
   {
-    icon: Search,
-    title: "Browse Advisors",
+    title: "Tell us what you need",
     description:
-      "Explore our curated directory of professional style advisors. Filter by specialty, price, and availability.",
+      "Browse advisors by specialty, price, and session type, or let the Style Concierge suggest a few who fit.",
   },
   {
-    icon: Calendar,
-    title: "Book a Session",
+    title: "Book a session",
     description:
-      "Choose between virtual or in-person consultations. Select a time that works for you and book instantly.",
+      "Pick a time and a length of one to three hours, by video or in person. You see the full price before you pay.",
   },
   {
-    icon: Sparkles,
-    title: "Transform Your Style",
+    title: "Leave with a plan",
     description:
-      "Work with your advisor to create personalized looks and receive expert guidance on building your wardrobe.",
+      "Get specific advice on outfits, fit, and what to buy, from a stylist who has listened to what you actually need.",
   },
 ];
 
-const HowItWorks = () => {
-  return (
-    <section className="py-24 bg-background">
-      <div className="container mx-auto px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">
-            Simple Process
-          </p>
-          <h2 className="font-serif text-4xl md:text-5xl font-medium mb-4">
-            How It Works
-          </h2>
-          <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-            Your style transformation is just three steps away
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          {steps.map((step, index) => (
-            <motion.div
-              key={step.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="text-center"
-            >
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-card border border-border mb-6">
-                <step.icon className="w-7 h-7 text-gold" />
-              </div>
-              <div className="font-sans text-sm text-gold tracking-[0.2em] uppercase mb-2">
-                Step {index + 1}
-              </div>
-              <h3 className="font-serif text-2xl font-medium mb-3">
-                {step.title}
-              </h3>
-              <p className="font-sans text-muted-foreground leading-relaxed">
-                {step.description}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
+const HowItWorks = () => (
+  <section className="bg-background py-20 lg:py-28">
+    <div className="container mx-auto px-5 sm:px-6 lg:px-8">
+      <h2 className="font-serif text-4xl md:text-5xl max-w-xl">How it works</h2>
+      <ol className="mt-12 grid gap-10 md:grid-cols-3 md:gap-12">
+        {steps.map((step, index) => (
+          <li key={step.title} className="border-t border-foreground pt-6">
+            <span className="text-sm font-semibold text-gold">0{index + 1}</span>
+            <h3 className="mt-3 font-serif text-2xl">{step.title}</h3>
+            <p className="mt-3 leading-relaxed text-muted-foreground">{step.description}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+);
 
 export default HowItWorks;

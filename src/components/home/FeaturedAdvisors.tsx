@@ -50,32 +50,26 @@ const FeaturedAdvisors = () => {
   };
 
   return (
-    <section className="py-24 bg-card overflow-hidden">
-      <div className="container mx-auto px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">
-            Meet the Advisors
-          </p>
-          <h2 className="font-serif text-4xl md:text-5xl font-medium mb-4">
-            Featured Style Advisors
-          </h2>
-          <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-            Book a one-on-one session by video or in person, at a time that suits you
-          </p>
-        </motion.div>
+    <section className="py-20 lg:py-28 bg-card overflow-hidden">
+      <div className="container mx-auto px-5 sm:px-6 lg:px-8">
+        <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-serif text-4xl md:text-5xl">Meet the advisors</h2>
+            <p className="mt-3 max-w-xl text-muted-foreground">
+              Book a one-on-one session by video or in person, at a time that suits you.
+            </p>
+          </div>
+          <Link to="/advisors" className="text-sm font-semibold text-foreground underline underline-offset-4 hover:text-gold">
+            See all advisors
+          </Link>
+        </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-gold" />
           </div>
         ) : advisors && advisors.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-2 lg:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {advisors.map((advisor, index) => (
               <motion.article
                 key={advisor.id}
@@ -83,7 +77,7 @@ const FeaturedAdvisors = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group bg-background border border-border overflow-hidden hover-lift cursor-pointer"
+                className="group bg-background border border-border overflow-hidden transition-colors hover:border-foreground cursor-pointer"
                 onClick={() => handleCardClick(advisor.id)}
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
@@ -173,17 +167,6 @@ const FeaturedAdvisors = () => {
           </p>
         )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mt-12"
-        >
-          <Button variant="heroOutline" size="lg" asChild>
-            <Link to="/advisors">View All Advisors</Link>
-          </Button>
-        </motion.div>
       </div>
     </section>
   );

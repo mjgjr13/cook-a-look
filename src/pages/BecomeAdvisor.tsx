@@ -900,7 +900,7 @@ const BecomeAdvisor = () => {
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center font-sans text-sm font-medium transition-colors ${
                           currentStep >= step.number
-                            ? "bg-gold text-accent-foreground"
+                            ? "bg-gold text-white"
                             : "bg-secondary text-muted-foreground"
                         }`}
                       >

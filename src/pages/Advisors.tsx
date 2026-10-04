@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilters";
-import AdvisorChatbot from "@/components/chat/AdvisorChatbot";
 import Seo from "@/components/Seo";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 interface AdvisorData {
@@ -33,7 +32,7 @@ interface AdvisorData {
 }
 
 const badgeColors = {
-  verified: "bg-gold text-accent-foreground",
+  verified: "bg-gold text-white",
 };
 
 const Advisors = () => {
@@ -358,9 +357,6 @@ const Advisors = () => {
           )}
         </div>
       </section>
-      
-      {/* AI Style Concierge Chatbot */}
-      <AdvisorChatbot />
     </Layout>
   );
 };
