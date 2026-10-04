@@ -83,7 +83,32 @@ const steps = [
   { number: 4, title: "Review & Pricing" },
 ];
 
+// Advisors must be adults. Age in whole years from a YYYY-MM-DD date of birth.
+const MIN_ADVISOR_AGE = 18;
+const ageFromDob = (dob: string): number | null => {
+  const d = new Date(`${dob}T00:00:00`);
+  if (!dob || Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+};
+const dobError = (dob: string): string | undefined => {
+  const age = ageFromDob(dob);
+  if (age === null) return "Please enter your date of birth";
+  if (age > 110) return "Please check your date of birth";
+  if (age < MIN_ADVISOR_AGE) return "You must be 18 or older to become an advisor";
+  return undefined;
+};
+const latestAllowedDob = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - MIN_ADVISOR_AGE);
+  return d.toISOString().slice(0, 10);
+};
+
 interface FormErrors {
+  dateOfBirth?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -119,6 +144,7 @@ const BecomeAdvisor = () => {
     email: "",
     password: "",
     phone: "",
+    dateOfBirth: "",
     experience: "",
     location: "",
     bio: "",
@@ -556,6 +582,18 @@ const BecomeAdvisor = () => {
       // the core application submission can never fail because of this - e.g.
       // if the selfie_storage_path/id_document_storage_path columns from
       // migration 20260704000000 haven't been applied to this environment yet.
+      // Best-effort: store date of birth (age checked client-side above; a DB
+      // trigger from migration 20261004000000 also rejects under-18s once applied).
+      if (!applicationError && formData.dateOfBirth) {
+        const { error: dobUpdateError } = await supabase
+          .from("advisor_applications")
+          .update({ date_of_birth: formData.dateOfBirth } as Record<string, string>)
+          .eq("user_id", userId);
+        if (dobUpdateError) {
+          console.error("Failed to record date of birth (non-blocking):", dobUpdateError);
+        }
+      }
+
       if (!applicationError && (selfieStoragePath || idDocumentStoragePath)) {
         const { error: pathUpdateError } = await supabase
           .from("advisor_applications")
@@ -691,6 +729,9 @@ const BecomeAdvisor = () => {
       if (!formData.phone || formData.phone.trim().length < 5) {
         stepErrors.phone = "Phone number is required";
       }
+
+      // Advisors must be 18 or older
+      stepErrors.dateOfBirth = dobError(formData.dateOfBirth);
       
       // Validate languages - at least one required
       if (!formData.languages || formData.languages.length === 0) {
@@ -761,6 +802,7 @@ const BecomeAdvisor = () => {
                (authUser || (formData.email && formData.password)) &&
                formData.bio && formData.experience && formData.location &&
                formData.phone && formData.phone.trim().length >= 5 &&
+               !dobError(formData.dateOfBirth) &&
                formData.languages && formData.languages.length > 0 &&
                (formData.virtual || formData.inPerson) &&
                !errors.firstName && !errors.lastName && !errors.email && !errors.password &&
@@ -1027,6 +1069,31 @@ const BecomeAdvisor = () => {
                       />
                       {errors.phone && (
                         <p className="text-xs text-destructive">{errors.phone}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        autoComplete="bday"
+                        max={latestAllowedDob()}
+                        min="1910-01-01"
+                        value={formData.dateOfBirth}
+                        onChange={(e) => {
+                          setFormData({ ...formData, dateOfBirth: e.target.value });
+                          setErrors((prev) => ({ ...prev, dateOfBirth: undefined }));
+                        }}
+                        onBlur={() => setErrors((prev) => ({ ...prev, dateOfBirth: dobError(formData.dateOfBirth) }))}
+                        aria-invalid={!!errors.dateOfBirth}
+                        aria-describedby="dob-help"
+                      />
+                      <p id="dob-help" className="text-xs text-muted-foreground">
+                        Advisors must be 18 or older. Your date of birth is kept private and checked against your ID.
+                      </p>
+                      {errors.dateOfBirth && (
+                        <p className="text-xs text-destructive">{errors.dateOfBirth}</p>
                       )}
                     </div>
 

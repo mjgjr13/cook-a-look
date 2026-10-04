@@ -69,6 +69,7 @@ interface AdvisorApplication {
   last_name: string;
   email: string;
   phone: string | null;
+  date_of_birth?: string | null;
   specialty: string;
   experience: string | null;
   bio: string;
@@ -959,6 +960,16 @@ const AdminAdvisors = () => {
                     <div>
                       <Label className="text-muted-foreground text-xs">Phone</Label>
                       <p>{selectedApplication.phone || "Not provided"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Date of birth</Label>
+                      <p>
+                        {selectedApplication.date_of_birth
+                          ? `${new Date(`${selectedApplication.date_of_birth}T00:00:00`).toLocaleDateString()} (age ${Math.floor(
+                              (Date.now() - new Date(`${selectedApplication.date_of_birth}T00:00:00`).getTime()) / 31557600000,
+                            )})`
+                          : "Not provided"}
+                      </p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground text-xs">Specialty</Label>
