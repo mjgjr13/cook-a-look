@@ -1,5 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import JoinCallButton from "@/components/booking/JoinCallButton";
+import { isVirtualBooking } from "@/lib/bookingUtils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +30,7 @@ interface BookingDetailsModalProps {
     id: string;
     status: string;
     created_at: string;
+    meeting_type?: string | null;
     slot: BookingSlot;
     client?: BookingParticipant;
     advisor?: BookingParticipant;
@@ -55,7 +58,7 @@ const BookingDetailsModal = ({
   // few minutes late (or rejoins mid-session) still has a working button.
   const isOver = new Date(booking.slot.end_time) <= new Date();
   const canJoinCall =
-    booking.status === "confirmed" && !isOver && booking.slot.is_virtual && onJoinCall;
+    booking.status === "confirmed" && !isOver && isVirtualBooking(booking) && onJoinCall;
   const isCancelled = booking.status === "cancelled";
 
   const otherParticipant = userRole === "client" ? booking.advisor : booking.client;
@@ -235,17 +238,16 @@ const BookingDetailsModal = ({
             {/* Actions */}
             <div className="border-t pt-4 flex gap-3">
               {canJoinCall && (
-                <Button
+                <JoinCallButton
                   variant="hero"
                   className="flex-1"
-                  onClick={() => {
+                  startTime={booking.slot.start_time}
+                  label={userRole === "advisor" ? "Start Call" : "Join Call"}
+                  onJoin={() => {
                     onJoinCall(booking.id);
                     onClose();
                   }}
-                >
-                  <Video className="w-4 h-4 mr-2" />
-                  {userRole === "advisor" ? "Start Call" : "Join Call"}
-                </Button>
+                />
               )}
               <Button variant="outline" onClick={onClose} className={canJoinCall ? "" : "flex-1"}>
                 Close

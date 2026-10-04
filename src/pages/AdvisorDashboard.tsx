@@ -23,6 +23,7 @@ import {
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { isVirtualBooking } from "@/lib/bookingUtils";
+import JoinCallButton from "@/components/booking/JoinCallButton";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
 import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal";
@@ -657,14 +658,13 @@ const AdvisorDashboard = () => {
                     </div>
                     <div className="flex gap-3">
                       {isVirtualBooking(booking) ? (
-                        <Button 
-                          variant="hero" 
+                        <JoinCallButton
+                          variant="hero"
                           size="sm"
-                          onClick={() => setActiveVideoBooking(booking.id)}
-                        >
-                          <Video className="w-4 h-4 mr-1" />
-                          Start Call
-                        </Button>
+                          label="Start Call"
+                          startTime={booking.slot.start_time}
+                          onJoin={() => setActiveVideoBooking(booking.id)}
+                        />
                       ) : (
                         <Button
                           variant="hero"

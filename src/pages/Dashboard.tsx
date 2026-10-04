@@ -6,6 +6,7 @@ import { Calendar, Video, Clock, Settings, LogOut, ChevronRight, RefreshCw, Aler
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { isVirtualBooking } from "@/lib/bookingUtils";
+import JoinCallButton from "@/components/booking/JoinCallButton";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 import { useToast } from "@/hooks/use-toast";
 import VideoCall from "@/components/VideoCall";
@@ -365,14 +366,12 @@ const Dashboard = () => {
                     </div>
                     <div className="flex gap-3">
                       {isVirtualBooking(booking) ? (
-                        <Button 
-                          variant="hero" 
+                        <JoinCallButton
+                          variant="hero"
                           size="sm"
-                          onClick={() => setActiveVideoBooking(booking)}
-                        >
-                          <Video className="w-4 h-4 mr-1" />
-                          Join Call
-                        </Button>
+                          startTime={booking.slot.start_time}
+                          onJoin={() => setActiveVideoBooking(booking)}
+                        />
                       ) : (
                         <Button
                           variant="hero"
