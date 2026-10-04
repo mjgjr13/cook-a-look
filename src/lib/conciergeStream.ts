@@ -3,7 +3,13 @@ export interface ConciergeMessage {
   content: string;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/advisor-chat`;
+// Same fallbacks as src/integrations/supabase/client.ts: the Cloudflare build
+// doesn't set VITE_SUPABASE_* env vars, so they must not be required here.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://chjmyzzczwattluqpbat.supabase.co";
+const PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoam15enpjendhdHRsdXFwYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDM3NjksImV4cCI6MjA4MzgxOTc2OX0.Y6N53UNdAZ5x02ADZNo7KMbjxEIsAmu8tq5OShOIHOs";
+const CHAT_URL = `${SUPABASE_URL}/functions/v1/advisor-chat`;
 
 /**
  * Sends the conversation to the Style Concierge edge function and streams the
@@ -18,8 +24,8 @@ export async function streamConcierge(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      apikey: PUBLISHABLE_KEY,
+      Authorization: `Bearer ${PUBLISHABLE_KEY}`,
     },
     body: JSON.stringify({ messages }),
     signal,
