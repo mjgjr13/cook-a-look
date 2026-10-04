@@ -131,17 +131,34 @@ const VideoCall = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomUrl, provider]);
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
     try {
       dailyFrameRef.current?.destroy();
     } catch (_e) {
       // ignore
     }
     dailyFrameRef.current = null;
-    toast({ title: "Call ended", description: "Your consultation has ended." });
-    if (isClient && advisorId && clientId) {
+    if (!(isClient && advisorId && clientId)) {
+      toast({ title: "Call ended", description: "Your consultation has ended." });
+      onClose();
+      return;
+    }
+    // Reviews are accepted once the booked time has ended (can_leave_review),
+    // so only ask now if it has; otherwise the dashboard will ask later.
+    const { data } = await supabase
+      .from("bookings")
+      .select("slot:availability_slots(end_time)")
+      .eq("id", bookingId)
+      .maybeSingle();
+    const endTime = (data?.slot as { end_time?: string } | null)?.end_time;
+    if (endTime && new Date(endTime) <= new Date()) {
+      toast({ title: "Call ended", description: "Your consultation has ended." });
       setShowReviewModal(true);
     } else {
+      toast({
+        title: "Call ended",
+        description: "You can rejoin until your session ends. We'll ask for your review on your dashboard afterwards.",
+      });
       onClose();
     }
   };

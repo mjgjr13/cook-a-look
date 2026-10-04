@@ -1,3 +1,5 @@
+import { TEST_ADVISOR_ACTS_AS_REAL } from "./featureFlags";
+
 /**
  * Sample ("demo") advisor profiles.
  *
@@ -75,8 +77,12 @@ export const SAMPLE_ADVISOR_CONTENT: Record<string, SampleAdvisorContent> = {
 
 export const SAMPLE_ADVISOR_IDS = Object.keys(SAMPLE_ADVISOR_CONTENT);
 
-export const isSampleAdvisor = (advisor: { id?: string | null; is_demo?: boolean | null } | null | undefined): boolean =>
-  !!advisor && (advisor.is_demo === true || (!!advisor.id && SAMPLE_ADVISOR_IDS.includes(advisor.id)));
+export const isSampleAdvisor = (advisor: { id?: string | null; is_demo?: boolean | null } | null | undefined): boolean => {
+  if (!advisor) return false;
+  // The test advisor behaves like a real advisor while TEST_ADVISOR_ACTS_AS_REAL is on.
+  if (TEST_ADVISOR_ACTS_AS_REAL && !!advisor.id && TEST_BOOKABLE_SAMPLE_ADVISOR_IDS.includes(advisor.id)) return false;
+  return advisor.is_demo === true || (!!advisor.id && SAMPLE_ADVISOR_IDS.includes(advisor.id));
+};
 
 /**
  * Returns the advisor with polished sample copy applied (if it's one of the
@@ -115,19 +121,3 @@ export function withSampleContent<
  */
 export const TEST_BOOKABLE_SAMPLE_ADVISOR_IDS = ["d5717c49-9c09-49d5-b2ee-34b138f6be04"]; // James Whitaker
 
-const TEST_BOOKING_KEY = "cal_test_booking";
-
-/**
- * Test booking mode: visit any page with ?test-booking=1 to turn it on for this
- * browser tab (?test-booking=0 turns it off). Public visitors never see it.
- */
-export const syncTestBookingMode = (searchParams: URLSearchParams): boolean => {
-  try {
-    const param = searchParams.get("test-booking");
-    if (param === "1") sessionStorage.setItem(TEST_BOOKING_KEY, "1");
-    if (param === "0") sessionStorage.removeItem(TEST_BOOKING_KEY);
-    return sessionStorage.getItem(TEST_BOOKING_KEY) === "1";
-  } catch {
-    return searchParams.get("test-booking") === "1";
-  }
-};

@@ -11,8 +11,7 @@ import BookingCalendar from "@/components/BookingCalendar";
 import AdvisorReviews from "@/components/reviews/AdvisorReviews";
 import Seo from "@/components/Seo";
 import SampleAdvisorWaitlistDialog from "@/components/booking/SampleAdvisorWaitlistDialog";
-import { withSampleContent, syncTestBookingMode, TEST_BOOKABLE_SAMPLE_ADVISOR_IDS } from "@/lib/sampleAdvisors";
-import { useProfile } from "@/hooks/useProfile";
+import { withSampleContent, SAMPLE_ADVISOR_IDS } from "@/lib/sampleAdvisors";
 
 // Fallback images for when no portfolio images exist
 import inspiration1 from "@/assets/inspiration-1.jpg";
@@ -53,13 +52,6 @@ const AdvisorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const { roles } = useProfile();
-  const [testBookingMode] = useState(() => syncTestBookingMode(searchParams));
-
-  // A sample advisor can be booked end to end in test booking mode (?test-booking=1) or by admins.
-  // create-checkout only allows this while Stripe is in test mode.
-  const testBookable =
-    !!advisor?.isSample && TEST_BOOKABLE_SAMPLE_ADVISOR_IDS.includes(advisor.id) && (testBookingMode || roles.isAdmin);
 
   // Auto-open calendar with preserved booking state after sign-in redirect
   const initialBookingDate = searchParams.get("bookingDate");
@@ -102,7 +94,7 @@ const AdvisorProfile = () => {
 
   // Auto-open booking calendar if redirected back from sign-in with booking state
   useEffect(() => {
-    if (!loading && advisor && initialBookingDate && (!advisor.isSample || testBookable)) {
+    if (!loading && advisor && initialBookingDate && !advisor.isSample) {
       setCalendarOpen(true);
       // Clean up URL params
       setSearchParams({}, { replace: true });
@@ -112,7 +104,7 @@ const AdvisorProfile = () => {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
 
   const handleBookConsultation = () => {
-    if (advisor?.isSample && !testBookable) {
+    if (advisor?.isSample) {
       setWaitlistOpen(true);
     } else {
       setCalendarOpen(true);
@@ -212,7 +204,8 @@ const AdvisorProfile = () => {
         ogImage={advisor.avatar_url || undefined}
         ogType="profile"
         jsonLd={isSample ? undefined : personJsonLd}
-        noindex={isSample}
+        // Sample and test profiles stay out of search results.
+        noindex={isSample || SAMPLE_ADVISOR_IDS.includes(advisor.id)}
       />
       <section className="py-5 pb-28 lg:py-8 lg:pb-8 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -247,7 +240,7 @@ const AdvisorProfile = () => {
                   </div>
                 )}
                 {advisor.verified && (
-                  <div className="absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider bg-gold text-accent-foreground">
+                  <div className="absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider bg-gold text-white">
                     Verified Advisor
                   </div>
                 )}
@@ -362,16 +355,7 @@ const AdvisorProfile = () => {
                 </div>
               )}
 
-              {testBookable && (
-                <div className="mb-4 p-4 border border-blue-500/40 bg-blue-500/5" role="note">
-                  <p className="font-sans text-sm text-foreground">
-                    <strong className="font-medium">Test booking mode.</strong> This sample advisor can be booked for
-                    testing while payments are in Stripe test mode. Use card 4242 4242 4242 4242, any future date, any CVC.
-                  </p>
-                </div>
-              )}
-
-              {isSample && !testBookable && (
+              {isSample && (
                 <div className="mb-4 p-4 border border-gold/40 bg-gold/5">
                   <p className="font-sans text-sm text-foreground">
                     <strong className="font-medium">This is a sample profile.</strong>{" "}
@@ -418,7 +402,7 @@ const AdvisorProfile = () => {
                 </div>
                 <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={handleBookConsultation}>
                   <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
-                  {isSample && !testBookable ? "Join the Waitlist" : "Book a Session"}
+                  {isSample ? "Join the Waitlist" : "Book a Session"}
                 </Button>
               </div>
             </motion.div>
@@ -433,7 +417,7 @@ const AdvisorProfile = () => {
             </div>
             <Button variant="hero" size="lg" className="shrink-0" onClick={handleBookConsultation}>
               <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
-              {isSample && !testBookable ? "Join Waitlist" : "Book a Session"}
+              {isSample ? "Join Waitlist" : "Book a Session"}
             </Button>
           </div>
         </div>

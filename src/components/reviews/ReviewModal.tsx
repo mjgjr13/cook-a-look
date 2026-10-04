@@ -62,8 +62,10 @@ const ReviewModal = ({
     } catch (error: unknown) {
       console.error("Failed to submit review:", error);
       toast({
-        title: "Failed to submit review",
-        description: error instanceof Error ? error.message : "Please try again later.",
+        title: "Couldn't submit your review",
+        description: /row-level security|violates/i.test(error instanceof Error ? error.message : String((error as { message?: string })?.message))
+          ? "Reviews open once your session time has ended, and each booking can be reviewed once."
+          : "Please try again in a moment.",
         variant: "destructive",
       });
     } finally {
