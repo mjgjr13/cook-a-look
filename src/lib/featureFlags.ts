@@ -15,3 +15,10 @@ export const GOOGLE_SIGN_IN_ENABLED = false;
  * also refuses him automatically once Stripe uses live keys.
  */
 export const TEST_ADVISOR_ACTS_AS_REAL = true;
+
+/**
+ * Path of the reviews/testimonials page. When set (e.g. "/reviews"), the
+ * "Leave confident, with a plan" step on the homepage links to it.
+ * Leave null until that page exists and has real reviews.
+ */
+export const REVIEWS_PAGE_PATH: string | null = null;

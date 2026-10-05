@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { REVIEWS_PAGE_PATH } from "@/lib/featureFlags";
 // Minimal black-and-white line illustrations of the Cook A Look process,
 // shown in the homepage hero: choose an advisor → meet → leave feeling better.
 // Pure SVG (no image files), so it stays crisp and loads instantly.
@@ -41,10 +42,10 @@ const Meeting = () => (
     {/* table */}
     <path d="M 28 120 L 212 120" {...stroke} />
     {/* speech bubble from advisor */}
-    <path d="M 108 22 h 44 a 8 8 0 0 1 8 8 v 14 a 8 8 0 0 1 -8 8 h -26 l -8 8 v -8 h -10 a 8 8 0 0 1 -8 -8 v -14 a 8 8 0 0 1 8 -8 z" {...stroke} strokeWidth={1.5} />
-    <circle cx="120" cy="37" r="2" fill="currentColor" />
-    <circle cx="130" cy="37" r="2" fill="currentColor" />
-    <circle cx="140" cy="37" r="2" fill="currentColor" />
+    <path d="M 104 12 h 32 a 8 8 0 0 1 8 8 v 12 a 8 8 0 0 1 -8 8 h -10 l -6 8 l -6 -8 h -10 a 8 8 0 0 1 -8 -8 v -12 a 8 8 0 0 1 8 -8 z" {...stroke} strokeWidth={1.5} />
+    <circle cx="110" cy="26" r="2" fill="currentColor" />
+    <circle cx="120" cy="26" r="2" fill="currentColor" />
+    <circle cx="130" cy="26" r="2" fill="currentColor" />
   </svg>
 );
 
@@ -78,18 +79,12 @@ const TellUsYourStyle = () => (
   </svg>
 );
 
-// Points down by default; rotate for right (-90) and left (90).
-const Arrow = ({ rotate = 0 }: { rotate?: number }) => (
-  <svg viewBox="0 0 24 40" className="h-7 w-5 text-foreground/70" style={{ transform: `rotate(${rotate}deg)` }} aria-hidden="true">
-    <path d="M 12 2 L 12 36 M 4 28 L 12 37 L 20 28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const STEPS = [
+const STEPS: { Art: () => JSX.Element; caption: string; to?: string }[] = [
   { Art: TellUsYourStyle, caption: "Tell us your style", to: "/ai-concierge" },
-  { Art: ScreenWithAdvisors, caption: "Find an advisor who fits" },
+  { Art: ScreenWithAdvisors, caption: "Find an advisor who fits", to: "/advisors" },
   { Art: Meeting, caption: "Meet by video or in person" },
-  { Art: FeelingGreat, caption: "Leave confident, with a plan" },
+  // Links to reviews/testimonials once that page exists (see featureFlags).
+  { Art: FeelingGreat, caption: "Leave confident, with a plan", to: REVIEWS_PAGE_PATH ?? undefined },
 ];
 
 const Step = ({ i }: { i: number }) => {
@@ -111,23 +106,15 @@ const Step = ({ i }: { i: number }) => {
   );
 };
 
-// Clockwise square: 1 → 2 ↓ 3 ← 4
+// 2x2 grid in reading order: 1 2 / 3 4
 const HowItWorksIllustration = () => (
-  <div
-    className="mx-auto grid w-full max-w-md grid-cols-[1fr_auto_1fr] items-center gap-y-1 text-foreground"
-    role="list"
-    aria-label="How Cook A Look works"
-  >
-    <div role="listitem"><Step i={0} /></div>
-    <Arrow rotate={-90} />
-    <div role="listitem"><Step i={1} /></div>
-    <div />
-    <div />
-    <div className="flex justify-center"><Arrow /></div>
-    <div role="listitem"><Step i={3} /></div>
-    <Arrow rotate={90} />
-    <div role="listitem"><Step i={2} /></div>
-  </div>
+  <ol className="mx-auto grid w-full max-w-md lg:max-w-lg grid-cols-2 gap-3 sm:gap-4 text-foreground" aria-label="How Cook A Look works">
+    {STEPS.map((step, i) => (
+      <li key={step.caption}>
+        <Step i={i} />
+      </li>
+    ))}
+  </ol>
 );
 
 export default HowItWorksIllustration;
