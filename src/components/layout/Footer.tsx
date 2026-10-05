@@ -44,8 +44,9 @@ const Footer = () => {
               info@cookalook.com
             </a>
             <div className="mt-3 flex justify-center">
-              <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={linkClass} aria-label="Cook A Look on Instagram">
-                <Instagram size={19} />
+              <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 text-sm ${linkClass}`} aria-label="Cook A Look on Instagram: cookalookofficial">
+                <Instagram size={17} aria-hidden="true" />
+                cookalookofficial
               </a>
             </div>
           </div>
