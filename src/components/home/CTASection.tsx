@@ -6,7 +6,7 @@ const CTASection = () => (
     <div className="container mx-auto px-5 sm:px-6 lg:px-8 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
       <div className="max-w-2xl">
         <p className="text-sm font-semibold text-primary-foreground/70">For stylists</p>
-        <h2 className="mt-3 font-serif text-4xl md:text-5xl">Grow your styling business on Cook A Look.</h2>
+        <h2 className="mt-3 font-serif text-4xl md:text-5xl">{"Grow your styling \nbusiness on Cook A Look.\n"}</h2>
         <p className="mt-4 text-lg leading-relaxed text-primary-foreground/80">
           Set your own rates and hours, offer sessions by video or in person, and get paid securely through the platform.
         </p>
