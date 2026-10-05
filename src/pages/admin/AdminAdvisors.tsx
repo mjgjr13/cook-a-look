@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { isSampleAdvisor } from "@/lib/sampleAdvisors";
 import { Button } from "@/components/ui/button";
+import { safeExternalUrl } from "@/lib/safeUrl";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -988,9 +989,9 @@ const AdminAdvisors = () => {
                     {selectedApplication.instagram}
                   </a>
                 )}
-                {selectedApplication.portfolio && (
+                {safeExternalUrl(selectedApplication.portfolio) && (
                   <a
-                    href={selectedApplication.portfolio}
+                    href={safeExternalUrl(selectedApplication.portfolio)!}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-sm text-primary hover:underline"

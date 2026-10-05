@@ -51,18 +51,26 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: userLookup, error: lookupError } = await supabaseAdmin
-      .auth.admin.listUsers({ page: 1, perPage: 1, email: email.toLowerCase() } as never);
+    // listUsers() has no email filter, so look the account up via profiles
+    // (created by the signup trigger) and confirm the auth email matches exactly.
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data: profileRow } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id")
+      .ilike("email", normalizedEmail)
+      .maybeSingle();
+    const { data: userResult } = profileRow?.user_id
+      ? await supabaseAdmin.auth.admin.getUserById(profileRow.user_id)
+      : { data: { user: null } };
+    const user = userResult?.user;
 
-    if (lookupError || !userLookup?.users?.length) {
-      console.error("No auth user found for email:", email, lookupError?.message);
+    if (!user || user.email?.toLowerCase() !== normalizedEmail) {
+      // Same generic response either way, so this can't be used to probe which emails have accounts.
       return new Response(
-        JSON.stringify({ error: "Unknown recipient" }),
+        JSON.stringify({ error: "Unable to send" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    const user = userLookup.users[0];
     // Only send within 5 minutes of account creation to avoid abuse
     const createdAt = new Date(user.created_at).getTime();
     if (Date.now() - createdAt > 5 * 60 * 1000) {
@@ -172,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Cook A Look <notify@cookalook.com>",
-      to: [email],
+      to: [user.email as string],
       subject,
       html,
     });

@@ -8,6 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { safeExternalUrl } from "@/lib/safeUrl";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -345,9 +346,9 @@ export const AdvisorDetailModal = ({
                         @{advisor.instagram_url.replace("@", "")}
                       </a>
                     )}
-                    {advisor.portfolio_url && (
+                    {safeExternalUrl(advisor.portfolio_url) && (
                       <a
-                        href={advisor.portfolio_url}
+                        href={safeExternalUrl(advisor.portfolio_url)!}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-sm text-primary hover:underline"
