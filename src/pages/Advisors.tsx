@@ -11,7 +11,7 @@ import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import AdvisorFilters, { EMPTY_FILTERS, FilterState } from "@/components/advisors/AdvisorFilters";
 import { compareTopAdvisors } from "@/lib/advisorRanking";
 
-const ADVISORS_PER_PAGE = 21;
+const ADVISORS_PER_PAGE = 20;
 import Seo from "@/components/Seo";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 interface AdvisorData {
