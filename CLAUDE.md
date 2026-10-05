@@ -71,6 +71,8 @@ Most privileged writes go through `SECURITY DEFINER` RPC functions rather than d
 - **Manual input validation** at the top of handlers (e.g. `isValidUUID`, `isValidISO8601`, `isValidStripeSessionId`) before touching the DB or Stripe.
 - **Error responses**: handlers wrap logic in try/catch, map error message patterns (e.g. `/authorization|authenticated/i`) to appropriate HTTP status codes, and always return JSON with CORS headers attached.
 - **Migrations are append-only and Lovable-generated**; treat `supabase/migrations/*.sql` as the authoritative, current schema — don't hand-roll schema assumptions from `types.ts` alone.
+- Before pushing Edge Function changes run `npm run check:functions` (a syntax error makes the function fail to boot in production). `npm run test:security` re-checks live database permissions (read-only).
+- Cloudflare Pages installs with Bun (`bun.lock`, frozen): after changing dependencies run `npx bun@1.2 install --lockfile-only` and commit `bun.lock`, or the deploy fails.
 - Business rules that aren't obvious from code are recorded in `.lovable/memory/` — read the relevant file before changing booking, payments, reviews, or location logic.
 
 ## Standing rules (autonomous work)

@@ -11,7 +11,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:security": "npx tsx scripts/security-check.ts"
+    "test:security": "npx tsx scripts/security-check.ts",
+    "check:functions": "node scripts/check-functions.mjs"
   },
   "dependencies": {
     "@daily-co/daily-js": "^0.91.0",
