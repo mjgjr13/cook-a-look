@@ -1849,6 +1849,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_allowed_image_object: {
+        Args: { p_metadata: Json; p_name: string }
+        Returns: boolean
+      }
       is_booking_participant: {
         Args: { _booking_id: string; _user_id: string }
         Returns: boolean
