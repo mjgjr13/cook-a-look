@@ -15,6 +15,7 @@ Last reviewed: 2026-10-04. Items marked **UNKNOWN** need checking in the vendor'
 | **Google Fonts** | Web fonts | Visitor IP, user agent (on each page load) | US/global | Google terms | Google policy | Could self-host to remove this transfer (P3) |
 | **Google Maps Platform (Places)** | Venue search for in-person sessions | Typed search text, IP | US/global | Google Maps terms | Google policy | Restrict the API key (E6) |
 | **ui-avatars.com** | Placeholder avatar images | Advisor name (in image URL), IP | **UNKNOWN** | None | **UNKNOWN** | Used only when an advisor has no photo. Consider local initials instead (P3). |
+| **purecatamphetamine.github.io** (GitHub Pages) | Country-flag images in the phone-number field (`react-phone-number-input`) | Visitor IP (when the phone field is shown) | US | None | — | Self-host the flag images to remove this request (P3) |
 | **GitHub** | Source code hosting | No customer data (repo has no secrets) | US | GitHub terms | — | Keep `.env` out of git |
 | **Google Search Console** | SEO | No customer data | — | — | — | — |
 
