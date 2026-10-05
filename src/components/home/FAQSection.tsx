@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "Can I cancel?",
-    a: "Yes, from your dashboard. Your refund depends on how far ahead you cancel, and you'll see the exact amount before you confirm. If your advisor doesn't show up, you get a refund.",
+    a: "Yes, from your dashboard, with a full refund any time before your session. The only exception is a 10% fee if you cancel within 1 hour of a video session or 2 hours of an in-person session. You'll see the exact amount before you confirm, and you get a full refund if your advisor cancels or doesn't show up.",
   },
   {
     q: "Is my payment secure?",

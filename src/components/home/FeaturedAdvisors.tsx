@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import { withSampleContent } from "@/lib/sampleAdvisors";
+import { compareTopAdvisors } from "@/lib/advisorRanking";
 
 interface FeaturedAdvisor {
   id: string;
@@ -30,12 +31,10 @@ const useFeaturedAdvisors = () => {
       if (error) throw error;
       if (!advisorsData || advisorsData.length === 0) return [];
 
-      // Real advisors first (by review count), then sample profiles; take top 4
+      // The four homepage spots go to the top advisors (see lib/advisorRanking).
       return (advisorsData as FeaturedAdvisor[])
         .map(withSampleContent)
-        .sort((a, b) =>
-          a.isSample !== b.isSample ? (a.isSample ? 1 : -1) : (b.review_count || 0) - (a.review_count || 0)
-        )
+        .sort(compareTopAdvisors)
         .slice(0, 4);
     }
   });
@@ -53,7 +52,7 @@ const FeaturedAdvisors = () => {
       <div className="container mx-auto px-5 sm:px-6 lg:px-8">
         <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="font-serif text-4xl md:text-5xl">Meet the advisors</h2>
+            <h2 className="font-serif text-4xl md:text-5xl">Featured advisors</h2>
             <p className="mt-3 max-w-xl text-muted-foreground">
               Book a one-on-one session by video or in person, at a time that suits you.
             </p>

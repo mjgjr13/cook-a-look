@@ -287,6 +287,22 @@ const AdvisorProfile = () => {
                   </a>
                 )}
               </div>
+                {!isSample && (
+                  <div className="mt-5 p-4 bg-secondary/40 border border-border">
+                    <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3">Booking with Cook A Look is protected</p>
+                    <ul className="grid grid-cols-1 gap-y-2 text-sm font-sans text-muted-foreground">
+                      {advisor.verified && (
+                        <li className="flex items-start gap-2"><ShieldCheck className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Identity-verified advisor</span></li>
+                      )}
+                      <li className="flex items-start gap-2"><Lock className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Payment held in escrow until 48h after your session</span></li>
+                      {advisor.virtual_available && (
+                        <li className="flex items-start gap-2"><Camera className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Video sessions recorded for dispute protection</span></li>
+                      )}
+                      <li className="flex items-start gap-2"><RefreshCw className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Full refund if your advisor cancels or doesn't show</span></li>
+                    </ul>
+                    <Link to="/terms" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
+                  </div>
+                )}
             </motion.div>
 
             {/* Right Column - Details */}
@@ -368,29 +384,12 @@ const AdvisorProfile = () => {
               <div className="mb-4 p-4 sm:p-5 bg-background border border-border">
                 <h2 className="font-serif text-lg font-medium mb-3">How a session works</h2>
                 <ol className="space-y-2 text-sm font-sans text-muted-foreground">
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pick a date, time, and session length (1–3 hours){advisor.in_person_available && advisor.virtual_available ? ", by video or in person" : advisor.in_person_available ? ", in person" : ", by video"}.</span></li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You'll see the full price before you pay.</span></li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Get a confirmation email{advisor.virtual_available ? " with your video link" : ""}, and message {firstName} from your dashboard before the session.</span></li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>{advisor.virtual_available ? "Join the video call right from your dashboard. No app to install." : "Meet at the agreed location and get personal styling advice."}</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Choose a date, time, and length (1 to 3 hours), and whether to meet by video or in person{advisor.virtual_available && !advisor.in_person_available ? ` (${firstName} offers video sessions)` : !advisor.virtual_available && advisor.in_person_available ? ` (${firstName} offers in-person sessions)` : ""}.</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You see the full price first, including any in-person fee.</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Get a confirmation email and message {firstName} from your dashboard. For in-person sessions you'll agree on a public meeting place.</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>On the day, join the video call from your dashboard (no app needed), or meet {firstName} at the agreed location.</span></li>
                 </ol>
               </div>
-
-              {!isSample && (
-                <div className="mb-4 p-4 bg-secondary/40 border border-border">
-                  <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3">Booking with Cook A Look is protected</p>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm font-sans text-muted-foreground">
-                    {advisor.verified && (
-                      <li className="flex items-start gap-2"><ShieldCheck className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Identity-verified advisor</span></li>
-                    )}
-                    <li className="flex items-start gap-2"><Lock className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Payment held in escrow until 48h after your session</span></li>
-                    {advisor.virtual_available && (
-                      <li className="flex items-start gap-2"><Camera className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Video sessions recorded for dispute protection</span></li>
-                    )}
-                    <li className="flex items-start gap-2"><RefreshCw className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Refund if the advisor no-shows</span></li>
-                  </ul>
-                  <Link to="/terms" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
-                </div>
-              )}
 
               <div className="hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
                 <div>

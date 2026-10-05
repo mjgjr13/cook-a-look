@@ -8,7 +8,10 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
-import AdvisorFilters, { FilterState } from "@/components/advisors/AdvisorFilters";
+import AdvisorFilters, { EMPTY_FILTERS, FilterState } from "@/components/advisors/AdvisorFilters";
+import { compareTopAdvisors } from "@/lib/advisorRanking";
+
+const ADVISORS_PER_PAGE = 21;
 import Seo from "@/components/Seo";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 interface AdvisorData {
@@ -75,17 +78,13 @@ const Advisors = () => {
   const filteredAndSortedAdvisors = useMemo(() => {
     let result = advisors.filter((advisor) => {
       const name = advisor.full_name || "";
-      const specialty = advisor.specialty || "";
       const styleTags = advisor.style_tags || [];
       const demographics = advisor.target_demographics || [];
       const useCases = advisor.use_cases || [];
       const price = advisor.price_per_session || 0;
 
-      // Search filter
-      const matchesSearch =
-        filters.searchTerm === "" ||
-        name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        specialty.toLowerCase().includes(filters.searchTerm.toLowerCase());
+      // Search by name only
+      const matchesSearch = filters.searchTerm.trim() === "" || name.toLowerCase().includes(filters.searchTerm.trim().toLowerCase());
 
       // Session type filter
       const matchesSessionType =
@@ -133,18 +132,24 @@ const Advisors = () => {
         break;
       case "featured":
       default:
-        // Featured sorting: real advisors before sample profiles, then by rating and review count
-        result = [...result].sort((a, b) => {
-          if (a.isSample !== b.isSample) return a.isSample ? 1 : -1;
-          const aScore = (a.rating || 0) * 10 + (a.review_count || 0);
-          const bScore = (b.rating || 0) * 10 + (b.review_count || 0);
-          return bScore - aScore;
-        });
+        // Recommended: top advisors first (see lib/advisorRanking)
+        result = [...result].sort(compareTopAdvisors);
         break;
     }
 
     return result;
   }, [advisors, filters]);
+
+  // Pagination: at most ADVISORS_PER_PAGE cards per page (7 rows of 3 on desktop).
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(filteredAndSortedAdvisors.length / ADVISORS_PER_PAGE));
+  useEffect(() => setPage(1), [filters]);
+  const currentPage = Math.min(page, pageCount);
+  const pageAdvisors = filteredAndSortedAdvisors.slice((currentPage - 1) * ADVISORS_PER_PAGE, currentPage * ADVISORS_PER_PAGE);
+  const goToPage = (n: number) => {
+    setPage(n);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleCardClick = (advisorId: string) => {
     navigate(`/advisors/${advisorId}`);
@@ -161,8 +166,8 @@ const Advisors = () => {
               <Skeleton className="h-6 w-96 mx-auto" />
             </div>
             <Skeleton className="h-32 w-full mb-12" />
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-background border border-border overflow-hidden">
                   <Skeleton className="aspect-[3/4] w-full" />
                   <div className="p-4">
@@ -220,8 +225,8 @@ const Advisors = () => {
           </motion.div>
 
           {/* Advisors Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {filteredAndSortedAdvisors.map((advisor, index) => {
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+            {pageAdvisors.map((advisor, index) => {
               const displayName = advisor.full_name || "Style Advisor";
               const displayPrice = advisor.price_per_session || 100;
               const displayRating = advisor.rating || 0;
@@ -335,6 +340,28 @@ const Advisors = () => {
             })}
           </div>
 
+          {pageCount > 1 && (
+            <nav aria-label="Advisor pages" className="mt-10 flex flex-wrap items-center justify-center gap-2">
+              <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>
+                Previous
+              </Button>
+              {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                <Button
+                  key={n}
+                  variant={n === currentPage ? "default" : "outline"}
+                  size="sm"
+                  aria-current={n === currentPage ? "page" : undefined}
+                  onClick={() => goToPage(n)}
+                >
+                  {n}
+                </Button>
+              ))}
+              <Button variant="outline" size="sm" disabled={currentPage === pageCount} onClick={() => goToPage(currentPage + 1)}>
+                Next
+              </Button>
+            </nav>
+          )}
+
           {filteredAndSortedAdvisors.length === 0 && !loading && (
             <div className="text-center py-16">
               <p className="font-sans text-muted-foreground">
@@ -347,7 +374,7 @@ const Advisors = () => {
                   variant="outline"
                   className="mt-4"
                   onClick={() =>
-                    setFilters({ searchTerm: "", styles: [], clientFocus: [], useCases: [], sessionTypes: [], minPrice: "", maxPrice: "", sortBy: "featured" })
+                    setFilters(EMPTY_FILTERS)
                   }
                 >
                   Clear all filters

@@ -1,6 +1,6 @@
 # Cancellation & Refund Policy
 
-> **DRAFT — requires review by a qualified lawyer before publication.** Written to match the system's actual behaviour as of 2026-10-04 (`public.calculate_refund`, `cancel_booking_with_refund`, `process-booking-cancellation`). If the code changes, this policy must change with it, and the reverse.
+> **DRAFT — requires review by a qualified lawyer before publication.** Written to match the system's actual behaviour as of 2026-10-06 (migration 20261006000000) (`public.calculate_refund`, `cancel_booking_with_refund`, `process-booking-cancellation`). If the code changes, this policy must change with it, and the reverse.
 
 ## Cancelling a session (clients)
 
@@ -8,10 +8,9 @@ You can cancel any upcoming session from your dashboard. Before you confirm, we 
 
 | When you cancel | Video session | In-person session |
 |---|---|---|
-| More than 24 hours before the start time | Full refund | Full refund |
-| 12 to 24 hours before | 50% refund | 50% refund |
-| 1 to 12 hours before | 25% refund | No refund |
-| Less than 1 hour before, or after the start time | No refund | No refund |
+| Any time before the late-cancellation window | Full refund | Full refund |
+| Within 1 hour of a video session / 2 hours of an in-person session | 90% refund (10% late-cancellation fee) | 90% refund (10% late-cancellation fee) |
+| After the start time | No refund | No refund |
 
 Refunds go back to your original payment method through Stripe. They usually appear within 5 to 10 business days, depending on your bank.
 

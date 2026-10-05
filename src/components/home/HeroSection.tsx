@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import HowItWorksIllustration from "@/components/home/HowItWorksIllustration";
 
 const HeroSection = () => (
-  <section className="bg-background border-b border-border flex items-center min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-5rem)]">
-    <div className="container mx-auto w-full px-5 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
+  <section className="bg-background border-b border-border flex items-center lg:min-h-[calc(100svh-9.5rem)]">
+    <div className="container mx-auto w-full px-5 sm:px-6 lg:px-8 py-10 sm:py-12 lg:pt-0 lg:pb-28">
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-16 items-center">
         <div className="lg:col-span-6">
           <h1 className="font-serif text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-7xl text-foreground">

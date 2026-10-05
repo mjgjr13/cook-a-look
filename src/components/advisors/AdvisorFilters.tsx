@@ -2,41 +2,31 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
-import { Search, SlidersHorizontal, ArrowUpDown, X, Video, MapPin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Search, SlidersHorizontal, X, Video, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-// Import standardized category options (merged styles + occasions live in STYLE_CATEGORY_OPTIONS)
 import { CLIENT_FOCUS_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 
-const styleCategories = STYLE_CATEGORY_OPTIONS;
-
-// Sort options
 const sortOptions = [
-  { value: "featured", label: "Featured" },
-  { value: "price-low", label: "Price: Low to High" },
-  { value: "price-high", label: "Price: High to Low" },
+  { value: "featured", label: "Recommended" },
+  { value: "price-low", label: "Price: low to high" },
+  { value: "price-high", label: "Price: high to low" },
 ];
+
+// Simple budget presets instead of free-form min/max boxes.
+const budgetOptions = [
+  { label: "Any", min: "", max: "" },
+  { label: "Under $100", min: "", max: "99" },
+  { label: "$100–$250", min: "100", max: "250" },
+  { label: "$250+", min: "250", max: "" },
+];
+
+// Friendlier labels for the stored client-focus values.
+const clientFocusLabel = (value: string) =>
+  ({ "Plus Size": "Plus size", Budget: "Budget-friendly", Luxury: "Luxury" } as Record<string, string>)[value] ?? value;
 
 export interface FilterState {
   searchTerm: string;
@@ -49,351 +39,191 @@ export interface FilterState {
   sortBy: string;
 }
 
+export const EMPTY_FILTERS: FilterState = {
+  searchTerm: "",
+  styles: [],
+  clientFocus: [],
+  useCases: [],
+  sessionTypes: [],
+  minPrice: "",
+  maxPrice: "",
+  sortBy: "featured",
+};
+
 interface AdvisorFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   resultCount: number;
 }
 
+const Chip = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    className={cn(
+      "min-h-9 px-3 py-1.5 text-sm border transition-colors",
+      active ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:border-foreground",
+    )}
+  >
+    {children}
+  </button>
+);
+
 const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFiltersProps) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    onFiltersChange({ ...filters, [key]: value });
+  const update = <K extends keyof FilterState>(key: K, value: FilterState[K]) => onFiltersChange({ ...filters, [key]: value });
+  const toggle = (key: "styles" | "clientFocus" | "sessionTypes", value: string) => {
+    const current = filters[key] as string[];
+    update(key, (current.includes(value) ? current.filter((v) => v !== value) : [...current, value]) as never);
   };
 
-  const toggleArrayFilter = <K extends keyof FilterState>(
-    key: K,
-    value: string
-  ) => {
-    const currentArray = filters[key] as string[];
-    const newArray = currentArray.includes(value)
-      ? currentArray.filter((v) => v !== value)
-      : [...currentArray, value];
-    updateFilter(key, newArray as FilterState[K]);
-  };
-
-  const clearFilters = () => {
-    onFiltersChange({
-      searchTerm: "",
-      styles: [],
-      clientFocus: [],
-      useCases: [],
-      sessionTypes: [],
-      minPrice: "",
-      maxPrice: "",
-      sortBy: "featured",
-    });
-  };
-
+  const activeBudget = budgetOptions.find((b) => b.min === filters.minPrice && b.max === filters.maxPrice);
   const activeFilterCount =
-    filters.styles.length +
-    filters.clientFocus.length +
-    filters.useCases.length +
-    filters.sessionTypes.length +
-    (filters.minPrice ? 1 : 0) +
-    (filters.maxPrice ? 1 : 0);
+    filters.styles.length + filters.clientFocus.length + filters.sessionTypes.length + (filters.minPrice || filters.maxPrice ? 1 : 0);
 
-  const hasActiveFilters =
-    filters.searchTerm !== "" ||
-    activeFilterCount > 0 ||
-    filters.sortBy !== "featured";
-
-  const filterFields = (
-    <>
-      {/* Sort */}
-      <div>
-        <Label className="text-sm font-medium mb-3 block">Sort By</Label>
-        <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
-          <SelectTrigger className="w-full gap-2">
-            <ArrowUpDown className="w-4 h-4" />
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent className="bg-background">
-            {sortOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Session Type */}
-      <div>
-        <Label className="text-sm font-medium mb-3 block">Session Type</Label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => toggleArrayFilter("sessionTypes", "virtual")}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-2 px-3 py-2 border text-sm font-sans transition-colors",
-              filters.sessionTypes.includes("virtual")
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:border-primary/50"
-            )}
-          >
-            <Video className="w-4 h-4" />
-            Virtual
-          </button>
-          <button
-            onClick={() => toggleArrayFilter("sessionTypes", "in-person")}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-2 px-3 py-2 border text-sm font-sans transition-colors",
-              filters.sessionTypes.includes("in-person")
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:border-primary/50"
-            )}
-          >
-            <MapPin className="w-4 h-4" />
-            In-Person
-          </button>
-        </div>
-      </div>
-
-      {/* Styles & Occasions (merged) */}
-      <div>
-        <Label className="text-sm font-medium mb-3 block">Styles & Occasions</Label>
+  const panel = (
+    <div className="space-y-6">
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">Who is it for?</h3>
         <div className="flex flex-wrap gap-2">
-          {styleCategories.map((style) => (
-            <button
-              key={style}
-              onClick={() => toggleArrayFilter("styles", style)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-sans border transition-colors",
-                filters.styles.includes(style)
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-muted-foreground border-border hover:border-primary/50"
-              )}
-            >
-              {style}
-            </button>
+          {CLIENT_FOCUS_OPTIONS.map((f) => (
+            <Chip key={f} active={filters.clientFocus.includes(f)} onClick={() => toggle("clientFocus", f)}>
+              {clientFocusLabel(f)}
+            </Chip>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Client Focus */}
-      <div>
-        <Label className="text-sm font-medium mb-3 block">Client Focus</Label>
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">What's the occasion?</h3>
         <div className="flex flex-wrap gap-2">
-          {CLIENT_FOCUS_OPTIONS.map((focus) => (
-            <button
-              key={focus}
-              onClick={() => toggleArrayFilter("clientFocus", focus)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-sans border transition-colors",
-                filters.clientFocus.includes(focus)
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-muted-foreground border-border hover:border-primary/50"
-              )}
-            >
-              {focus}
-            </button>
+          {STYLE_CATEGORY_OPTIONS.map((s) => (
+            <Chip key={s} active={filters.styles.includes(s)} onClick={() => toggle("styles", s)}>
+              {s}
+            </Chip>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Price Range */}
-      <div>
-        <Label className="text-sm font-medium mb-3 block">Price Range</Label>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-            <Input
-              type="number"
-              placeholder="Min"
-              value={filters.minPrice}
-              onChange={(e) => updateFilter("minPrice", e.target.value)}
-              className="pl-7"
-              min="0"
-            />
-          </div>
-          <span className="text-muted-foreground">—</span>
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-            <Input
-              type="number"
-              placeholder="Max"
-              value={filters.maxPrice}
-              onChange={(e) => updateFilter("maxPrice", e.target.value)}
-              className="pl-7"
-              min="0"
-            />
-          </div>
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">How do you want to meet?</h3>
+        <div className="flex flex-wrap gap-2">
+          <Chip active={filters.sessionTypes.includes("virtual")} onClick={() => toggle("sessionTypes", "virtual")}>
+            <span className="inline-flex items-center gap-1.5"><Video className="h-4 w-4" aria-hidden="true" /> Video call</span>
+          </Chip>
+          <Chip active={filters.sessionTypes.includes("in-person")} onClick={() => toggle("sessionTypes", "in-person")}>
+            <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" /> In person</span>
+          </Chip>
         </div>
-      </div>
+      </section>
 
-      {/* Apply/Clear buttons */}
-      <div className="flex gap-2 pt-2 border-t border-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            clearFilters();
-            setFiltersOpen(false);
-          }}
-          className="flex-1"
-        >
-          Clear All
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">Budget per hour</h3>
+        <div className="flex flex-wrap gap-2">
+          {budgetOptions.map((b) => (
+            <Chip
+              key={b.label}
+              active={activeBudget?.label === b.label}
+              onClick={() => onFiltersChange({ ...filters, minPrice: b.min, maxPrice: b.max })}
+            >
+              {b.label}
+            </Chip>
+          ))}
+        </div>
+      </section>
+
+      <div className="flex gap-2 border-t border-border pt-4">
+        <Button variant="ghost" className="flex-1" onClick={() => onFiltersChange({ ...EMPTY_FILTERS, searchTerm: filters.searchTerm, sortBy: filters.sortBy })}>
+          Clear filters
         </Button>
-        <Button size="sm" onClick={() => setFiltersOpen(false)} className="flex-1">
-          Apply
+        <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
+          Show {resultCount} advisor{resultCount === 1 ? "" : "s"}
         </Button>
       </div>
-    </>
+    </div>
   );
 
+  const filtersButton = (
+    <Button variant="outline" className="gap-2 shrink-0">
+      <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+      Filters
+      {activeFilterCount > 0 && (
+        <Badge variant="secondary" className="ml-1 h-5 min-w-5 justify-center px-1 text-xs">{activeFilterCount}</Badge>
+      )}
+    </Button>
+  );
+
+  const chips = [
+    ...filters.clientFocus.map((v) => ({ label: clientFocusLabel(v), clear: () => toggle("clientFocus", v) })),
+    ...filters.styles.map((v) => ({ label: v, clear: () => toggle("styles", v) })),
+    ...filters.sessionTypes.map((v) => ({ label: v === "virtual" ? "Video call" : "In person", clear: () => toggle("sessionTypes", v) })),
+    ...(filters.minPrice || filters.maxPrice
+      ? [{ label: activeBudget?.label ?? "Budget", clear: () => onFiltersChange({ ...filters, minPrice: "", maxPrice: "" }) }]
+      : []),
+  ];
+
   return (
-    <div className="mb-12 p-6 bg-background border border-border">
-      {/* Clean single-row toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        {/* Search */}
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+    <div className="mb-10 border border-border bg-background p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
-            placeholder="Search by name or specialty..."
+            placeholder="Search by name"
+            aria-label="Search advisors by name"
             value={filters.searchTerm}
-            onChange={(e) => updateFilter("searchTerm", e.target.value)}
+            onChange={(e) => update("searchTerm", e.target.value)}
             className="pl-10"
           />
         </div>
-
-        {/* Filters Dropdown */}
-        {isMobile ? (
-          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="gap-2 w-full sm:w-auto">
-                <SlidersHorizontal className="w-4 h-4" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[85vw] bg-background overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Filters</SheetTitle>
-              </SheetHeader>
-              <div className="space-y-6 mt-6">{filterFields}</div>
-            </SheetContent>
-          </Sheet>
-        ) : (
-          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2 w-full sm:w-auto">
-                <SlidersHorizontal className="w-4 h-4" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-4 bg-background" align="end">
-              <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">{filterFields}</div>
-            </PopoverContent>
-          </Popover>
-        )}
+        <div className="flex gap-3">
+          <Select value={filters.sortBy} onValueChange={(v) => update("sortBy", v)}>
+            <SelectTrigger className="w-full sm:w-52" aria-label="Sort advisors">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent className="bg-background">
+              {sortOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isMobile ? (
+            <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <SheetTrigger asChild>{filtersButton}</SheetTrigger>
+              <SheetContent side="right" className="w-[88vw] overflow-y-auto bg-background">
+                <SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader>
+                <div className="mt-6">{panel}</div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <PopoverTrigger asChild>{filtersButton}</PopoverTrigger>
+              <PopoverContent className="w-[26rem] bg-background p-5" align="end">
+                <div className="max-h-[70vh] overflow-y-auto pr-1">{panel}</div>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
       </div>
 
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
-          <span className="text-sm text-muted-foreground font-sans">
-            {resultCount} result{resultCount !== 1 ? "s" : ""}
-          </span>
-          
-          {filters.sessionTypes.map((type) => (
-            <Badge key={type} variant="secondary" className="gap-1 pr-1">
-              {type === "virtual" ? (
-                <>
-                  <Video className="w-3 h-3" /> Virtual
-                </>
-              ) : (
-                <>
-                  <MapPin className="w-3 h-3" /> In-Person
-                </>
-              )}
-              <button
-                onClick={() => toggleArrayFilter("sessionTypes", type)}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-                aria-label="Remove filter"
-              >
-                <X className="w-3 h-3" />
+      {chips.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+          <span className="text-sm text-muted-foreground">{resultCount} result{resultCount === 1 ? "" : "s"}</span>
+          {chips.map((c) => (
+            <Badge key={c.label} variant="secondary" className="gap-1 pr-1">
+              {c.label}
+              <button onClick={c.clear} className="ml-1 rounded-full p-0.5 hover:bg-muted" aria-label={`Remove ${c.label}`}>
+                <X className="h-3 w-3" />
               </button>
             </Badge>
           ))}
-          
-          {filters.styles.map((style) => (
-            <Badge key={style} variant="secondary" className="gap-1 pr-1">
-              {style}
-              <button
-                onClick={() => toggleArrayFilter("styles", style)}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-                aria-label="Remove filter"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          ))}
-          
-          {filters.clientFocus.map((focus) => (
-            <Badge key={focus} variant="secondary" className="gap-1 pr-1">
-              {focus}
-              <button
-                onClick={() => toggleArrayFilter("clientFocus", focus)}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-                aria-label="Remove filter"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          ))}
-
-
-
-          {(filters.minPrice || filters.maxPrice) && (
-            <Badge variant="secondary" className="gap-1 pr-1">
-              {filters.minPrice && filters.maxPrice
-                ? `$${filters.minPrice} - $${filters.maxPrice}`
-                : filters.minPrice
-                ? `$${filters.minPrice}+`
-                : `Up to $${filters.maxPrice}`}
-              <button
-                onClick={() => {
-                  updateFilter("minPrice", "");
-                  updateFilter("maxPrice", "");
-                }}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-                aria-label="Remove price filter"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          )}
-
-          {filters.sortBy !== "featured" && (
-            <Badge variant="secondary" className="gap-1 pr-1">
-              <ArrowUpDown className="w-3 h-3" />
-              {sortOptions.find((o) => o.value === filters.sortBy)?.label}
-              <button
-                onClick={() => updateFilter("sortBy", "featured")}
-                className="ml-1 hover:bg-muted rounded-full p-0.5"
-                aria-label="Reset sort"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </Badge>
-          )}
-
           <Button
             variant="ghost"
             size="sm"
-            onClick={clearFilters}
-            className="text-muted-foreground hover:text-foreground h-7"
+            className="h-7 text-muted-foreground"
+            onClick={() => onFiltersChange({ ...EMPTY_FILTERS, searchTerm: filters.searchTerm, sortBy: filters.sortBy })}
           >
             Clear all
           </Button>

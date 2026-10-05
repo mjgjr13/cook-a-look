@@ -108,7 +108,7 @@ const Step = ({ i }: { i: number }) => {
 
 // 2x2 grid in reading order: 1 2 / 3 4
 const HowItWorksIllustration = () => (
-  <ol className="mx-auto grid w-full max-w-md lg:max-w-lg grid-cols-2 gap-3 sm:gap-4 text-foreground" aria-label="How Cook A Look works">
+  <ol className="mx-auto grid w-full max-w-md lg:max-w-xl grid-cols-2 gap-3 sm:gap-4 text-foreground" aria-label="How Cook A Look works">
     {STEPS.map((step, i) => (
       <li key={step.caption}>
         <Step i={i} />

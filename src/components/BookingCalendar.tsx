@@ -512,17 +512,11 @@ const BookingCalendar = ({
               {/* Must match public.calculate_refund (database) - update both together. */}
               <div className="text-[11px] leading-relaxed text-muted-foreground border-t border-border pt-3">
                 <p className="font-semibold text-foreground mb-1">Cancellation policy</p>
-                {meetingType === "in_person" ? (
-                  <p>
-                    Full refund if you cancel more than 24 hours before the session, 50% refund 12 to 24 hours before,
-                    and no refund within 12 hours. Full refund if your advisor cancels.
-                  </p>
-                ) : (
-                  <p>
-                    Full refund if you cancel more than 24 hours before the session, 50% refund 12 to 24 hours before,
-                    25% refund 1 to 12 hours before, and no refund within 1 hour. Full refund if your advisor cancels.
-                  </p>
-                )}
+                <p>
+                  Cancel any time before your session for a full refund. Cancelling within{" "}
+                  {meetingType === "in_person" ? "2 hours of an in-person session" : "1 hour of a video session"} has a 10%
+                  fee. Full refund if your advisor cancels.
+                </p>
               </div>
               <Button variant="hero" className="w-full" onClick={handleBooking} disabled={isLoading}>
                 {isLoading ? (
