@@ -104,10 +104,10 @@ const PortfolioUpload = ({
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 25 * 1024 * 1024) {
       toast({
         title: "File too large",
-        description: `${file.name} exceeds the 10MB limit.`,
+        description: `${file.name} is larger than 25MB.`,
         variant: "destructive",
       });
       return;
@@ -163,13 +163,13 @@ const PortfolioUpload = ({
     setIsProcessing(true);
 
     try {
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
       const filePath = `${userId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("portfolios")
         .upload(filePath, croppedBlob, {
-          contentType: "image/png",
+          contentType: "image/jpeg",
         });
 
       if (uploadError) throw uploadError;
@@ -333,7 +333,7 @@ const PortfolioUpload = ({
             Upload Photos
           </Button>
           <span className="text-xs text-muted-foreground">
-            JPG, PNG up to 10MB each
+            JPG, PNG or WebP up to 25MB each. We keep them sharp and size them for fast loading.
           </span>
         </div>
       )}

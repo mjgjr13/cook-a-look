@@ -4,6 +4,7 @@ import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { resizeImageFile } from "@/lib/imageResize";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1269,25 +1270,28 @@ const BecomeAdvisor = () => {
                                     });
                                     return;
                                   }
-                                  // Validate file size (5MB max)
-                                  if (file.size > 5 * 1024 * 1024) {
+                                  // Large originals are fine: resized in the browser to a sharp
+                                  // 2400px JPEG before upload (storage limit is 5MB).
+                                  if (file.size > 25 * 1024 * 1024) {
                                     toast({
                                       title: "File too large",
-                                      description: "Please upload an image smaller than 5MB",
+                                      description: "Please upload an image smaller than 25MB",
                                       variant: "destructive",
                                     });
                                     return;
                                   }
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    setFormData({ 
-                                      ...formData, 
-                                      profilePhotoFile: file,
-                                      profilePhotoPreview: reader.result as string
-                                    });
-                                    setErrors((prev) => ({ ...prev, profilePhotoFile: undefined }));
-                                  };
-                                  reader.readAsDataURL(file);
+                                  void resizeImageFile(file).then((resized) => {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        profilePhotoFile: resized,
+                                        profilePhotoPreview: reader.result as string,
+                                      }));
+                                      setErrors((prev) => ({ ...prev, profilePhotoFile: undefined }));
+                                    };
+                                    reader.readAsDataURL(resized);
+                                  });
                                 }
                               }}
                             />

@@ -25,6 +25,9 @@ interface ImageCropModalProps {
   title?: string;
 }
 
+/** Long edge of saved photos, in pixels: sharp on retina screens, ~0.5-1.5MB as JPEG. */
+export const MAX_OUTPUT_EDGE = 2400;
+
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -74,15 +77,21 @@ const getCroppedImg = async (
     throw new Error("No 2d context");
   }
 
-  // Set the size to the crop area - use exact pixel dimensions
-  croppedCanvas.width = pixelCrop.width;
-  croppedCanvas.height = pixelCrop.height;
+  // Keep photos high resolution but bounded: long edge capped at MAX_OUTPUT_EDGE
+  // so a 6000px camera original doesn't become a 30MB upload (storage limit is
+  // 5-10MB) or slow down pages. Never upscales.
+  const scale = Math.min(1, MAX_OUTPUT_EDGE / Math.max(pixelCrop.width, pixelCrop.height));
+  const outWidth = Math.round(pixelCrop.width * scale);
+  const outHeight = Math.round(pixelCrop.height * scale);
+  croppedCanvas.width = outWidth;
+  croppedCanvas.height = outHeight;
+  croppedCtx.imageSmoothingEnabled = true;
+  croppedCtx.imageSmoothingQuality = "high";
 
   // Calculate the offset due to rotation
   const offsetX = (newWidth - image.width) / 2;
   const offsetY = (newHeight - image.height) / 2;
 
-  // Draw the cropped image without any scaling
   croppedCtx.drawImage(
     canvas,
     pixelCrop.x + offsetX,
@@ -91,11 +100,11 @@ const getCroppedImg = async (
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    outWidth,
+    outHeight
   );
 
-  // Return as blob with high quality PNG to avoid compression artifacts
+  // High-quality JPEG: visually lossless for photos at a fraction of PNG's size.
   return new Promise((resolve, reject) => {
     croppedCanvas.toBlob(
       (blob) => {
@@ -105,8 +114,8 @@ const getCroppedImg = async (
           reject(new Error("Canvas is empty"));
         }
       },
-      "image/png",
-      1.0 // Maximum quality
+      "image/jpeg",
+      0.9
     );
   });
 };

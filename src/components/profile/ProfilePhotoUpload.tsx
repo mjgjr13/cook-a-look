@@ -64,15 +64,15 @@ const ProfilePhotoUpload = ({
 
   const validateImage = async (file: File): Promise<{ valid: boolean; error?: string }> => {
     // Check file type
-    const allowedTypes = ["image/jpeg", "image/png"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       return { valid: false, error: "Only JPG and PNG images are allowed" };
     }
 
-    // Check file size (max 10MB - increased since we'll crop)
-    const maxSize = 10 * 1024 * 1024;
+    // Large originals are fine: the crop step resizes to 2400px JPEG before upload
+    const maxSize = 25 * 1024 * 1024;
     if (file.size > maxSize) {
-      return { valid: false, error: "Image must be smaller than 10MB" };
+      return { valid: false, error: "Image must be smaller than 25MB" };
     }
 
     // Check minimum resolution
@@ -130,14 +130,14 @@ const ProfilePhotoUpload = ({
 
     try {
       // Generate unique filename - always save as PNG to preserve quality
-      const fileName = `${userId}/avatar_${Date.now()}.png`;
+      const fileName = `${userId}/avatar_${Date.now()}.jpg`;
 
       // Upload to storage without any compression
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(fileName, croppedBlob, {
           upsert: true,
-          contentType: "image/png",
+          contentType: "image/jpeg",
         });
 
       if (uploadError) {
@@ -281,7 +281,7 @@ const ProfilePhotoUpload = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/jpeg,image/png,image/webp"
             onChange={handleFileSelect}
             className="hidden"
             disabled={isUploading}
@@ -321,7 +321,7 @@ const ProfilePhotoUpload = ({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        JPG or PNG, minimum 200×200 pixels, max 10MB
+        JPG, PNG or WebP, at least 200×200 pixels, up to 25MB
       </p>
 
       {/* Remove Confirmation Dialog */}
