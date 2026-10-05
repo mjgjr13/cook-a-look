@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import JoinCallButton from "@/components/booking/JoinCallButton";
+import SessionRecordings from "@/components/booking/SessionRecordings";
 import { isVirtualBooking } from "@/lib/bookingUtils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -233,6 +234,11 @@ const BookingDetailsModal = ({
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Recordings: clients (their own sessions) and admins, video sessions only */}
+            {(userRole === "client" || userRole === "admin") && isVirtualBooking(booking) && !isCancelled && (
+              <SessionRecordings bookingId={booking.id} />
             )}
 
             {/* Actions */}

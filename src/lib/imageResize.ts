@@ -27,3 +27,19 @@ export async function resizeImageFile(file: File, maxEdge = 2400, quality = 0.9)
     return file;
   }
 }
+
+/** Minimum shortest-side resolution for advisor photos, so profiles stay sharp. */
+export const MIN_PROFILE_PHOTO_PX = 600;
+export const MIN_PORTFOLIO_PHOTO_PX = 800;
+
+/** Pixel dimensions of an image file, or null if it can't be decoded. */
+export async function getImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const dims = { width: bitmap.width, height: bitmap.height };
+    bitmap.close?.();
+    return dims;
+  } catch {
+    return null;
+  }
+}

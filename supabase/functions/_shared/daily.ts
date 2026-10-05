@@ -165,7 +165,19 @@ export async function createMeetingToken(roomName: string, userName: string, exp
     const res = await fetch("https://api.daily.co/v1/meeting-tokens", {
       method: "POST",
       headers: { Authorization: `Bearer ${dailyKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ properties: { room_name: roomName, user_name: userName.slice(0, 60), exp: expSeconds, is_owner: false } }),
+      // start_cloud_recording: every session is recorded automatically as soon
+      // as someone joins (participants consent on the pre-call screen). Daily
+      // ignores it if a recording is already running.
+      body: JSON.stringify({
+        properties: {
+          room_name: roomName,
+          user_name: userName.slice(0, 60),
+          exp: expSeconds,
+          is_owner: false,
+          enable_recording: "cloud",
+          start_cloud_recording: true,
+        },
+      }),
     });
     if (!res.ok) {
       console.error("Daily meeting token failed", res.status, await res.text());

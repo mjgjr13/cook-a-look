@@ -432,7 +432,12 @@ const Dashboard = () => {
                         })}
                       </p>
                     </div>
-                    <span className="text-sm text-muted-foreground capitalize">{booking.status}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-muted-foreground capitalize">{booking.status}</span>
+                      <Button variant="outline" size="sm" onClick={() => { setModalTab("details"); setSelectedBooking(booking); }}>
+                        {isVirtualBooking(booking) ? "Details & recording" : "Details"}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

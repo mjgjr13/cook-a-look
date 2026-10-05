@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Upload, ImagePlus, Loader2 } from "lucide-react";
+import { getImageDimensions, MIN_PORTFOLIO_PHOTO_PX } from "@/lib/imageResize";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,20 @@ const PortfolioUpload = ({
       toast({
         title: "File too large",
         description: `${file.name} is larger than 25MB.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const dims = await getImageDimensions(file);
+    if (!dims) {
+      toast({ title: "Couldn't read image", description: `${file.name} isn't a valid image.`, variant: "destructive" });
+      return;
+    }
+    if (Math.min(dims.width, dims.height) < MIN_PORTFOLIO_PHOTO_PX) {
+      toast({
+        title: "Photo resolution too low",
+        description: `Please use a sharper photo, at least ${MIN_PORTFOLIO_PHOTO_PX} pixels on the shortest side.`,
         variant: "destructive",
       });
       return;

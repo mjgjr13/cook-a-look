@@ -80,7 +80,7 @@ const ProfilePhotoUpload = ({
       const img = new Image();
       img.onload = () => {
         URL.revokeObjectURL(img.src);
-        const minDimension = 200;
+        const minDimension = 600; // keep profile photos sharp
         if (img.width < minDimension || img.height < minDimension) {
           resolve({ valid: false, error: `Image must be at least ${minDimension}x${minDimension} pixels` });
         } else {

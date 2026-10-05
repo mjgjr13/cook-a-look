@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { resizeImageFile } from "@/lib/imageResize";
+import { resizeImageFile, getImageDimensions, MIN_PROFILE_PHOTO_PX } from "@/lib/imageResize";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1280,7 +1280,18 @@ const BecomeAdvisor = () => {
                                     });
                                     return;
                                   }
-                                  void resizeImageFile(file).then((resized) => {
+                                  void getImageDimensions(file).then((dims) => {
+                                    if (!dims || Math.min(dims.width, dims.height) < MIN_PROFILE_PHOTO_PX) {
+                                      toast({
+                                        title: "Photo resolution too low",
+                                        description: `Please choose a sharper photo, at least ${MIN_PROFILE_PHOTO_PX} pixels on the shortest side.`,
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
+                                    return resizeImageFile(file);
+                                  }).then((resized) => {
+                                    if (!resized) return;
                                     const reader = new FileReader();
                                     reader.onloadend = () => {
                                       setFormData((prev) => ({
