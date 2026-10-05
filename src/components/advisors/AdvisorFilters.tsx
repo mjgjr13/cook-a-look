@@ -16,14 +16,6 @@ const sortOptions = [
   { value: "price-high", label: "Price: high to low" },
 ];
 
-// Simple budget presets instead of free-form min/max boxes.
-const budgetOptions = [
-  { label: "Any", min: "", max: "" },
-  { label: "Under $100", min: "", max: "99" },
-  { label: "$100–$250", min: "100", max: "250" },
-  { label: "$250+", min: "250", max: "" },
-];
-
 // Friendlier labels for the stored client-focus values.
 const clientFocusLabel = (value: string) =>
   ({ "Plus Size": "Plus size", Budget: "Budget-friendly", Luxury: "Luxury" } as Record<string, string>)[value] ?? value;
@@ -80,7 +72,6 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
     update(key, (current.includes(value) ? current.filter((v) => v !== value) : [...current, value]) as never);
   };
 
-  const activeBudget = budgetOptions.find((b) => b.min === filters.minPrice && b.max === filters.maxPrice);
   const activeFilterCount =
     filters.styles.length + filters.clientFocus.length + filters.sessionTypes.length + (filters.minPrice || filters.maxPrice ? 1 : 0);
 
@@ -122,15 +113,24 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
 
       <section>
         <h3 className="mb-2 text-sm font-semibold">Budget per hour</h3>
-        <div className="flex flex-wrap gap-2">
-          {budgetOptions.map((b) => (
-            <Chip
-              key={b.label}
-              active={activeBudget?.label === b.label}
-              onClick={() => onFiltersChange({ ...filters, minPrice: b.min, maxPrice: b.max })}
-            >
-              {b.label}
-            </Chip>
+        <div className="flex items-center gap-2">
+          {(["minPrice", "maxPrice"] as const).map((key, idx) => (
+            <div key={key} className="contents">
+              {idx === 1 && <span className="text-muted-foreground">to</span>}
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder={key === "minPrice" ? "Min" : "Max"}
+                  aria-label={key === "minPrice" ? "Minimum price per hour" : "Maximum price per hour"}
+                  value={filters[key]}
+                  onChange={(e) => update(key, e.target.value)}
+                  className="pl-7"
+                />
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -161,7 +161,9 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
     ...filters.styles.map((v) => ({ label: v, clear: () => toggle("styles", v) })),
     ...filters.sessionTypes.map((v) => ({ label: v === "virtual" ? "Video call" : "In person", clear: () => toggle("sessionTypes", v) })),
     ...(filters.minPrice || filters.maxPrice
-      ? [{ label: activeBudget?.label ?? "Budget", clear: () => onFiltersChange({ ...filters, minPrice: "", maxPrice: "" }) }]
+      ? [{
+          label: filters.minPrice && filters.maxPrice ? `$${filters.minPrice}–$${filters.maxPrice}` : filters.minPrice ? `$${filters.minPrice}+` : `Up to $${filters.maxPrice}`,
+          clear: () => onFiltersChange({ ...filters, minPrice: "", maxPrice: "" }) }]
       : []),
   ];
 

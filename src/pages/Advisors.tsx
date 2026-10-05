@@ -140,7 +140,7 @@ const Advisors = () => {
     return result;
   }, [advisors, filters]);
 
-  // Pagination: at most ADVISORS_PER_PAGE cards per page (7 rows of 3 on desktop).
+  // Pagination: at most ADVISORS_PER_PAGE cards per page (rows of 4 on desktop).
   const [page, setPage] = useState(1);
   const pageCount = Math.max(1, Math.ceil(filteredAndSortedAdvisors.length / ADVISORS_PER_PAGE));
   useEffect(() => setPage(1), [filters]);
@@ -166,8 +166,8 @@ const Advisors = () => {
               <Skeleton className="h-6 w-96 mx-auto" />
             </div>
             <Skeleton className="h-32 w-full mb-12" />
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i} className="bg-background border border-border overflow-hidden">
                   <Skeleton className="aspect-[3/4] w-full" />
                   <div className="p-4">
@@ -225,7 +225,7 @@ const Advisors = () => {
           </motion.div>
 
           {/* Advisors Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {pageAdvisors.map((advisor, index) => {
               const displayName = advisor.full_name || "Style Advisor";
               const displayPrice = advisor.price_per_session || 100;
