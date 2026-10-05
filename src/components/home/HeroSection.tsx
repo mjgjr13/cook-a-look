@@ -5,7 +5,7 @@ import HowItWorksIllustration from "@/components/home/HowItWorksIllustration";
 
 const HeroSection = () => (
   <section className="bg-background border-b border-border">
-    <div className="container mx-auto px-5 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
+    <div className="container mx-auto px-5 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-16 items-center">
         <div className="lg:col-span-6">
           <h1 className="font-serif text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-7xl text-foreground">

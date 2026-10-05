@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 // Minimal black-and-white line illustrations of the Cook A Look process,
 // shown in the homepage hero: choose an advisor → meet → leave feeling better.
 // Pure SVG (no image files), so it stays crisp and loads instantly.
@@ -64,32 +65,69 @@ const FeelingGreat = () => (
   </svg>
 );
 
-const Arrow = () => (
-  <svg viewBox="0 0 24 40" className="h-7 w-5 text-foreground/70" aria-hidden="true">
+// Step 1: a chat with the AI Concierge (a hanger in the visitor's message).
+const TellUsYourStyle = () => (
+  <svg viewBox="0 0 240 150" className="w-full h-auto" role="img" aria-label="Telling the AI Concierge about your style">
+    <rect x="50" y="10" width="140" height="128" rx="10" {...stroke} />
+    {/* visitor message with a hanger */}
+    <path d="M 92 30 h 80 a 6 6 0 0 1 6 6 v 30 a 6 6 0 0 1 -6 6 h -80 a 6 6 0 0 1 -6 -6 v -30 a 6 6 0 0 1 6 -6 z" {...stroke} strokeWidth={1.5} />
+    <path d="M 132 40 a 4 4 0 1 1 4 4 v 4 L 152 60 L 116 60 L 132 48" {...stroke} strokeWidth={1.5} />
+    {/* reply */}
+    <path d="M 68 84 h 64 a 6 6 0 0 1 6 6 v 20 a 6 6 0 0 1 -6 6 h -64 a 6 6 0 0 1 -6 -6 v -20 a 6 6 0 0 1 6 -6 z" {...stroke} strokeWidth={1.5} />
+    <path d="M 74 96 L 122 96 M 74 105 L 108 105" {...stroke} strokeWidth={1.5} />
+  </svg>
+);
+
+// Points down by default; rotate for right (-90) and left (90).
+const Arrow = ({ rotate = 0 }: { rotate?: number }) => (
+  <svg viewBox="0 0 24 40" className="h-7 w-5 text-foreground/70" style={{ transform: `rotate(${rotate}deg)` }} aria-hidden="true">
     <path d="M 12 2 L 12 36 M 4 28 L 12 37 L 20 28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const STEPS = [
-  { Art: ScreenWithAdvisors, caption: "Find an advisor who fits your style" },
+  { Art: TellUsYourStyle, caption: "Tell us your style", to: "/ai-concierge" },
+  { Art: ScreenWithAdvisors, caption: "Find an advisor who fits" },
   { Art: Meeting, caption: "Meet by video or in person" },
   { Art: FeelingGreat, caption: "Leave confident, with a plan" },
 ];
 
+const Step = ({ i }: { i: number }) => {
+  const { Art, caption, to } = STEPS[i];
+  const body = (
+    <>
+      <Art />
+      <p className="mt-1.5 text-center text-[11px] sm:text-xs font-medium text-muted-foreground">
+        <span className="text-foreground">{i + 1}.</span> {caption}
+        {to && <span className="text-foreground"> →</span>}
+      </p>
+    </>
+  );
+  const cls = "block h-full border border-border bg-card px-3 pt-2.5 pb-2";
+  return to ? (
+    <Link to={to} className={`${cls} transition-colors hover:border-foreground`}>{body}</Link>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+};
+
+// Clockwise square: 1 → 2 ↓ 3 ← 4
 const HowItWorksIllustration = () => (
-  <ol className="mx-auto flex w-full max-w-[13rem] sm:max-w-[14rem] flex-col items-center text-foreground" aria-label="How Cook A Look works">
-    {STEPS.map(({ Art, caption }, i) => (
-      <li key={caption} className="flex w-full flex-col items-center">
-        <div className="w-full border border-border bg-card px-4 pt-3 pb-2.5">
-          <Art />
-          <p className="mt-2 text-center text-xs font-medium text-muted-foreground">
-            <span className="text-foreground">{i + 1}.</span> {caption}
-          </p>
-        </div>
-        {i < STEPS.length - 1 && <Arrow />}
-      </li>
-    ))}
-  </ol>
+  <div
+    className="mx-auto grid w-full max-w-md grid-cols-[1fr_auto_1fr] items-center gap-y-1 text-foreground"
+    role="list"
+    aria-label="How Cook A Look works"
+  >
+    <div role="listitem"><Step i={0} /></div>
+    <Arrow rotate={-90} />
+    <div role="listitem"><Step i={1} /></div>
+    <div />
+    <div />
+    <div className="flex justify-center"><Arrow /></div>
+    <div role="listitem"><Step i={3} /></div>
+    <Arrow rotate={90} />
+    <div role="listitem"><Step i={2} /></div>
+  </div>
 );
 
 export default HowItWorksIllustration;
