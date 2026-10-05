@@ -244,11 +244,6 @@ const AdvisorProfile = () => {
                     Verified Advisor
                   </div>
                 )}
-                {isSample && advisor.avatar_url && (
-                  <span className="absolute bottom-2 right-2 bg-background/85 px-2 py-0.5 text-[10px] text-muted-foreground">
-                    Stock photo
-                  </span>
-                )}
               </div>
 
                <div className="space-y-2.5 lg:space-y-4">
