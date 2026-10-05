@@ -88,14 +88,16 @@ serve(async (req) => {
     let videoUrl: string | null = null;
     if (slot.is_virtual) {
       try {
-        const room = await getOrCreateVideoRoomForBooking(supabase, b.id);
-        videoUrl = room.roomUrl;
+        // Rooms are private (token-based): make sure the room exists, but send
+        // people to their dashboard, where Join Call issues their personal pass.
+        await getOrCreateVideoRoomForBooking(supabase, b.id);
+        videoUrl = "https://www.cookalook.com/signin";
       } catch (e) { console.error("video room error", e); }
     }
 
     const when = new Date(slot.start_time).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short" });
     const joinBtn = videoUrl
-      ? `<p style="text-align:center;margin:24px 0;"><a href="${videoUrl}" style="background:#1a1a1a;color:#fff;padding:12px 28px;text-decoration:none;letter-spacing:1px;font-size:14px;">JOIN VIDEO CALL</a></p>`
+      ? `<p style="text-align:center;margin:24px 0;"><a href="${videoUrl}" style="background:#1a1a1a;color:#fff;padding:12px 28px;text-decoration:none;letter-spacing:1px;font-size:14px;">OPEN YOUR DASHBOARD</a></p><p style="text-align:center;font-size:12px;color:#666;">Sign in and press Join Call. The room opens 15 minutes before your session.</p>`
       : "";
     const lead = win === "24h" ? "tomorrow" : "in about an hour";
 

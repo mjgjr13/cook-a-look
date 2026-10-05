@@ -26,10 +26,10 @@ Branch: `security-compliance-audit` (not merged to `main`; nothing deployed to p
 | Item | Status |
 |---|---|
 | SEC-01/02/09 revokes applied in production | **VERIFIED** (`npm run test:security`: all pass) |
-| SEC-07 storage MIME/size limits | IMPLEMENTED BUT UNVERIFIED (Lovable applying) |
+| SEC-07: storage uploads limited to jpg/png/webp via storage policies (bucket MIME settings not available on Lovable Cloud) + size limits | **VERIFIED** (HTML, disguised HTML and SVG refused; JPEG accepted) |
 | Fonts self-hosted (no Google Fonts requests); phone flags bundled; ui-avatars removed | IMPLEMENTED |
 | VID-01 private Daily rooms + per-person meeting tokens; emails link to dashboard | IMPLEMENTED BUT UNVERIFIED (needs deploy of create-video-room, send-booking-confirmation) |
-| **VID-03 (new):** no code starts cloud recording and participants aren't room owners, so sessions are likely **not recorded**, even though the Terms and consent screen say they are | NOT IMPLEMENTED — owner decision needed (auto-record, or change the wording) |
+| VID-03: sessions are now recorded automatically (meeting tokens start cloud recording); the booking's client and admins can watch them; others get 403 | **VERIFIED** 2026-10-05 (39-second test recording) |
 | Advisor photo uploads: 2400px JPEG cap, 25MB originals accepted | IMPLEMENTED |
 
 ## Next — continuation point
