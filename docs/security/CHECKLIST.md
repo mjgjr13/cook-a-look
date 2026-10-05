@@ -21,6 +21,17 @@ Branch: `security-compliance-audit` (not merged to `main`; nothing deployed to p
 | Drafts: refund policy, privacy-policy corrections, AI disclosure, cookie notice, safety guidance, IP complaints, AUP | REQUIRES PROFESSIONAL REVIEW | `docs/legal/` |
 | Retention schedule, incident response plan | REQUIRES PROFESSIONAL REVIEW | `docs/security/` |
 
+## Stage 2 — 2026-10-05
+
+| Item | Status |
+|---|---|
+| SEC-01/02/09 revokes applied in production | **VERIFIED** (`npm run test:security`: all pass) |
+| SEC-07 storage MIME/size limits | IMPLEMENTED BUT UNVERIFIED (Lovable applying) |
+| Fonts self-hosted (no Google Fonts requests); phone flags bundled; ui-avatars removed | IMPLEMENTED |
+| VID-01 private Daily rooms + per-person meeting tokens; emails link to dashboard | IMPLEMENTED BUT UNVERIFIED (needs deploy of create-video-room, send-booking-confirmation) |
+| **VID-03 (new):** no code starts cloud recording and participants aren't room owners, so sessions are likely **not recorded**, even though the Terms and consent screen say they are | NOT IMPLEMENTED — owner decision needed (auto-record, or change the wording) |
+| Advisor photo uploads: 2400px JPEG cap, 25MB originals accepted | IMPLEMENTED |
+
 ## Next — continuation point
 
 1. **Approval needed:** apply migrations `20261004010000` + `20261004020000` and deploy `delete-account`, `send-signup-confirmation`, `advisor-chat` via Lovable. Then run `npm run test:security` (expect all PASS) and test deletion with a throw-away account.

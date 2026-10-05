@@ -161,8 +161,11 @@ serve(async (req) => {
     let videoJoinUrl: string | null = null;
     if (booking.slot.is_virtual) {
       try {
-        const room = await getOrCreateVideoRoomForBooking(supabaseAdmin, bookingId);
-        videoJoinUrl = room.roomUrl;
+        // Rooms are private (token-based), so the email links to the dashboard,
+        // where the Join Call button issues a token. Pre-creating the room here
+        // still makes sure it exists before the session.
+        await getOrCreateVideoRoomForBooking(supabaseAdmin, bookingId);
+        videoJoinUrl = "https://www.cookalook.com/signin";
       } catch (e) {
         console.error("Pre-create video room failed:", e);
       }
@@ -230,9 +233,9 @@ serve(async (req) => {
               </div>
             </div>
             
-            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">JOIN VIDEO CALL</a></p><p style="text-align:center;font-size:12px;color:#666;word-break:break-all;">Fallback link: <a href="${videoJoinUrl}">${videoJoinUrl}</a></p>` : ""}
+            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">OPEN YOUR DASHBOARD</a></p><p style="text-align:center;font-size:12px;color:#666;">Sign in and press Join Call. The video room opens 15 minutes before your session.</p>` : ""}
 
-            <p>A calendar invite is attached. ${videoJoinUrl ? "The video call link is also included in the calendar event." : "You'll receive a video call link before your session."}</p>
+            <p>A calendar invite is attached. ${videoJoinUrl ? "The calendar event links to your dashboard, where you join the call." : "You'll receive a video call link before your session."}</p>
             
             <div class="footer">
               <p>Questions? Reply to this email or visit our help center.</p>
@@ -291,7 +294,7 @@ serve(async (req) => {
               </div>
             </div>
             
-            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">JOIN VIDEO CALL</a></p><p style="text-align:center;font-size:12px;color:#666;word-break:break-all;">Fallback link: <a href="${videoJoinUrl}">${videoJoinUrl}</a></p>` : ""}
+            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">OPEN YOUR DASHBOARD</a></p><p style="text-align:center;font-size:12px;color:#666;">Sign in and press Join Call. The video room opens 15 minutes before your session.</p>` : ""}
 
             <p>A calendar invite is attached. Please ensure you're available and prepared for the session.</p>
             

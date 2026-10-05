@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
-import { getOrCreateVideoRoomForBooking } from "../_shared/daily.ts";
+import { createMeetingToken, getOrCreateVideoRoomForBooking } from "../_shared/daily.ts";
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -35,7 +35,7 @@ serve(async (req) => {
     // Authorize: only client or advisor of the booking can fetch the room
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
-      .select(`id, status, meeting_type, client:profiles!bookings_client_id_fkey(user_id), advisor:profiles!bookings_advisor_id_fkey(user_id)`)
+      .select(`id, status, meeting_type, slot:availability_slots(end_time), client:profiles!bookings_client_id_fkey(user_id, full_name), advisor:profiles!bookings_advisor_id_fkey(user_id, full_name)`)
       .eq("id", bookingId)
       .single();
     if (bookingError || !booking) return jsonResponse({ error: "Booking not found" }, 404);
@@ -60,7 +60,17 @@ serve(async (req) => {
     }
 
     const room = await getOrCreateVideoRoomForBooking(supabaseAdmin, bookingId);
-    return jsonResponse(room);
+
+    // Private Daily rooms need a per-person token; valid until 30 min after the session.
+    let token: string | null = null;
+    if (room.provider === "daily") {
+      const isAdvisor = user.id === advisorUserId;
+      const person = (isAdvisor ? booking.advisor : booking.client) as { full_name?: string } | null;
+      const endTime = (booking as { slot?: { end_time?: string } | null }).slot?.end_time;
+      const exp = Math.floor((endTime ? new Date(endTime).getTime() : Date.now() + 4 * 3600e3) / 1000) + 30 * 60;
+      token = await createMeetingToken(room.roomName, `${person?.full_name || (isAdvisor ? "Advisor" : "Client")}`, exp);
+    }
+    return jsonResponse({ ...room, token });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Create video room error:", error);

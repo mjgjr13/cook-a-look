@@ -37,6 +37,7 @@ const VideoCall = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [roomToken, setRoomToken] = useState<string | null>(null);
   const [provider, setProvider] = useState<"daily" | "jitsi_fallback" | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
@@ -69,6 +70,7 @@ const VideoCall = ({
         if (cancelled) return;
         setProvider(data.provider === "daily" ? "daily" : "jitsi_fallback");
         setRoomUrl(data.roomUrl);
+        setRoomToken(typeof data.token === "string" ? data.token : null);
       } catch (error) {
         console.error("Failed to create video room:", error);
         toast({
@@ -108,7 +110,7 @@ const VideoCall = ({
         });
         dailyFrameRef.current = frame;
         frame.on("left-meeting", () => handleEndCall());
-        await frame.join({ url: roomUrl });
+        await frame.join(roomToken ? { url: roomUrl, token: roomToken } : { url: roomUrl });
       } catch (e) {
         console.error("Failed to mount Daily frame:", e);
         toast({
@@ -337,7 +339,7 @@ const VideoCall = ({
             {roomUrl && (
               <Button
                 variant="outline"
-                onClick={() => window.open(roomUrl, "_blank", "noopener,noreferrer")}
+                onClick={() => window.open(roomToken && provider === "daily" ? `${roomUrl}?t=${encodeURIComponent(roomToken)}` : roomUrl, "_blank", "noopener,noreferrer")}
                 aria-label="Open call in new tab"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />

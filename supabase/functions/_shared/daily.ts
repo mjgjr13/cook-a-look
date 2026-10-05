@@ -87,7 +87,9 @@ export async function getOrCreateVideoRoomForBooking(
       },
       body: JSON.stringify({
         name: roomName,
-        privacy: "public",
+        // Private: joining needs a meeting token from create-video-room (issued only
+        // to the booking's client and advisor), so a leaked room URL isn't enough.
+        privacy: "private",
         properties: {
           exp: expSeconds,
           ...(nbfSeconds ? { nbf: nbfSeconds } : {}),
@@ -149,4 +151,30 @@ export async function getOrCreateVideoRoomForBooking(
   }
 
   return room;
+}
+
+/**
+ * Short-lived Daily meeting token for one participant of a booking's room.
+ * Required for private rooms. Returns null if Daily isn't configured or the
+ * request fails (the caller then falls back to the plain room URL).
+ */
+export async function createMeetingToken(roomName: string, userName: string, expSeconds: number): Promise<string | null> {
+  const dailyKey = Deno.env.get("DAILY_API_KEY");
+  if (!dailyKey) return null;
+  try {
+    const res = await fetch("https://api.daily.co/v1/meeting-tokens", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${dailyKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ properties: { room_name: roomName, user_name: userName.slice(0, 60), exp: expSeconds, is_owner: false } }),
+    });
+    if (!res.ok) {
+      console.error("Daily meeting token failed", res.status, await res.text());
+      return null;
+    }
+    const { token } = await res.json();
+    return typeof token === "string" ? token : null;
+  } catch (e) {
+    console.error("Daily meeting token error", e);
+    return null;
+  }
 }

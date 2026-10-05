@@ -1,6 +1,8 @@
 import * as React from "react";
 import PhoneInputWithCountry from "react-phone-number-input";
 import type { Value } from "react-phone-number-input";
+// Bundled SVG flags instead of loading them from a third-party CDN.
+import flags from "react-phone-number-input/flags";
 import { cn } from "@/lib/utils";
 import "react-phone-number-input/style.css";
 
@@ -38,6 +40,7 @@ const InternationalPhoneInput = React.forwardRef<
       <div className={cn("space-y-1", className)}>
         <PhoneInputWithCountry
           international
+          flags={flags}
           countryCallingCodeEditable={false}
           defaultCountry={defaultCountry}
           value={value as Value}

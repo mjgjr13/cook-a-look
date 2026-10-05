@@ -76,14 +76,20 @@ const FeaturedAdvisors = () => {
                 onClick={() => handleCardClick(advisor.id)}
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
-                  <img
-                    src={optimizedImageUrl(advisor.avatar_url, 560, 700) || `https://ui-avatars.com/api/?name=${encodeURIComponent(advisor.full_name || 'Advisor')}&background=C9A961&color=1A1A1A&size=400&bold=true`}
-                    onError={fallbackToOriginal(advisor.avatar_url)}
-                    alt={`${advisor.full_name || 'Style Advisor'}, style advisor`}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  {advisor.avatar_url ? (
+                    <img
+                      src={optimizedImageUrl(advisor.avatar_url, 560, 700)}
+                      onError={fallbackToOriginal(advisor.avatar_url)}
+                      alt={`${advisor.full_name || 'Style Advisor'}, style advisor`}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center font-serif text-6xl text-muted-foreground" aria-hidden="true">
+                      {(advisor.full_name || "A").charAt(0)}
+                    </div>
+                  )}
                   {advisor.isSample && (
                     <div className="absolute top-3 left-3 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
                       <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
