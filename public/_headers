@@ -1,0 +1,11 @@
+# Security headers for Cloudflare Pages (audit SEC-04).
+# CSP is Report-Only first: check the browser console on key flows (booking,
+# Stripe redirect, video call, Google Places, concierge) and switch the header
+# name to Content-Security-Policy once no legitimate request is reported.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self "https://*.daily.co" "https://meet.ffmuc.net"), microphone=(self "https://*.daily.co" "https://meet.ffmuc.net"), display-capture=(self "https://*.daily.co" "https://meet.ffmuc.net"), fullscreen=(self "https://*.daily.co" "https://meet.ffmuc.net"), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com https://c.daily.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://chjmyzzczwattluqpbat.supabase.co https://ui-avatars.com https://maps.gstatic.com https://maps.googleapis.com https://*.ggpht.com https://*.googleusercontent.com; connect-src 'self' https://chjmyzzczwattluqpbat.supabase.co wss://chjmyzzczwattluqpbat.supabase.co https://maps.googleapis.com https://*.daily.co wss://*.daily.co https://*.pluot.blue wss://*.pluot.blue; frame-src https://*.daily.co https://meet.ffmuc.net; media-src 'self' blob: mediastream:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'self'; upgrade-insecure-requests

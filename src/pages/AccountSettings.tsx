@@ -30,7 +30,6 @@ import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
 import { useProfile } from "@/hooks/useProfile";
 
-type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
 
@@ -57,62 +56,30 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
       return;
     }
     setIsDeleting(true);
-
     try {
-      // 1. Find profile id
-      const { data: profile, error: pErr } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("user_id", userId)
-        .single();
+      // Server-side deletion (supabase/functions/delete-account): removes files,
+      // anonymizes the profile, and disables the login in one step.
+      const { data, error } = await supabase.functions.invoke("delete-account", {
+        body: { confirm: "DELETE" },
+      });
+      if (error) {
+        const ctx = (error as unknown as { context?: Response }).context;
+        const body = ctx && typeof ctx.json === "function" ? await ctx.clone().json().catch(() => null) : null;
+        throw new Error(body?.error || "We couldn't delete your account. Please contact info@cookalook.com.");
+      }
+      if (!data?.ok) throw new Error("We couldn't delete your account. Please contact info@cookalook.com.");
 
-      if (pErr) throw pErr;
-
-      // 2. Delete related data (bookings, payments, rewards, withdrawal_requests, advisor_applications)
-      // Note: Order matters – delete child rows first
-      await supabase.from("disputes").delete().eq("raised_by", userId);
-      await supabase.from("user_rewards").delete().eq("user_id", userId);
-      await supabase.from("advisor_applications").delete().eq("user_id", userId);
-      // Bookings referencing the user as client
-      await supabase.from("bookings").delete().eq("client_id", profile.id);
-      await supabase.from("availability_slots").delete().eq("advisor_id", profile.id);
-      await supabase.from("withdrawal_requests").delete().eq("advisor_id", profile.id);
-      // Payments referencing user as client
-      // Note: payments cannot be deleted per RLS (for audit), but we'll clear profile anyway
-      
-      // 3. Anonymize the profile instead of delete (soft-delete)
-      await supabase
-        .from("profiles")
-        .update({
-          full_name: "Deleted User",
-          email: null,
-          bio: null,
-          avatar_url: null,
-          location: null,
-          instagram_url: null,
-          portfolio_url: null,
-          portfolio_images: [],
-          personal_philosophy: null,
-          specialty: null,
-          is_advisor: false,
-          advisor_approved: false,
-          demo_availability_enabled: false,
-        } satisfies ProfileUpdate)
-        .eq("id", profile.id);
-
-      // 4. Sign out
       await supabase.auth.signOut();
-
       toast({
         title: "Account deleted",
-        description: "Your data has been removed and you have been signed out.",
+        description: "Your personal information has been removed and you've been signed out.",
       });
       navigate("/");
     } catch (err) {
       console.error("Delete account error:", err);
       toast({
-        title: "Error",
-        description: "Failed to delete account. Please contact support.",
+        title: "Couldn't delete your account",
+        description: err instanceof Error ? err.message : "Please contact info@cookalook.com.",
         variant: "destructive",
       });
     } finally {
@@ -144,7 +111,7 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
         <div>
           <Label className="text-destructive">Delete Account</Label>
           <p className="text-sm text-muted-foreground mb-3">
-            Permanently delete your account and all associated data. This action cannot be undone.
+            Delete your account, personal information, and photos. This cannot be undone.
           </p>
           <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
             Delete Account
@@ -157,7 +124,7 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete your profile, bookings, and all associated data. This action cannot be undone.
+              We'll remove your name, contact details, photos and uploaded documents, and disable your login. Records of past bookings and payments are kept without your personal details, because we need them for accounting and for the other party's records. Please cancel any upcoming sessions first. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="my-4">
