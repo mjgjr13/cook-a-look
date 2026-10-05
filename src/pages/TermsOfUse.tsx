@@ -76,7 +76,7 @@ const TermsOfUse = () => {
                   exclusively between the Client and the Advisor.
                 </p>
                 <p className="text-muted-foreground leading-relaxed mt-4">
-                  <strong className="text-foreground">AI Style Concierge.</strong> The "Style
+                  <strong className="text-foreground">AI Concierge.</strong> The "AI
                   Concierge" chat feature is an automated system powered by artificial
                   intelligence, not a human advisor or employee of Cook A Look. It is disclosed as
                   AI-powered in the chat interface itself. Its responses are generated

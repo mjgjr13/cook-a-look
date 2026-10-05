@@ -2,7 +2,7 @@ const steps = [
   {
     title: "Tell us what you need",
     description:
-      "Browse advisors by specialty, price, and session type, or let the Style Concierge suggest a few who fit.",
+      "Browse advisors by specialty, price, and session type, or let the AI Concierge suggest a few who fit.",
   },
   {
     title: "Book a session",

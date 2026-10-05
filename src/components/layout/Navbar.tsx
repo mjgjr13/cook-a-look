@@ -25,7 +25,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Style Advisors", path: "/advisors" },
-    { name: "Style Concierge", path: "/style-concierge" },
+    { name: "AI Concierge", path: "/ai-concierge" },
     { name: "Become an Advisor", path: "/become-advisor" },
   ];
 

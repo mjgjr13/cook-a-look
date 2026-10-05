@@ -173,15 +173,15 @@ const StyleConcierge = () => {
   return (
     <Layout>
       <Seo
-        title="Style Concierge | Cook A Look"
-        description="Ask our AI Style Concierge what to wear for work, a wedding, a date, or travel. Get outfit ideas, brands, and style advisors who fit you."
-        path="/style-concierge"
+        title="AI Concierge | Cook A Look"
+        description="Ask our AI Concierge what to wear for work, a wedding, a date, or travel. Get outfit ideas, brands, and style advisors who fit you."
+        path="/ai-concierge"
       />
       <section className="bg-background">
         <div className="container mx-auto max-w-3xl px-5 sm:px-6 py-10 sm:py-14 flex flex-col min-h-[calc(100svh-5rem)]">
           <header className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="font-serif text-4xl sm:text-5xl">Style Concierge</h1>
+              <h1 className="font-serif text-4xl sm:text-5xl">AI Concierge</h1>
               <p className="mt-3 max-w-xl text-muted-foreground">
                 Tell me what you're dressing for and a little about yourself. I'll suggest outfits, pieces, and brands,
                 and point you to advisors who fit.
@@ -260,7 +260,7 @@ const StyleConcierge = () => {
           >
             <div className="flex items-end gap-2 border border-border bg-card p-2 focus-within:border-foreground">
               <label htmlFor="concierge-input" className="sr-only">
-                Message the Style Concierge
+                Message the AI Concierge
               </label>
               <Textarea
                 id="concierge-input"

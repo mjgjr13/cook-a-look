@@ -27,7 +27,8 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 import NotFound from "./pages/NotFound";
 const OgPreview = lazy(() => import("./pages/OgPreview"));
 const Brand = lazy(() => import("./pages/Brand"));
-const StyleConcierge = lazy(() => import("./pages/StyleConcierge"));
+const AIConcierge = lazy(() => import("./pages/StyleConcierge"));
+const FAQ = lazy(() => import("./pages/FAQ"));
 const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
 const AdminAdvisors = lazy(() => import("./pages/admin/AdminAdvisors"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -54,9 +55,11 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/advisors" element={<Advisors />} />
             <Route path="/advisors/:id" element={<AdvisorProfile />} />
-            <Route path="/style-concierge" element={<StyleConcierge />} />
-            {/* The Lookbook was replaced by the Style Concierge */}
-            <Route path="/lookbook" element={<Navigate to="/style-concierge" replace />} />
+            <Route path="/ai-concierge" element={<AIConcierge />} />
+            {/* Older names for the AI Concierge */}
+            <Route path="/style-concierge" element={<Navigate to="/ai-concierge" replace />} />
+            <Route path="/lookbook" element={<Navigate to="/ai-concierge" replace />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/become-advisor" element={<BecomeAdvisor />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />

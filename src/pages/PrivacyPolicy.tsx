@@ -7,7 +7,6 @@ const nutritionLabelRows: {
   collected: string;
   purpose: string;
   sharedWith: string;
-  sold: string;
   retention: string;
 }[] = [
   {
@@ -15,7 +14,6 @@ const nutritionLabelRows: {
     collected: "Yes",
     purpose: "Account creation, booking, communication",
     sharedWith: "Service providers only",
-    sold: "Never",
     retention: "Duration of account + 3 years",
   },
   {
@@ -23,7 +21,6 @@ const nutritionLabelRows: {
     collected: "Card data: no (Stripe-hosted)",
     purpose: "Processing bookings and payouts",
     sharedWith: "Stripe (processor)",
-    sold: "Never",
     retention: "Per Stripe's records-retention policy",
   },
   {
@@ -31,7 +28,6 @@ const nutritionLabelRows: {
     collected: "Advisors only, at application",
     purpose: "Identity verification for advisor applicants",
     sharedWith: "Not shared outside Cook A Look",
-    sold: "Never",
     retention: "Up to 1 year after last verification interaction",
   },
   {
@@ -39,7 +35,6 @@ const nutritionLabelRows: {
     collected: "Yes",
     purpose: "Scheduling, escrow, disputes",
     sharedWith: "The other party to your booking",
-    sold: "Never",
     retention: "Duration of account + 3 years",
   },
   {
@@ -47,7 +42,6 @@ const nutritionLabelRows: {
     collected: "Yes, for virtual sessions",
     purpose: "Quality assurance, dispute resolution, fraud prevention",
     sharedWith: "Not shared outside Cook A Look",
-    sold: "Never",
     retention: "90 days, longer if under active dispute",
   },
   {
@@ -55,7 +49,6 @@ const nutritionLabelRows: {
     collected: "Yes",
     purpose: "Booking coordination between client & advisor",
     sharedWith: "The other party to your booking",
-    sold: "Never",
     retention: "Duration of account",
   },
   {
@@ -63,7 +56,6 @@ const nutritionLabelRows: {
     collected: "Yes, if you use it",
     purpose: "Advisor recommendations (sent to our AI provider)",
     sharedWith: "AI infrastructure provider",
-    sold: "Never",
     retention: "Not persisted after your session ends",
   },
   {
@@ -71,7 +63,6 @@ const nutritionLabelRows: {
     collected: "Yes",
     purpose: "Security, analytics, service improvement",
     sharedWith: "Analytics/hosting providers",
-    sold: "Never",
     retention: "Up to 2 years",
   },
 ];
@@ -124,7 +115,6 @@ const PrivacyPolicy = () => {
                         <th className="py-2 pr-3 font-medium">Collected?</th>
                         <th className="py-2 pr-3 font-medium">Purpose</th>
                         <th className="py-2 pr-3 font-medium">Shared With</th>
-                        <th className="py-2 pr-3 font-medium">Sold?</th>
                         <th className="py-2 font-medium">Retention</th>
                       </tr>
                     </thead>
@@ -137,7 +127,6 @@ const PrivacyPolicy = () => {
                           <td className="py-2 pr-3">{row.collected}</td>
                           <td className="py-2 pr-3">{row.purpose}</td>
                           <td className="py-2 pr-3">{row.sharedWith}</td>
-                          <td className="py-2 pr-3">{row.sold}</td>
                           <td className="py-2">{row.retention}</td>
                         </tr>
                       ))}
@@ -244,7 +233,7 @@ const PrivacyPolicy = () => {
                   <li>To process bookings and payments</li>
                   <li>To verify advisor identities</li>
                   <li>To communicate with you about your account and bookings</li>
-                  <li>To power the AI Style Concierge chat feature you choose to use (see Section 9)</li>
+                  <li>To power the AI Concierge chat feature you choose to use (see Section 9)</li>
                   <li>To improve our platform and user experience</li>
                   <li>To resolve disputes and enforce our Terms of Use</li>
                 </ul>
@@ -325,9 +314,9 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">9. AI Style Concierge</h2>
+                <h2 className="font-serif text-2xl font-medium mb-4">9. AI Concierge</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  The "Style Concierge" chat feature is an automated system powered by a
+                  The "AI Concierge" chat feature is an automated system powered by a
                   third-party AI model, not a human advisor. Messages you send it, along with
                   publicly listed advisor information, are sent to our AI infrastructure provider
                   to generate a response; we do not use your chat content to train AI models, and
@@ -335,7 +324,7 @@ const PrivacyPolicy = () => {
                   <a href="/terms" className="text-gold hover:underline">
                     Terms of Use
                   </a>{" "}
-                  for the disclosure that Style Concierge is AI-generated and not professional
+                  for the disclosure that AI Concierge is AI-generated and not professional
                   styling advice.
                 </p>
               </section>

@@ -1,4 +1,4 @@
-// Style Concierge: the AI assistant on /style-concierge.
+// AI Concierge: the AI assistant on /ai-concierge.
 // Public (no sign-in needed), so input is validated and rate-limited per IP.
 // It interviews the visitor (occasion, work/lifestyle, style, budget), answers
 // style questions, recommends item types and brands, and suggests matching
@@ -29,7 +29,7 @@ const isRateLimited = (key: string): boolean => {
   return recent.length > RATE_LIMIT;
 };
 
-const SYSTEM_PROMPT = (advisors: unknown) => `You are the Style Concierge for Cook A Look, a marketplace where clients book one-on-one styling sessions (video or in person) with independent style advisors. You are an AI assistant, not a human stylist. Say so if asked.
+const SYSTEM_PROMPT = (advisors: unknown) => `You are the AI Concierge for Cook A Look, a marketplace where clients book one-on-one styling sessions (video or in person) with independent style advisors. You are an AI assistant, not a human stylist. Say so if asked.
 
 YOUR JOB
 1. Get to know the visitor, one short question at a time: what they're dressing for (event, work, date, everyday, travel), what they do (job, dress code, lifestyle), styles they like or dislike, budget, and whether they'd prefer video or in person (and roughly where they are). Ask at most three or four questions before giving something useful. If they ask a direct question, answer it first.

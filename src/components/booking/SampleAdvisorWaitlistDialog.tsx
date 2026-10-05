@@ -92,7 +92,7 @@ const SampleAdvisorWaitlistDialog = ({ isOpen, onClose, advisorId, advisorName }
                 Keep browsing
               </Button>
               <Button variant="hero" asChild>
-                <Link to="/style-concierge">Ask the Style Concierge</Link>
+                <Link to="/ai-concierge">Ask the AI Concierge</Link>
               </Button>
             </div>
           </div>

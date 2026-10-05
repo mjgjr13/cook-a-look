@@ -12,7 +12,7 @@ const PUBLISHABLE_KEY =
 const CHAT_URL = `${SUPABASE_URL}/functions/v1/advisor-chat`;
 
 /**
- * Sends the conversation to the Style Concierge edge function and streams the
+ * Sends the conversation to the AI Concierge edge function and streams the
  * reply (OpenAI-style SSE). Calls onDelta with the full reply so far.
  */
 export async function streamConcierge(
