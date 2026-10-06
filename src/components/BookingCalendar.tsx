@@ -205,7 +205,7 @@ const BookingCalendar = ({
             row
               ? [{
                   id: `fullday-${row.day_start}`,
-                  time: `Full day · ${formatTimeInTimezone(new Date(row.day_start), clientTimezone)} – ${formatTimeInTimezone(new Date(row.day_end), clientTimezone)}`,
+                  time: "Full day available",
                   isVirtual: false,
                   startTime: row.day_start,
                   endTime: row.day_end,
@@ -466,7 +466,7 @@ const BookingCalendar = ({
                         : "bg-background border-border hover:border-primary"
                     )}
                   >
-                    <Video className="w-4 h-4" aria-hidden="true" /> Virtual · {CORPORATE_VIRTUAL_HOURS} hours
+                    <Video className="w-4 h-4" aria-hidden="true" /> Virtual
                   </button>
                 )}
                 {corporate?.offers_on_site && (
@@ -481,13 +481,13 @@ const BookingCalendar = ({
                         : "bg-background border-border hover:border-primary"
                     )}
                   >
-                    <MapPin className="w-4 h-4" aria-hidden="true" /> On-site · full day
+                    <MapPin className="w-4 h-4" aria-hidden="true" /> On-site
                   </button>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 {corpFormat === "virtual"
-                  ? `A ${CORPORATE_VIRTUAL_HOURS}-hour video session for your team.`
+                  ? "A video session for your team."
                   : "The advisor comes to your workplace for the whole day."}
               </p>
             </div>
@@ -545,7 +545,7 @@ const BookingCalendar = ({
                     {isCorporate && corpFormat === "on_site"
                       ? "This day isn't fully open for an on-site booking."
                       : isCorporate
-                        ? `No ${CORPORATE_VIRTUAL_HOURS}-hour openings on this date.`
+                        ? `No openings on this date.`
                         : "No available slots for this date."}
                   </p>
                   <p className="text-sm mt-1">Please select another date.</p>

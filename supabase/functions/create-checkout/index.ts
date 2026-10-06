@@ -280,7 +280,7 @@ serve(async (req) => {
           sessionDate,
           corporateFormat === "on_site"
             ? "Corporate on-site day"
-            : `Corporate ${CORPORATE_VIRTUAL_HOURS}-hour virtual session`,
+            : "Corporate virtual session",
         ]
       : [
           `${sessionDate} at ${sessionTime}`,

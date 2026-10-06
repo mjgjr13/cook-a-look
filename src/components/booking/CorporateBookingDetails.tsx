@@ -37,7 +37,7 @@ const CorporateBookingDetails = ({ bookingId }: { bookingId: string }) => {
     <div className="border border-border p-4 space-y-2 text-sm">
       <p className="flex items-center gap-2 font-medium">
         <Briefcase className="w-4 h-4" aria-hidden="true" />
-        Corporate booking · {details.format === "on_site" ? "On-site, full day" : "Virtual, 3 hours"}
+        Corporate booking · {details.format === "on_site" ? "On-site" : "Virtual"}
       </p>
       <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1.5">
         {details.company && (<><dt className="text-muted-foreground">Company</dt><dd>{details.company}</dd></>)}

@@ -472,8 +472,8 @@ const AdvisorProfile = () => {
                       <dt className="text-xs text-muted-foreground">Formats</dt>
                       <dd>
                         {[
-                          corporate.offers_virtual && "Virtual session (3 hours)",
-                          corporate.offers_on_site && "On-site (full day)",
+                          corporate.offers_virtual && "Virtual",
+                          corporate.offers_on_site && "On-site",
                         ].filter(Boolean).join(" · ")}
                       </dd>
                     </div>
