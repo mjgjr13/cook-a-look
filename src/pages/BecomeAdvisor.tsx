@@ -1200,6 +1200,12 @@ const BecomeAdvisor = () => {
                       error={errors.languages}
                       required
                     />
+
+                    {/* Corporate / B2B - Optional */}
+                    <CorporateServicesFields
+                      value={formData.corporate}
+                      onChange={(corporate) => setFormData({ ...formData, corporate })}
+                    />
                   </motion.div>
                 )}
 
@@ -1416,12 +1422,6 @@ const BecomeAdvisor = () => {
                       onChange={(selected) => {
                         setFormData({ ...formData, clientFocus: selected });
                       }}
-                    />
-
-                    {/* Corporate / B2B - Optional */}
-                    <CorporateServicesFields
-                      value={formData.corporate}
-                      onChange={(corporate) => setFormData({ ...formData, corporate })}
                     />
                   </motion.div>
                 )}
