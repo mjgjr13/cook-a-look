@@ -650,18 +650,18 @@ export type Database = {
       }
       bookings: {
         Row: {
-          corporate_details: Json | null
-          is_corporate: boolean
           advisor_id: string
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           client_id: string
           completed_at: string | null
+          corporate_details: Json | null
           created_at: string | null
           duration_hours: number
           id: string
           in_person_surcharge_cents: number
+          is_corporate: boolean
           location_id: string | null
           location_snapshot: Json | null
           location_status: string
@@ -681,18 +681,18 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          corporate_details?: Json | null
-          is_corporate?: boolean
           advisor_id: string
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id: string
           completed_at?: string | null
+          corporate_details?: Json | null
           created_at?: string | null
           duration_hours?: number
           id?: string
           in_person_surcharge_cents?: number
+          is_corporate?: boolean
           location_id?: string | null
           location_snapshot?: Json | null
           location_status?: string
@@ -712,18 +712,18 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          corporate_details?: Json | null
-          is_corporate?: boolean
           advisor_id?: string
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           client_id?: string
           completed_at?: string | null
+          corporate_details?: Json | null
           created_at?: string | null
           duration_hours?: number
           id?: string
           in_person_surcharge_cents?: number
+          is_corporate?: boolean
           location_id?: string | null
           location_snapshot?: Json | null
           location_status?: string
@@ -1130,16 +1130,16 @@ export type Database = {
       }
       profiles: {
         Row: {
-          corporate_in_person_rate: number | null
-          corporate_virtual_rate: number | null
           account_type: string | null
           advisor_approved: boolean | null
           advisor_status: string | null
           avatar_url: string | null
           bio: string | null
+          corporate_in_person_rate: number | null
           corporate_industries: string | null
           corporate_services: string[]
           corporate_starting_price: number | null
+          corporate_virtual_rate: number | null
           created_at: string | null
           demo_availability_enabled: boolean | null
           email: string | null
@@ -1178,16 +1178,16 @@ export type Database = {
           virtual_available: boolean | null
         }
         Insert: {
-          corporate_in_person_rate?: number | null
-          corporate_virtual_rate?: number | null
           account_type?: string | null
           advisor_approved?: boolean | null
           advisor_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          corporate_in_person_rate?: number | null
           corporate_industries?: string | null
           corporate_services?: string[]
           corporate_starting_price?: number | null
+          corporate_virtual_rate?: number | null
           created_at?: string | null
           demo_availability_enabled?: boolean | null
           email?: string | null
@@ -1226,16 +1226,16 @@ export type Database = {
           virtual_available?: boolean | null
         }
         Update: {
-          corporate_in_person_rate?: number | null
-          corporate_virtual_rate?: number | null
           account_type?: string | null
           advisor_approved?: boolean | null
           advisor_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          corporate_in_person_rate?: number | null
           corporate_industries?: string | null
           corporate_services?: string[]
           corporate_starting_price?: number | null
+          corporate_virtual_rate?: number | null
           created_at?: string | null
           demo_availability_enabled?: boolean | null
           email?: string | null
@@ -1824,6 +1824,20 @@ export type Database = {
           total_points: number
         }[]
       }
+      get_corporate_booking_info: {
+        Args: { p_advisor_id: string }
+        Returns: {
+          in_person_rate: number
+          virtual_rate: number
+        }[]
+      }
+      get_corporate_full_day: {
+        Args: { p_advisor_id: string; p_date: string }
+        Returns: {
+          day_end: string
+          day_start: string
+        }[]
+      }
       get_public_advisor_profiles: {
         Args: never
         Returns: {
@@ -1848,20 +1862,6 @@ export type Database = {
           target_demographics: string[]
           verified: boolean
           virtual_available: boolean
-        }[]
-      }
-      get_corporate_booking_info: {
-        Args: { p_advisor_id: string }
-        Returns: {
-          in_person_rate: number
-          virtual_rate: number
-        }[]
-      }
-      get_corporate_full_day: {
-        Args: { p_advisor_id: string; p_date: string }
-        Returns: {
-          day_end: string
-          day_start: string
         }[]
       }
       get_public_corporate_advisors: {
