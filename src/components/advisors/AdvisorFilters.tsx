@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Search, SlidersHorizontal, X, Video, MapPin } from "lucide-react";
+import { Search, SlidersHorizontal, X, Video, MapPin, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CLIENT_FOCUS_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
@@ -29,6 +29,8 @@ export interface FilterState {
   minPrice: string;
   maxPrice: string;
   sortBy: string;
+  /** Only advisors who offer corporate / B2B image consulting. */
+  corporateOnly: boolean;
 }
 
 export const EMPTY_FILTERS: FilterState = {
@@ -40,6 +42,7 @@ export const EMPTY_FILTERS: FilterState = {
   minPrice: "",
   maxPrice: "",
   sortBy: "featured",
+  corporateOnly: false,
 };
 
 interface AdvisorFiltersProps {
@@ -73,7 +76,11 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
   };
 
   const activeFilterCount =
-    filters.styles.length + filters.clientFocus.length + filters.sessionTypes.length + (filters.minPrice || filters.maxPrice ? 1 : 0);
+    filters.styles.length +
+    filters.clientFocus.length +
+    filters.sessionTypes.length +
+    (filters.minPrice || filters.maxPrice ? 1 : 0) +
+    (filters.corporateOnly ? 1 : 0);
 
   const panel = (
     <div className="space-y-6">
@@ -107,6 +114,15 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
           </Chip>
           <Chip active={filters.sessionTypes.includes("in-person")} onClick={() => toggle("sessionTypes", "in-person")}>
             <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" /> In person</span>
+          </Chip>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">For companies</h3>
+        <div className="flex flex-wrap gap-2">
+          <Chip active={filters.corporateOnly} onClick={() => update("corporateOnly", !filters.corporateOnly)}>
+            <span className="inline-flex items-center gap-1.5"><Briefcase className="h-4 w-4" aria-hidden="true" /> Corporate / B2B</span>
           </Chip>
         </div>
       </section>
@@ -160,6 +176,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
     ...filters.clientFocus.map((v) => ({ label: clientFocusLabel(v), clear: () => toggle("clientFocus", v) })),
     ...filters.styles.map((v) => ({ label: v, clear: () => toggle("styles", v) })),
     ...filters.sessionTypes.map((v) => ({ label: v === "virtual" ? "Video call" : "In person", clear: () => toggle("sessionTypes", v) })),
+    ...(filters.corporateOnly ? [{ label: "Corporate / B2B", clear: () => update("corporateOnly", false) }] : []),
     ...(filters.minPrice || filters.maxPrice
       ? [{
           label: filters.minPrice && filters.maxPrice ? `$${filters.minPrice}–$${filters.maxPrice}` : filters.minPrice ? `$${filters.minPrice}+` : `Up to $${filters.maxPrice}`,

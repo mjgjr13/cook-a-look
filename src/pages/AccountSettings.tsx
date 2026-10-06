@@ -32,6 +32,7 @@ import { useProfile } from "@/hooks/useProfile";
 
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
+import CorporateServicesFields, { corporateFromProfile, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
 
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
@@ -175,6 +176,11 @@ interface Profile {
   style_tags: string[];
   target_demographics: string[];
   use_cases: string[];
+  // Corporate / B2B (present once migration 20261006120000 is applied)
+  offers_corporate?: boolean;
+  corporate_services?: string[];
+  corporate_industries?: string | null;
+  corporate_starting_price?: number | null;
 }
 
 const AccountSettings = () => {
@@ -238,6 +244,9 @@ const AccountSettings = () => {
     loadProfile();
   }, [navigate, toast]);
 
+  // Only show/save the B2B section once the database has the columns.
+  const hasCorporateColumns = !!profile && "offers_corporate" in profile;
+
   const handleSave = async () => {
     if (!profile) return;
 
@@ -261,6 +270,7 @@ const AccountSettings = () => {
         style_tags: profile.style_tags,
         target_demographics: profile.target_demographics,
         use_cases: profile.use_cases,
+        ...(hasCorporateColumns ? corporateToProfile(corporateFromProfile(profile)) : {}),
       })
       .eq("id", profile.id);
 
@@ -571,6 +581,13 @@ const AccountSettings = () => {
                       selected={profile?.target_demographics || []}
                       onChange={(selected) => updateProfile("target_demographics", selected)}
                     />
+
+                    {hasCorporateColumns && profile && (
+                      <CorporateServicesFields
+                        value={corporateFromProfile(profile)}
+                        onChange={(v) => setProfile({ ...profile, ...corporateToProfile(v), corporate_starting_price: v.startingPrice === "" ? null : Number(v.startingPrice), corporate_industries: v.industries })}
+                      />
+                    )}
                   </div>
 
                   <Separator />

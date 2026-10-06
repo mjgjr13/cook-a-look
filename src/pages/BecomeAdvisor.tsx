@@ -49,6 +49,7 @@ import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import BiometricConsentScreen from "@/components/advisor/BiometricConsentScreen";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
+import CorporateServicesFields, { EMPTY_CORPORATE, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
 
 type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
@@ -162,6 +163,8 @@ const BecomeAdvisor = () => {
     styleCategories: [] as string[],
     clientFocus: [] as string[],
     useCases: [] as string[],
+    // Corporate / B2B (optional)
+    corporate: EMPTY_CORPORATE,
     // Profile photo for step 2
     profilePhotoFile: null as File | null,
     profilePhotoPreview: "",
@@ -483,6 +486,8 @@ const BecomeAdvisor = () => {
             style_tags: formData.styleCategories,
             target_demographics: formData.clientFocus,
             use_cases: formData.useCases,
+            // B2B fields only when opted in (defaults cover everyone else)
+            ...(formData.corporate.offersCorporate ? corporateToProfile(formData.corporate) : {}),
           };
 
           if (avatarUrl) {
@@ -532,6 +537,8 @@ const BecomeAdvisor = () => {
           style_tags: formData.styleCategories,
           target_demographics: formData.clientFocus,
           use_cases: formData.useCases,
+          // B2B fields only when opted in (defaults cover everyone else)
+            ...(formData.corporate.offersCorporate ? corporateToProfile(formData.corporate) : {}),
         };
 
         if (avatarUrl) {
@@ -1410,6 +1417,12 @@ const BecomeAdvisor = () => {
                         setFormData({ ...formData, clientFocus: selected });
                       }}
                     />
+
+                    {/* Corporate / B2B - Optional */}
+                    <CorporateServicesFields
+                      value={formData.corporate}
+                      onChange={(corporate) => setFormData({ ...formData, corporate })}
+                    />
                   </motion.div>
                 )}
 
@@ -1560,6 +1573,14 @@ const BecomeAdvisor = () => {
                         <div>
                           <span className="text-muted-foreground">Experience:</span>
                           <p className="font-medium">{formData.experience} years</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Corporate / B2B:</span>
+                          <p className="font-medium">
+                            {formData.corporate.offersCorporate
+                              ? formData.corporate.services.join(", ") || "Yes"
+                              : "No"}
+                          </p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Location:</span>

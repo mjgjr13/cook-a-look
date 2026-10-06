@@ -3,7 +3,8 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
+import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw, Sparkles, CheckCircle2, Briefcase } from "lucide-react";
+import { CorporateInfo, fetchCorporateAdvisors } from "@/lib/corporateAdvisors";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
@@ -57,6 +58,8 @@ const AdvisorProfile = () => {
   const initialBookingDate = searchParams.get("bookingDate");
   const initialBookingSlot = searchParams.get("bookingSlot");
 
+  const [corporate, setCorporate] = useState<CorporateInfo | null>(null);
+
   useEffect(() => {
     const fetchAdvisor = async () => {
       if (!id) {
@@ -66,8 +69,11 @@ const AdvisorProfile = () => {
       }
 
       try {
-        const { data, error: fetchError } = await supabase
-          .rpc('get_advisor_public_profile', { advisor_profile_id: id });
+        const [{ data, error: fetchError }, corporateMap] = await Promise.all([
+          supabase.rpc('get_advisor_public_profile', { advisor_profile_id: id }),
+          fetchCorporateAdvisors(),
+        ]);
+        setCorporate(corporateMap.get(id) ?? null);
 
         if (fetchError) {
           console.error('Error fetching advisor:', fetchError);
@@ -337,6 +343,12 @@ const AdvisorProfile = () => {
                   ? advisor.target_demographics.slice(0, 3).join(" · ") 
                   : "Style Consultant"}
               </p>
+              {corporate && (
+                <span className="mb-5 lg:mb-6 -mt-2 inline-flex items-center gap-1.5 border border-border bg-background px-2 py-1 font-sans text-[11px] uppercase tracking-wider text-foreground">
+                  <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
+                  Corporate services
+                </span>
+              )}
 
               <div className="prose prose-sm sm:prose-lg max-w-none mb-6 lg:mb-8">
                 <p className="font-sans text-muted-foreground leading-relaxed">
@@ -368,6 +380,46 @@ const AdvisorProfile = () => {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {corporate && (
+                <div className="mb-8 p-5 lg:p-6 bg-background border border-border">
+                  <h3 className="font-serif text-lg font-medium mb-1 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" aria-hidden="true" />
+                    Corporate services
+                  </h3>
+                  <p className="font-sans text-sm text-muted-foreground mb-4">
+                    {firstName} also works with companies on employee image and dress code.
+                  </p>
+                  <dl className="space-y-3 font-sans text-sm">
+                    {corporate.corporate_services.length > 0 && (
+                      <div>
+                        <dt className="text-muted-foreground mb-1.5">Services</dt>
+                        <dd className="flex flex-wrap gap-2">
+                          {corporate.corporate_services.map((service) => (
+                            <span key={service} className="px-3 py-1.5 bg-secondary text-xs sm:text-sm">{service}</span>
+                          ))}
+                        </dd>
+                      </div>
+                    )}
+                    {corporate.corporate_industries && (
+                      <div>
+                        <dt className="text-muted-foreground">Industries</dt>
+                        <dd>{corporate.corporate_industries}</dd>
+                      </div>
+                    )}
+                    {corporate.corporate_starting_price != null && (
+                      <div>
+                        <dt className="text-muted-foreground">Corporate engagements</dt>
+                        <dd>Starting from ${corporate.corporate_starting_price.toLocaleString()}</dd>
+                      </div>
+                    )}
+                  </dl>
+                  <p className="mt-4 font-sans text-xs text-muted-foreground">
+                    For a corporate engagement, message {firstName} after booking an intro session, or email{" "}
+                    <a href="mailto:info@cookalook.com" className="text-gold hover:underline">info@cookalook.com</a>.
+                  </p>
                 </div>
               )}
 

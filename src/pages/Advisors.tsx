@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, CheckCircle, Sparkles } from "lucide-react";
+import { Star, Video, MapPin, CheckCircle, Sparkles, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import AdvisorFilters, { EMPTY_FILTERS, FilterState } from "@/components/advisors/AdvisorFilters";
 import { compareTopAdvisors } from "@/lib/advisorRanking";
+import { CorporateInfo, fetchCorporateAdvisors } from "@/lib/corporateAdvisors";
 
 const ADVISORS_PER_PAGE = 20;
 import Seo from "@/components/Seo";
@@ -32,6 +33,7 @@ interface AdvisorData {
   verified: boolean | null;
   advisor_approved: boolean | null;
   is_demo?: boolean | null;
+  corporate?: CorporateInfo | null;
 }
 
 const badgeColors = {
@@ -41,28 +43,24 @@ const badgeColors = {
 const Advisors = () => {
   const [advisors, setAdvisors] = useState<(AdvisorData & { isSample: boolean })[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<FilterState>({
-    searchTerm: "",
-    styles: [],
-    clientFocus: [],
-    useCases: [],
-    sessionTypes: [],
-    minPrice: "",
-    maxPrice: "",
-    sortBy: "featured",
-  });
+  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAdvisors = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_public_advisor_profiles');
+        const [{ data, error }, corporate] = await Promise.all([
+          supabase.rpc('get_public_advisor_profiles'),
+          fetchCorporateAdvisors(),
+        ]);
         
         if (error) {
           console.error('Error fetching advisors:', error);
           setAdvisors([]);
         } else {
-          setAdvisors(((data || []) as AdvisorData[]).map(withSampleContent));
+          setAdvisors(
+            ((data || []) as AdvisorData[]).map((a) => withSampleContent({ ...a, corporate: corporate.get(a.id) ?? null })),
+          );
         }
       } catch (err) {
         console.error('Error:', err);
@@ -115,7 +113,10 @@ const Advisors = () => {
       const maxPrice = filters.maxPrice ? parseFloat(filters.maxPrice) : Infinity;
       const matchesPrice = price >= minPrice && price <= maxPrice;
 
-      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesPrice;
+      // Corporate / B2B filter
+      const matchesCorporate = !filters.corporateOnly || !!advisor.corporate;
+
+      return matchesSearch && matchesSessionType && matchesStyle && matchesClientFocus && matchesPrice && matchesCorporate;
     });
 
     // Sort results
@@ -294,6 +295,19 @@ const Advisors = () => {
                     <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
                       {clientFocus.length > 0 ? clientFocus.slice(0, 3).join(" · ") : "Style Consultant"}
                     </p>
+                    {advisor.corporate && (
+                      <div className="mb-1.5 min-w-0" title={advisor.corporate.corporate_services.join(", ") || undefined}>
+                        <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wider text-foreground">
+                          <Briefcase className="w-3 h-3" aria-hidden="true" />
+                          Corporate services
+                        </span>
+                        {advisor.corporate.corporate_industries && (
+                          <p className="mt-0.5 font-sans text-[11px] text-muted-foreground line-clamp-1">
+                            {advisor.corporate.corporate_industries}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
 
                     <div className="flex items-start justify-between gap-2 mb-2 text-xs text-muted-foreground font-sans">

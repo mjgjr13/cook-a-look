@@ -61,6 +61,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import AdvisorDetailModal from "@/components/admin/AdvisorDetailModal";
+import CorporateServicesSummary from "@/components/admin/CorporateServicesSummary";
 
 interface AdvisorApplication {
   id: string;
@@ -88,6 +89,10 @@ interface AdvisorApplication {
   created_at: string;
   // From profile
   profile_avatar_url?: string | null;
+  offers_corporate?: boolean | null;
+  corporate_services?: string[] | null;
+  corporate_industries?: string | null;
+  corporate_starting_price?: number | null;
 }
 
 interface ActiveAdvisor {
@@ -156,19 +161,24 @@ const AdminAdvisors = () => {
         
         // Fetch profile avatars for applications
         const userIds = (data || []).map(app => app.user_id);
+        // select("*") so this keeps working whether or not the B2B columns exist yet
         const { data: profilesData } = await supabase
           .from("profiles")
-          .select("user_id, avatar_url")
+          .select("*")
           .in("user_id", userIds);
 
-        const avatarMap = new Map(
-          (profilesData || []).map(p => [p.user_id, p.avatar_url])
+        const profileMap = new Map(
+          (profilesData || []).map(p => [p.user_id, p as typeof p & Partial<AdvisorApplication>])
         );
 
         // Filter to only show pending/denied (not in Active Advisors)
         const enrichedApplications = (data as AdvisorApplication[])?.map(app => ({
           ...app,
-          profile_avatar_url: avatarMap.get(app.user_id) || null,
+          profile_avatar_url: profileMap.get(app.user_id)?.avatar_url || null,
+          offers_corporate: profileMap.get(app.user_id)?.offers_corporate ?? false,
+          corporate_services: profileMap.get(app.user_id)?.corporate_services ?? [],
+          corporate_industries: profileMap.get(app.user_id)?.corporate_industries ?? null,
+          corporate_starting_price: profileMap.get(app.user_id)?.corporate_starting_price ?? null,
         })).filter(app => 
           app.status === "pending" || app.status === "denied"
         ) || [];
@@ -975,6 +985,13 @@ const AdminAdvisors = () => {
                 <Label className="text-muted-foreground text-xs">Bio</Label>
                 <p className="text-sm mt-1">{selectedApplication.bio}</p>
               </div>
+
+              <CorporateServicesSummary
+                offersCorporate={selectedApplication.offers_corporate}
+                services={selectedApplication.corporate_services}
+                industries={selectedApplication.corporate_industries}
+                startingPrice={selectedApplication.corporate_starting_price}
+              />
 
               {/* Social Links */}
               <div className="flex gap-4">

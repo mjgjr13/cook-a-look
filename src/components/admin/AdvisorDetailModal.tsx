@@ -30,6 +30,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import CorporateServicesSummary from "@/components/admin/CorporateServicesSummary";
 import { format } from "date-fns";
 
 interface AdvisorDetailModalProps {
@@ -59,6 +60,10 @@ interface AdvisorDetails {
   in_person_available: boolean | null;
   is_listed?: boolean;
   application_status?: string;
+  offers_corporate?: boolean | null;
+  corporate_services?: string[] | null;
+  corporate_industries?: string | null;
+  corporate_starting_price?: number | null;
 }
 
 interface BookingStat {
@@ -333,6 +338,13 @@ export const AdvisorDetailModal = ({
                       <p>{advisor.in_person_available ? "✓ Available" : "Not available"}</p>
                     </div>
                   </div>
+
+                  <CorporateServicesSummary
+                    offersCorporate={advisor.offers_corporate}
+                    services={advisor.corporate_services}
+                    industries={advisor.corporate_industries}
+                    startingPrice={advisor.corporate_starting_price}
+                  />
 
                   <div className="flex gap-3 flex-wrap">
                     {advisor.instagram_url && (
