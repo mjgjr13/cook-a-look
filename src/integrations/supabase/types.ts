@@ -1124,10 +1124,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          offers_corporate: boolean
-          corporate_industries: string | null
-          corporate_services: string[]
-          corporate_starting_price: number | null
           account_type: string | null
           advisor_approved: boolean | null
           advisor_status: string | null
@@ -1170,10 +1166,6 @@ export type Database = {
           virtual_available: boolean | null
         }
         Insert: {
-          offers_corporate?: boolean
-          corporate_industries?: string | null
-          corporate_services?: string[]
-          corporate_starting_price?: number | null
           account_type?: string | null
           advisor_approved?: boolean | null
           advisor_status?: string | null
@@ -1216,10 +1208,6 @@ export type Database = {
           virtual_available?: boolean | null
         }
         Update: {
-          offers_corporate?: boolean
-          corporate_industries?: string | null
-          corporate_services?: string[]
-          corporate_starting_price?: number | null
           account_type?: string | null
           advisor_approved?: boolean | null
           advisor_status?: string | null
@@ -1595,15 +1583,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_public_corporate_advisors: {
-        Args: never
-        Returns: {
-          corporate_industries: string
-          corporate_services: string[]
-          corporate_starting_price: number
-          id: string
-        }[]
-      }
       admin_override_refund: {
         Args: {
           p_booking_id: string
