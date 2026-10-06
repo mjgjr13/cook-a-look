@@ -324,50 +324,6 @@ const AdvisorProfile = () => {
                     <Link to="/terms" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
                   </div>
                 )}
-                {corporate && !isSample && (
-                  <div className="mt-5 p-4 bg-background border border-border">
-                    <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
-                      Corporate services
-                    </p>
-                    <p className="font-sans text-sm text-muted-foreground mb-3">
-                      {firstName} works with companies on employee image and dress code.
-                    </p>
-                    <dl className="space-y-3 font-sans text-sm">
-                      {corporate.corporate_services.length > 0 && (
-                        <div>
-                          <dt className="text-xs text-muted-foreground mb-1.5">Services</dt>
-                          <dd className="flex flex-wrap gap-1.5">
-                            {corporate.corporate_services.map((service) => (
-                              <span key={service} className="px-2.5 py-1 bg-secondary text-xs">{service}</span>
-                            ))}
-                          </dd>
-                        </div>
-                      )}
-                      {corporate.corporate_industries && (
-                        <div>
-                          <dt className="text-xs text-muted-foreground">Industries</dt>
-                          <dd>{corporate.corporate_industries}</dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt className="text-xs text-muted-foreground">Formats</dt>
-                        <dd>
-                          {[
-                            corporate.offers_virtual && "Virtual session (3 hours)",
-                            corporate.offers_on_site && "On-site (full day)",
-                          ].filter(Boolean).join(" · ")}
-                        </dd>
-                      </div>
-                    </dl>
-                    <Button variant="outline" className="mt-4 w-full gap-2" asChild>
-                      <Link to={`/advisors/${advisor.id}?book=corporate`} replace>
-                        <Briefcase className="w-4 h-4" aria-hidden="true" />
-                        Book corporate services
-                      </Link>
-                    </Button>
-                  </div>
-                )}
             </motion.div>
 
             {/* Right Column - Details */}
@@ -475,6 +431,50 @@ const AdvisorProfile = () => {
                   {isSample ? "Join the Waitlist" : "Book a Session"}
                 </Button>
               </div>
+              {corporate && !isSample && (
+                <div className="mt-4 p-5 lg:p-6 bg-background border border-border">
+                  <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
+                    Corporate services
+                  </p>
+                  <p className="font-sans text-sm text-muted-foreground mb-3">
+                    {firstName} works with companies on employee image and dress code.
+                  </p>
+                  <dl className="space-y-3 font-sans text-sm">
+                    {corporate.corporate_services.length > 0 && (
+                      <div>
+                        <dt className="text-xs text-muted-foreground mb-1.5">Services</dt>
+                        <dd className="flex flex-wrap gap-1.5">
+                          {corporate.corporate_services.map((service) => (
+                            <span key={service} className="px-2.5 py-1 bg-secondary text-xs">{service}</span>
+                          ))}
+                        </dd>
+                      </div>
+                    )}
+                    {corporate.corporate_industries && (
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Industries</dt>
+                        <dd>{corporate.corporate_industries}</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Formats</dt>
+                      <dd>
+                        {[
+                          corporate.offers_virtual && "Virtual session (3 hours)",
+                          corporate.offers_on_site && "On-site (full day)",
+                        ].filter(Boolean).join(" · ")}
+                      </dd>
+                    </div>
+                  </dl>
+                  <Button variant="outline" className="mt-5 w-full sm:w-auto gap-2" asChild>
+                    <Link to={`/advisors/${advisor.id}?book=corporate`} replace>
+                      <Briefcase className="w-4 h-4" aria-hidden="true" />
+                      Book corporate services
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </motion.div>
           </div>
         </div>
