@@ -29,6 +29,7 @@ const FinishSetupPromptModal = ({
     { label: "Set your session price", complete: completionStatus.hasPrice, icon: DollarSign },
     { label: "Write your bio", complete: completionStatus.hasBio, icon: ImageIcon },
     { label: "Set your availability", complete: completionStatus.hasAvailability, icon: Calendar },
+    { label: "Add at least one portfolio photo", complete: completionStatus.hasPortfolio, icon: ImageIcon },
   ];
 
   return (

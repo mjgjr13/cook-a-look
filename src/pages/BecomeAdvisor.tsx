@@ -49,7 +49,7 @@ import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import BiometricConsentScreen from "@/components/advisor/BiometricConsentScreen";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
-import CorporateServicesFields, { EMPTY_CORPORATE, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
+import CorporateServicesFields, { EMPTY_CORPORATE, corporateError, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
 
 type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
@@ -110,6 +110,7 @@ const latestAllowedDob = () => {
 };
 
 interface FormErrors {
+  corporate?: string;
   dateOfBirth?: string;
   firstName?: string;
   lastName?: string;
@@ -406,7 +407,7 @@ const BecomeAdvisor = () => {
       const uploadVerificationDoc = async (
         file: File,
         kind: "selfie" | "id"
-      ): Promise<{ url: string; path: string } | null> => {
+      ): Promise<{ url: string | null; path: string } | null> => {
         try {
           const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
           const path = `${userId}/${kind}_${Date.now()}.${ext}`;
@@ -417,16 +418,13 @@ const BecomeAdvisor = () => {
             console.error(`${kind} upload error:`, upErr);
             return null;
           }
-          // Private bucket — generate a signed URL (1 year) for admin viewing.
-          const { data: signed, error: signErr } = await supabase.storage
+          // Private bucket. Applicants usually can't create a viewing link
+          // (only admins can read it), so the storage path is what matters:
+          // the admin review screen creates a fresh link from it.
+          const { data: signed } = await supabase.storage
             .from("verifications")
             .createSignedUrl(path, 60 * 60 * 24 * 365);
-          if (signErr || !signed?.signedUrl) {
-            console.error(`${kind} signed URL error:`, signErr);
-            return null;
-          }
-          console.log(`${kind} uploaded:`, path);
-          return { url: signed.signedUrl, path };
+          return { url: signed?.signedUrl ?? null, path };
         } catch (err) {
           console.error(`Error uploading ${kind}:`, err);
           return null;
@@ -439,12 +437,12 @@ const BecomeAdvisor = () => {
       let idDocumentStoragePath: string | null = null;
       if (formData.selfieFile) {
         const result = await uploadVerificationDoc(formData.selfieFile, "selfie");
-        selfieUrl = result?.url ?? null;
+        selfieUrl = result?.url ?? result?.path ?? null; // bare path is fine: admin screen signs it
         selfieStoragePath = result?.path ?? null;
       }
       if (formData.idFile) {
         const result = await uploadVerificationDoc(formData.idFile, "id");
-        idDocumentUrl = result?.url ?? null;
+        idDocumentUrl = result?.url ?? result?.path ?? null;
         idDocumentStoragePath = result?.path ?? null;
       }
 
@@ -745,6 +743,9 @@ const BecomeAdvisor = () => {
       if (!formData.languages || formData.languages.length === 0) {
         stepErrors.languages = "Please select at least one language";
       }
+
+      // Corporate / B2B: if opted in, at least one rate is needed to be bookable
+      stepErrors.corporate = corporateError(formData.corporate) ?? undefined;
     } else if (currentStep === 2) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
@@ -1204,7 +1205,11 @@ const BecomeAdvisor = () => {
                     {/* Corporate / B2B - Optional */}
                     <CorporateServicesFields
                       value={formData.corporate}
-                      onChange={(corporate) => setFormData({ ...formData, corporate })}
+                      onChange={(corporate) => {
+                        setFormData({ ...formData, corporate });
+                        setErrors((prev) => ({ ...prev, corporate: undefined }));
+                      }}
+                      error={errors.corporate}
                     />
                   </motion.div>
                 )}

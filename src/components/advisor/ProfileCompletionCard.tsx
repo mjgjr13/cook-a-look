@@ -46,6 +46,14 @@ const ProfileCompletionCard = ({ completionStatus, isApproved }: ProfileCompleti
       icon: Calendar,
       link: "/advisor-availability",
     },
+    {
+      id: "portfolio",
+      label: "Add Portfolio Photos",
+      description: "At least one photo of your work",
+      completed: completionStatus.hasPortfolio,
+      icon: Camera,
+      link: "/settings",
+    },
   ];
 
   const progressPercent = (completionStatus.completedSteps / completionStatus.totalSteps) * 100;

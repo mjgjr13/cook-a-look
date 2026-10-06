@@ -16,15 +16,17 @@ export interface CorporateServicesValue {
   offersCorporate: boolean;
   services: string[];
   industries: string;
-  /** Whole dollars as typed; empty string means not set. */
-  startingPrice: string;
+  /** Whole dollars as typed; empty string means "not offered". */
+  virtualRate: string;
+  inPersonRate: string;
 }
 
 export const EMPTY_CORPORATE: CorporateServicesValue = {
   offersCorporate: false,
   services: [],
   industries: "",
-  startingPrice: "",
+  virtualRate: "",
+  inPersonRate: "",
 };
 
 /** Profile-row fields → form value. */
@@ -32,31 +34,76 @@ export const corporateFromProfile = (p: {
   offers_corporate?: boolean | null;
   corporate_services?: string[] | null;
   corporate_industries?: string | null;
-  corporate_starting_price?: number | null;
+  corporate_virtual_rate?: number | null;
+  corporate_in_person_rate?: number | null;
 }): CorporateServicesValue => ({
   offersCorporate: !!p.offers_corporate,
   services: p.corporate_services ?? [],
   industries: p.corporate_industries ?? "",
-  startingPrice: p.corporate_starting_price != null ? String(p.corporate_starting_price) : "",
+  virtualRate: p.corporate_virtual_rate != null ? String(p.corporate_virtual_rate) : "",
+  inPersonRate: p.corporate_in_person_rate != null ? String(p.corporate_in_person_rate) : "",
 });
 
-/** Form value → profile-row fields (display-only; not used for booking or payments). */
-export const corporateToProfile = (v: CorporateServicesValue) => {
-  const price = parseInt(v.startingPrice, 10);
-  return {
-    offers_corporate: v.offersCorporate,
-    corporate_services: v.services.filter((s) => (CORPORATE_SERVICE_OPTIONS as readonly string[]).includes(s)),
-    corporate_industries: v.industries.trim().slice(0, CORPORATE_INDUSTRIES_MAX) || null,
-    corporate_starting_price: Number.isFinite(price) && price >= 0 ? price : null,
-  };
+const toRate = (v: string) => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
 };
+
+/** Form value → profile-row fields. Rates are flat per engagement, in whole dollars. */
+export const corporateToProfile = (v: CorporateServicesValue) => ({
+  offers_corporate: v.offersCorporate,
+  corporate_services: v.services.filter((s) => (CORPORATE_SERVICE_OPTIONS as readonly string[]).includes(s)),
+  corporate_industries: v.industries.trim().slice(0, CORPORATE_INDUSTRIES_MAX) || null,
+  corporate_virtual_rate: toRate(v.virtualRate),
+  corporate_in_person_rate: toRate(v.inPersonRate),
+});
+
+/** Validation message, or null when the value can be saved. */
+export const corporateError = (v: CorporateServicesValue): string | null =>
+  v.offersCorporate && toRate(v.virtualRate) == null && toRate(v.inPersonRate) == null
+    ? "Set a rate for virtual sessions, on-site days, or both, so companies can book you."
+    : null;
 
 interface CorporateServicesFieldsProps {
   value: CorporateServicesValue;
   onChange: (value: CorporateServicesValue) => void;
+  error?: string | null;
 }
 
-const CorporateServicesFields = ({ value, onChange }: CorporateServicesFieldsProps) => {
+const RateInput = ({
+  id,
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  value: string;
+  onChange: (v: string) => void;
+}) => (
+  <div className="space-y-1.5">
+    <label htmlFor={id} className="text-sm font-medium">{label}</label>
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+      <Input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min="1"
+        step="1"
+        placeholder="Leave blank if not offered"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ""))}
+        className="pl-7"
+      />
+    </div>
+    <p className="text-xs text-muted-foreground">{hint}</p>
+  </div>
+);
+
+const CorporateServicesFields = ({ value, onChange, error }: CorporateServicesFieldsProps) => {
   const set = (patch: Partial<CorporateServicesValue>) => onChange({ ...value, ...patch });
 
   return (
@@ -96,27 +143,28 @@ const CorporateServicesFields = ({ value, onChange }: CorporateServicesFieldsPro
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="corporate-starting-price" className="text-sm font-medium">
-              Corporate engagements starting from
-            </label>
-            <div className="relative max-w-xs">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-              <Input
-                id="corporate-starting-price"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                step="1"
-                placeholder="e.g. 1500"
-                value={value.startingPrice}
-                onChange={(e) => set({ startingPrice: e.target.value.replace(/[^\d]/g, "") })}
-                className="pl-7"
+          <div>
+            <p className="text-sm font-medium">Corporate rates</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              Flat price per booking. Only shown to a company when they're about to check out.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <RateInput
+                id="corporate-virtual-rate"
+                label="Virtual session (3 hours)"
+                hint="Blocks 3 hours on your calendar."
+                value={value.virtualRate}
+                onChange={(virtualRate) => set({ virtualRate })}
+              />
+              <RateInput
+                id="corporate-in-person-rate"
+                label="On-site day (in person)"
+                hint="Blocks your whole available day."
+                value={value.inPersonRate}
+                onChange={(inPersonRate) => set({ inPersonRate })}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Shown on your profile as a "starting from" price. Final pricing is agreed with each company.
-            </p>
+            {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
           </div>
         </div>
       )}

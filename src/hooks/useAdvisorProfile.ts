@@ -26,6 +26,7 @@ export interface ProfileCompletionStatus {
   hasPrice: boolean;
   hasBio: boolean;
   hasAvailability: boolean;
+  hasPortfolio: boolean;
   isComplete: boolean;
   completedSteps: number;
   totalSteps: number;
@@ -38,6 +39,7 @@ interface UseAdvisorProfileResult {
     full_name: string | null;
     price_per_session: number | null;
     bio: string | null;
+    portfolio_images?: string[] | null;
   } | null;
   completionStatus: ProfileCompletionStatus;
   pendingBookingsCount: number;
@@ -58,6 +60,7 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     full_name: string | null;
     price_per_session: number | null;
     bio: string | null;
+    portfolio_images?: string[] | null;
   } | null>(null);
   const [pendingBookingsCount, setPendingBookingsCount] = useState(0);
   const [availabilityWindowCount, setAvailabilityWindowCount] = useState(0);
@@ -85,7 +88,7 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
           .maybeSingle(),
         supabase
           .from("profiles")
-          .select("id, avatar_url, full_name, price_per_session, bio")
+          .select("id, avatar_url, full_name, price_per_session, bio, portfolio_images")
           .eq("user_id", user.id)
           .maybeSingle(),
       ]);
@@ -147,9 +150,10 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     hasPrice: Boolean(userProfile?.price_per_session && userProfile.price_per_session > 0),
     hasBio: Boolean(userProfile?.bio && userProfile.bio.trim().length > 0),
     hasAvailability: Boolean(advisorProfile?.availability_set) || availabilityWindowCount > 0,
+    hasPortfolio: (userProfile?.portfolio_images?.length ?? 0) > 0,
     isComplete: false,
     completedSteps: 0,
-    totalSteps: 4,
+    totalSteps: 5,
   };
 
   completionStatus.completedSteps = [
@@ -157,6 +161,7 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
     completionStatus.hasPrice,
     completionStatus.hasBio,
     completionStatus.hasAvailability,
+    completionStatus.hasPortfolio,
   ].filter(Boolean).length;
 
   completionStatus.isComplete = completionStatus.completedSteps === completionStatus.totalSteps;
@@ -204,6 +209,14 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
       };
     }
 
+    // Block showing without portfolio photos (also enforced in the database)
+    if (newValue && !completionStatus.hasPortfolio) {
+      return {
+        success: false,
+        error: "Add at least one portfolio photo before going live.",
+      };
+    }
+
     // Block showing if profile is not complete
     if (newValue && !completionStatus.isComplete) {
       return {
@@ -228,7 +241,12 @@ export const useAdvisorProfile = (): UseAdvisorProfileResult => {
         .update(updatePayload)
         .eq("id", profile.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        if (/portfolio_required/.test(updateError.message)) {
+          return { success: false, error: "Add at least one portfolio photo before going live." };
+        }
+        throw updateError;
+      }
 
       // Update local state
       setAdvisorProfile((prev) =>

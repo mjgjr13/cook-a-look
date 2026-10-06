@@ -57,6 +57,9 @@ const AdvisorProfile = () => {
   // Auto-open calendar with preserved booking state after sign-in redirect
   const initialBookingDate = searchParams.get("bookingDate");
   const initialBookingSlot = searchParams.get("bookingSlot");
+  // Direct corporate booking link: /advisors/:id?book=corporate
+  const wantsCorporate = searchParams.get("book") === "corporate";
+  const [bookingKind, setBookingKind] = useState<"personal" | "corporate">("personal");
 
   const [corporate, setCorporate] = useState<CorporateInfo | null>(null);
 
@@ -101,11 +104,22 @@ const AdvisorProfile = () => {
   // Auto-open booking calendar if redirected back from sign-in with booking state
   useEffect(() => {
     if (!loading && advisor && initialBookingDate && !advisor.isSample) {
+      setBookingKind(wantsCorporate ? "corporate" : "personal");
       setCalendarOpen(true);
       // Clean up URL params
       setSearchParams({}, { replace: true });
     }
   }, [loading, advisor, initialBookingDate]);
+
+  // Open straight into corporate booking from the direct link / button.
+  useEffect(() => {
+    if (!loading && advisor && !advisor.isSample && wantsCorporate && !initialBookingDate && corporate) {
+      setBookingKind("corporate");
+      setCalendarOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, advisor, wantsCorporate, corporate]);
 
   const [waitlistOpen, setWaitlistOpen] = useState(false);
 
@@ -113,6 +127,7 @@ const AdvisorProfile = () => {
     if (advisor?.isSample) {
       setWaitlistOpen(true);
     } else {
+      setBookingKind("personal");
       setCalendarOpen(true);
     }
   };
@@ -309,6 +324,50 @@ const AdvisorProfile = () => {
                     <Link to="/terms" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
                   </div>
                 )}
+                {corporate && !isSample && (
+                  <div className="mt-5 p-4 bg-background border border-border">
+                    <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
+                      Corporate services
+                    </p>
+                    <p className="font-sans text-sm text-muted-foreground mb-3">
+                      {firstName} works with companies on employee image and dress code.
+                    </p>
+                    <dl className="space-y-3 font-sans text-sm">
+                      {corporate.corporate_services.length > 0 && (
+                        <div>
+                          <dt className="text-xs text-muted-foreground mb-1.5">Services</dt>
+                          <dd className="flex flex-wrap gap-1.5">
+                            {corporate.corporate_services.map((service) => (
+                              <span key={service} className="px-2.5 py-1 bg-secondary text-xs">{service}</span>
+                            ))}
+                          </dd>
+                        </div>
+                      )}
+                      {corporate.corporate_industries && (
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Industries</dt>
+                          <dd>{corporate.corporate_industries}</dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Formats</dt>
+                        <dd>
+                          {[
+                            corporate.offers_virtual && "Virtual session (3 hours)",
+                            corporate.offers_on_site && "On-site (full day)",
+                          ].filter(Boolean).join(" · ")}
+                        </dd>
+                      </div>
+                    </dl>
+                    <Button variant="outline" className="mt-4 w-full gap-2" asChild>
+                      <Link to={`/advisors/${advisor.id}?book=corporate`} replace>
+                        <Briefcase className="w-4 h-4" aria-hidden="true" />
+                        Book corporate services
+                      </Link>
+                    </Button>
+                  </div>
+                )}
             </motion.div>
 
             {/* Right Column - Details */}
@@ -383,46 +442,6 @@ const AdvisorProfile = () => {
                 </div>
               )}
 
-              {corporate && (
-                <div className="mb-8 p-5 lg:p-6 bg-background border border-border">
-                  <h3 className="font-serif text-lg font-medium mb-1 flex items-center gap-2">
-                    <Briefcase className="w-4 h-4" aria-hidden="true" />
-                    Corporate services
-                  </h3>
-                  <p className="font-sans text-sm text-muted-foreground mb-4">
-                    {firstName} also works with companies on employee image and dress code.
-                  </p>
-                  <dl className="space-y-3 font-sans text-sm">
-                    {corporate.corporate_services.length > 0 && (
-                      <div>
-                        <dt className="text-muted-foreground mb-1.5">Services</dt>
-                        <dd className="flex flex-wrap gap-2">
-                          {corporate.corporate_services.map((service) => (
-                            <span key={service} className="px-3 py-1.5 bg-secondary text-xs sm:text-sm">{service}</span>
-                          ))}
-                        </dd>
-                      </div>
-                    )}
-                    {corporate.corporate_industries && (
-                      <div>
-                        <dt className="text-muted-foreground">Industries</dt>
-                        <dd>{corporate.corporate_industries}</dd>
-                      </div>
-                    )}
-                    {corporate.corporate_starting_price != null && (
-                      <div>
-                        <dt className="text-muted-foreground">Corporate engagements</dt>
-                        <dd>Starting from ${corporate.corporate_starting_price.toLocaleString()}</dd>
-                      </div>
-                    )}
-                  </dl>
-                  <p className="mt-4 font-sans text-xs text-muted-foreground">
-                    For a corporate engagement, message {firstName} after booking an intro session, or email{" "}
-                    <a href="mailto:info@cookalook.com" className="text-gold hover:underline">info@cookalook.com</a>.
-                  </p>
-                </div>
-              )}
-
               {isSample && (
                 <div className="mb-4 p-4 border border-gold/40 bg-gold/5">
                   <p className="font-sans text-sm text-foreground">
@@ -475,6 +494,7 @@ const AdvisorProfile = () => {
       </section>
 
       {/* Inspiration Gallery */}
+      {(hasPortfolio || isSample) && (
       <section className="py-10 lg:py-16 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -518,6 +538,7 @@ const AdvisorProfile = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Reviews Section */}
       <section className="py-10 lg:py-16 bg-card">
@@ -568,6 +589,8 @@ const AdvisorProfile = () => {
         virtualAvailable={advisor.virtual_available ?? true}
         inPersonAvailable={advisor.in_person_available ?? false}
         inPersonSurcharge={advisor.in_person_surcharge ?? 0}
+        corporate={corporate}
+        initialKind={bookingKind}
       />
     </Layout>
   );

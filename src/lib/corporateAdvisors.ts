@@ -3,13 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 export interface CorporateInfo {
   corporate_services: string[];
   corporate_industries: string | null;
-  corporate_starting_price: number | null;
+  /** Offers a 3-hour virtual corporate session. */
+  offers_virtual: boolean;
+  /** Offers a full on-site corporate day. */
+  offers_on_site: boolean;
 }
 
 /**
- * B2B details for approved advisors who opted in, keyed by profile id.
- * Returns an empty map on any error (e.g. before the migration is applied),
- * so the directory and profile pages keep working without B2B data.
+ * B2B details for approved advisors who opted in and set at least one
+ * corporate rate, keyed by profile id. Never includes prices (those are only
+ * shown at checkout). Returns an empty map on any error so pages keep working.
  */
 export const fetchCorporateAdvisors = async (): Promise<Map<string, CorporateInfo>> => {
   try {
@@ -21,7 +24,8 @@ export const fetchCorporateAdvisors = async (): Promise<Map<string, CorporateInf
         {
           corporate_services: row.corporate_services ?? [],
           corporate_industries: row.corporate_industries ?? null,
-          corporate_starting_price: row.corporate_starting_price ?? null,
+          offers_virtual: !!row.offers_virtual,
+          offers_on_site: !!row.offers_on_site,
         },
       ]),
     );
@@ -29,3 +33,6 @@ export const fetchCorporateAdvisors = async (): Promise<Map<string, CorporateInf
     return new Map();
   }
 };
+
+/** Booking-time corporate engagement formats. */
+export const CORPORATE_VIRTUAL_HOURS = 3;

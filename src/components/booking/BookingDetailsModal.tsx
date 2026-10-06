@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Clock, Video, MapPin, User, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import BookingChat from "./BookingChat";
+import CorporateBookingDetails from "./CorporateBookingDetails";
 
 interface BookingParticipant {
   full_name?: string | null;
@@ -138,6 +139,8 @@ const BookingDetailsModal = ({
                 )}
               </div>
             </div>
+
+            <CorporateBookingDetails bookingId={booking.id} />
 
             {/* Participant Info */}
             {otherParticipant && (

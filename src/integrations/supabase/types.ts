@@ -650,6 +650,8 @@ export type Database = {
       }
       bookings: {
         Row: {
+          corporate_details: Json | null
+          is_corporate: boolean
           advisor_id: string
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -679,6 +681,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          corporate_details?: Json | null
+          is_corporate?: boolean
           advisor_id: string
           cancellation_reason?: string | null
           cancelled_at?: string | null
@@ -708,6 +712,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          corporate_details?: Json | null
+          is_corporate?: boolean
           advisor_id?: string
           cancellation_reason?: string | null
           cancelled_at?: string | null
@@ -1124,6 +1130,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          corporate_in_person_rate: number | null
+          corporate_virtual_rate: number | null
           account_type: string | null
           advisor_approved: boolean | null
           advisor_status: string | null
@@ -1170,6 +1178,8 @@ export type Database = {
           virtual_available: boolean | null
         }
         Insert: {
+          corporate_in_person_rate?: number | null
+          corporate_virtual_rate?: number | null
           account_type?: string | null
           advisor_approved?: boolean | null
           advisor_status?: string | null
@@ -1216,6 +1226,8 @@ export type Database = {
           virtual_available?: boolean | null
         }
         Update: {
+          corporate_in_person_rate?: number | null
+          corporate_virtual_rate?: number | null
           account_type?: string | null
           advisor_approved?: boolean | null
           advisor_status?: string | null
@@ -1838,13 +1850,28 @@ export type Database = {
           virtual_available: boolean
         }[]
       }
+      get_corporate_booking_info: {
+        Args: { p_advisor_id: string }
+        Returns: {
+          in_person_rate: number
+          virtual_rate: number
+        }[]
+      }
+      get_corporate_full_day: {
+        Args: { p_advisor_id: string; p_date: string }
+        Returns: {
+          day_end: string
+          day_start: string
+        }[]
+      }
       get_public_corporate_advisors: {
         Args: never
         Returns: {
           corporate_industries: string
           corporate_services: string[]
-          corporate_starting_price: number
           id: string
+          offers_on_site: boolean
+          offers_virtual: boolean
         }[]
       }
       get_public_featured_advisors: {

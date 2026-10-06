@@ -26,7 +26,18 @@ interface CheckoutRequest {
   meetingType?: "virtual" | "in_person";
   locationId?: string | null;
   suggestedLocation?: { name?: string; address?: string; note?: string } | null;
+  corporate?: {
+    format?: "virtual" | "on_site";
+    date?: string;
+    groupSize?: number;
+    company?: string;
+    location?: string;
+    about?: string;
+  } | null;
 }
+
+// Corporate engagements: 3-hour virtual block, or the advisor's whole day on site.
+const CORPORATE_VIRTUAL_HOURS = 3;
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -49,11 +60,17 @@ serve(async (req) => {
     const body = await req.json();
     const {
       advisorId, slotId, slotStartTime, slotEndTime, sessionDate, sessionTime, isDynamicSlot,
-      hours: rawHours, meetingType: rawMeetingType, locationId, suggestedLocation,
+      hours: rawHours, meetingType: rawMeetingType, locationId, suggestedLocation, corporate: rawCorporate,
     } = body as CheckoutRequest;
 
-    const hours = Number.isInteger(rawHours) && rawHours! >= 1 && rawHours! <= 3 ? rawHours! : 1;
-    const meetingType: "virtual" | "in_person" = rawMeetingType === "in_person" ? "in_person" : "virtual";
+    const isCorporate = !!rawCorporate;
+    const corporateFormat: "virtual" | "on_site" = rawCorporate?.format === "on_site" ? "on_site" : "virtual";
+    const hours = isCorporate
+      ? CORPORATE_VIRTUAL_HOURS
+      : Number.isInteger(rawHours) && rawHours! >= 1 && rawHours! <= 3 ? rawHours! : 1;
+    const meetingType: "virtual" | "in_person" = isCorporate
+      ? (corporateFormat === "on_site" ? "in_person" : "virtual")
+      : rawMeetingType === "in_person" ? "in_person" : "virtual";
 
     if (!isValidUUID(advisorId)) throw new Error("Invalid advisor ID format");
     if (!isDynamicSlot && slotId && !isValidUUID(slotId)) throw new Error("Invalid slot ID format");
@@ -74,7 +91,7 @@ serve(async (req) => {
     // Fetch advisor with capabilities + surcharge
     const { data: advisor, error: advisorError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, price_per_session, is_advisor, advisor_approved, is_demo, virtual_available, in_person_available, in_person_surcharge")
+      .select("id, full_name, price_per_session, is_advisor, advisor_approved, is_demo, virtual_available, in_person_available, in_person_surcharge, offers_corporate, corporate_virtual_rate, corporate_in_person_rate")
       .eq("id", advisorId)
       .single();
     if (advisorError || !advisor) throw new Error("Advisor not found");
@@ -85,15 +102,40 @@ serve(async (req) => {
     if (advisor.is_demo && !isTestBookableAdvisor(advisor.id)) {
       throw new Error("This is a sample profile and can't be booked yet");
     }
-    if (!advisor.price_per_session || advisor.price_per_session <= 0) throw new Error("Advisor has not set a valid price");
-
-    if (meetingType === "virtual" && !advisor.virtual_available) throw new Error("Advisor does not offer virtual sessions");
-    if (meetingType === "in_person" && !advisor.in_person_available) throw new Error("Advisor does not offer in-person sessions");
+    // Corporate: validate the request and the advisor's corporate rate.
+    let corporateRate = 0;
+    let corporateDetails: Record<string, unknown> | null = null;
+    if (isCorporate) {
+      if (!advisor.offers_corporate) throw new Error("This advisor doesn't offer corporate services");
+      const rate = corporateFormat === "on_site" ? advisor.corporate_in_person_rate : advisor.corporate_virtual_rate;
+      if (!rate || rate <= 0) throw new Error("This advisor doesn't offer that corporate format");
+      corporateRate = rate;
+      const groupSize = Number(rawCorporate?.groupSize);
+      const company = String(rawCorporate?.company ?? "").trim().slice(0, 200);
+      const location = String(rawCorporate?.location ?? "").trim().slice(0, 300);
+      const about = String(rawCorporate?.about ?? "").trim().slice(0, 2000);
+      if (!Number.isInteger(groupSize) || groupSize < 1 || groupSize > 10000) throw new Error("Please enter a valid group size");
+      if (!company) throw new Error("Please enter your company or organization");
+      if (corporateFormat === "on_site" && location.length < 5) throw new Error("Please enter the session address");
+      if (about.length < 10) throw new Error("Please tell the advisor what you're looking for");
+      corporateDetails = { format: corporateFormat, group_size: groupSize, company, location: location || null, about };
+    } else {
+      if (!advisor.price_per_session || advisor.price_per_session <= 0) throw new Error("Advisor has not set a valid price");
+      if (meetingType === "virtual" && !advisor.virtual_available) throw new Error("Advisor does not offer virtual sessions");
+      if (meetingType === "in_person" && !advisor.in_person_available) throw new Error("Advisor does not offer in-person sessions");
+    }
 
     // Validate location for in-person
     let validatedLocationId: string | null = null;
     let validatedSuggested: { name: string; address: string; note?: string } | null = null;
-    if (meetingType === "in_person") {
+    if (isCorporate && meetingType === "in_person") {
+      // On-site corporate: the company's address (book_slot needs a location;
+      // it's marked confirmed after booking since the advisor offers on-site work).
+      validatedSuggested = {
+        name: String(corporateDetails?.company ?? "On-site session").slice(0, 200),
+        address: String(corporateDetails?.location ?? "").slice(0, 300),
+      };
+    } else if (meetingType === "in_person") {
       if (locationId) {
         const { data: loc } = await supabaseAdmin
           .from("advisor_meeting_locations")
@@ -115,7 +157,7 @@ serve(async (req) => {
       }
     }
 
-    const surchargeDollars = meetingType === "in_person"
+    const surchargeDollars = !isCorporate && meetingType === "in_person"
       ? Math.max(0, Math.min(100, advisor.in_person_surcharge ?? 0))
       : 0;
 
@@ -124,7 +166,29 @@ serve(async (req) => {
     let finalEndTime: string;
     let finalIsVirtual = meetingType === "virtual";
 
-    if (isDynamicSlot && slotStartTime && slotEndTime) {
+    if (isCorporate && corporateFormat === "on_site") {
+      // Whole day: times come from the server-side availability check, never the client.
+      const date = String(rawCorporate?.date ?? "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Invalid date");
+      const { data: day, error: dayError } = await supabaseAdmin.rpc("get_corporate_full_day", {
+        p_advisor_id: advisorId,
+        p_date: date,
+      });
+      const dayRow = Array.isArray(day) ? day[0] : null;
+      if (dayError || !dayRow) {
+        return new Response(
+          JSON.stringify({ error: "That day is no longer fully available. Please pick another." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+        );
+      }
+      finalStartTime = dayRow.day_start;
+      finalEndTime = dayRow.day_end;
+      finalIsVirtual = false;
+    } else if (isCorporate && isDynamicSlot && slotStartTime) {
+      // Virtual corporate: always exactly 3 hours from the chosen start.
+      finalStartTime = slotStartTime;
+      finalEndTime = new Date(new Date(slotStartTime).getTime() + CORPORATE_VIRTUAL_HOURS * 3600_000).toISOString();
+    } else if (isDynamicSlot && slotStartTime && slotEndTime) {
       finalStartTime = slotStartTime;
       finalEndTime = slotEndTime;
     } else if (slotId) {
@@ -173,13 +237,34 @@ serve(async (req) => {
     const pendingBookingId: string = row?.booking_id;
     if (!finalSlotId || !pendingBookingId) throw new Error("Booking creation failed");
 
-    await supabaseAdmin
-      .from("bookings")
-      .update({ duration_hours: hours })
-      .eq("id", pendingBookingId);
+    if (isCorporate) {
+      const { error: corpUpdateError } = await supabaseAdmin
+        .from("bookings")
+        .update({
+          duration_hours: hours,
+          is_corporate: true,
+          corporate_details: corporateDetails,
+          ...(meetingType === "in_person"
+            ? { location_status: "confirmed", location_snapshot: validatedSuggested, suggested_location: null }
+            : {}),
+        })
+        .eq("id", pendingBookingId);
+      if (corpUpdateError) {
+        console.error("corporate booking update error:", corpUpdateError);
+        // Release the held time so it isn't blocked by a booking we can't complete.
+        await supabaseAdmin.from("bookings").update({ status: "cancelled" }).eq("id", pendingBookingId);
+        await supabaseAdmin.from("availability_slots").update({ is_booked: false }).eq("id", finalSlotId);
+        throw new Error("Corporate booking could not be created. Please try again.");
+      }
+    } else {
+      await supabaseAdmin
+        .from("bookings")
+        .update({ duration_hours: hours })
+        .eq("id", pendingBookingId);
+    }
 
     const hourlyRate = advisor.price_per_session;
-    const amount = hourlyRate * hours + surchargeDollars;
+    const amount = isCorporate ? corporateRate : hourlyRate * hours + surchargeDollars;
     const advisorName = advisor.full_name || "Style Advisor";
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
@@ -190,10 +275,17 @@ serve(async (req) => {
 
     const origin = getSafeOrigin(req.headers.get("origin"));
     const sessionTypeLabel = meetingType === "in_person" ? "in-person" : "virtual";
-    const descriptionParts = [
-      `${sessionDate} at ${sessionTime}`,
-      `${hours}-hour ${sessionTypeLabel} styling session ($${hourlyRate}/hour)`,
-    ];
+    const descriptionParts = isCorporate
+      ? [
+          sessionDate,
+          corporateFormat === "on_site"
+            ? "Corporate on-site day"
+            : `Corporate ${CORPORATE_VIRTUAL_HOURS}-hour virtual session`,
+        ]
+      : [
+          `${sessionDate} at ${sessionTime}`,
+          `${hours}-hour ${sessionTypeLabel} styling session ($${hourlyRate}/hour)`,
+        ];
     if (surchargeDollars > 0) descriptionParts.push(`+ $${surchargeDollars} in-person surcharge`);
 
     const session = await stripe.checkout.sessions.create({
@@ -206,7 +298,7 @@ serve(async (req) => {
         price_data: {
           currency: "usd",
           product_data: {
-            name: `Style Consultation with ${advisorName}`,
+            name: isCorporate ? `Corporate Image Consulting with ${advisorName}` : `Style Consultation with ${advisorName}`,
             description: descriptionParts.join(" — "),
             tax_code: "txcd_20030000",
           },
@@ -225,6 +317,7 @@ serve(async (req) => {
         hours: String(hours),
         meeting_type: meetingType,
         surcharge_cents: String(surchargeCents),
+        is_corporate: isCorporate ? "true" : "false",
       },
     });
 

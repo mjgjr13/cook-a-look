@@ -32,7 +32,7 @@ import { useProfile } from "@/hooks/useProfile";
 
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
-import CorporateServicesFields, { corporateFromProfile, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
+import CorporateServicesFields, { type CorporateServicesValue, corporateError, corporateFromProfile, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
 
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
@@ -176,11 +176,12 @@ interface Profile {
   style_tags: string[];
   target_demographics: string[];
   use_cases: string[];
-  // Corporate / B2B (present once migration 20261006120000 is applied)
+  // Corporate / B2B (present once migrations 20261006120000/180000 are applied)
   offers_corporate?: boolean;
   corporate_services?: string[];
   corporate_industries?: string | null;
-  corporate_starting_price?: number | null;
+  corporate_virtual_rate?: number | null;
+  corporate_in_person_rate?: number | null;
 }
 
 const AccountSettings = () => {
@@ -245,10 +246,18 @@ const AccountSettings = () => {
   }, [navigate, toast]);
 
   // Only show/save the B2B section once the database has the columns.
-  const hasCorporateColumns = !!profile && "offers_corporate" in profile;
+  const hasCorporateColumns = !!profile && "corporate_virtual_rate" in profile;
+  // Raw form value kept separately so partially typed values aren't normalised away.
+  const [corporateDraft, setCorporateDraft] = useState<CorporateServicesValue | null>(null);
+  const corporateValue = corporateDraft ?? (profile ? corporateFromProfile(profile) : null);
+  const corporateValidation = hasCorporateColumns && corporateValue ? corporateError(corporateValue) : null;
 
   const handleSave = async () => {
     if (!profile) return;
+    if (corporateValidation) {
+      toast({ title: "Corporate rates needed", description: corporateValidation, variant: "destructive" });
+      return;
+    }
 
     setIsSaving(true);
 
@@ -270,7 +279,7 @@ const AccountSettings = () => {
         style_tags: profile.style_tags,
         target_demographics: profile.target_demographics,
         use_cases: profile.use_cases,
-        ...(hasCorporateColumns ? corporateToProfile(corporateFromProfile(profile)) : {}),
+        ...(hasCorporateColumns && corporateValue ? corporateToProfile(corporateValue) : {}),
       })
       .eq("id", profile.id);
 
@@ -582,10 +591,11 @@ const AccountSettings = () => {
                       onChange={(selected) => updateProfile("target_demographics", selected)}
                     />
 
-                    {hasCorporateColumns && profile && (
+                    {hasCorporateColumns && corporateValue && (
                       <CorporateServicesFields
-                        value={corporateFromProfile(profile)}
-                        onChange={(v) => setProfile({ ...profile, ...corporateToProfile(v), corporate_starting_price: v.startingPrice === "" ? null : Number(v.startingPrice), corporate_industries: v.industries })}
+                        value={corporateValue}
+                        onChange={setCorporateDraft}
+                        error={corporateValidation}
                       />
                     )}
                   </div>

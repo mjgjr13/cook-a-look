@@ -379,6 +379,7 @@ const AdvisorDashboard = () => {
                       !completionStatus.hasPrice && "session price",
                       !completionStatus.hasBio && "bio",
                       !completionStatus.hasAvailability && "availability",
+                      !completionStatus.hasPortfolio && "portfolio photos",
                     ].filter(Boolean).join(", ")} still needed before you can go live.
                   </p>
                 </div>

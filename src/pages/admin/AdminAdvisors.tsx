@@ -82,6 +82,8 @@ interface AdvisorApplication {
   portfolio: string | null;
   selfie_url: string | null;
   id_document_url: string | null;
+  selfie_storage_path?: string | null;
+  id_document_storage_path?: string | null;
   liveness_verified: boolean;
   status: "pending" | "approved" | "denied";
   admin_notes: string | null;
@@ -119,13 +121,21 @@ const AdminAdvisors = () => {
   const [activeAdvisors, setActiveAdvisors] = useState<ActiveAdvisor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   
   const [selectedApplication, setSelectedApplication] = useState<AdvisorApplication | null>(null);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"approve" | "deny" | null>(null);
+  // Fresh, short-lived links to the private selfie / ID images, made when an
+  // application is opened (admins can read the private verifications bucket).
+  const [verificationImages, setVerificationImages] = useState<{ selfie: string | null; id: string | null; loading: boolean }>({
+    selfie: null,
+    id: null,
+    loading: false,
+  });
+  // Approval requires a human comparison of the live selfie against the ID photo.
+  const [identityConfirmed, setIdentityConfirmed] = useState(false);
 
   // Advisor detail modal
   const [selectedAdvisorDetail, setSelectedAdvisorDetail] = useState<ActiveAdvisor | null>(null);
@@ -150,7 +160,7 @@ const AdminAdvisors = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      if (activeTab === "applications") {
+      if (activeTab === "applications" || activeTab === "denied") {
         // Fetch applications with profile data for avatar
         const { data, error } = await supabase
           .from("advisor_applications")
@@ -226,10 +236,36 @@ const AdminAdvisors = () => {
     }
   };
 
+  // Storage path for a verification image: the saved path, else a bare path
+  // stored in the URL column, else the path inside an (expired) signed URL.
+  const verificationPath = (path?: string | null, url?: string | null): string | null => {
+    if (path) return path;
+    if (!url) return null;
+    if (!/^https?:\/\//.test(url)) return url;
+    const m = url.match(/\/object\/sign\/verifications\/([^?]+)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  };
+
+  const loadVerificationImages = async (app: AdvisorApplication) => {
+    setVerificationImages({ selfie: null, id: null, loading: true });
+    const sign = async (path: string | null, fallbackUrl: string | null) => {
+      if (!path) return fallbackUrl;
+      const { data } = await supabase.storage.from("verifications").createSignedUrl(path, 60 * 30);
+      return data?.signedUrl ?? fallbackUrl;
+    };
+    const [selfie, id] = await Promise.all([
+      sign(verificationPath(app.selfie_storage_path, app.selfie_url), app.selfie_url),
+      sign(verificationPath(app.id_document_storage_path, app.id_document_url), app.id_document_url),
+    ]);
+    setVerificationImages({ selfie, id, loading: false });
+  };
+
   const handleReviewApplication = (app: AdvisorApplication) => {
     setSelectedApplication(app);
     setAdminNotes(app.admin_notes || "");
+    setIdentityConfirmed(false);
     setIsReviewDialogOpen(true);
+    loadVerificationImages(app);
   };
 
   const handleApprove = async () => {
@@ -534,7 +570,7 @@ const AdminAdvisors = () => {
     const matchesSearch =
       `${app.first_name} ${app.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+    const matchesStatus = app.status === (activeTab === "denied" ? "denied" : "pending");
     return matchesSearch && matchesStatus;
   });
 
@@ -669,12 +705,16 @@ const AdminAdvisors = () => {
             <TabsList className="mb-6">
               <TabsTrigger value="applications" className="gap-2">
                 <Clock className="w-4 h-4" />
-                Applications
+                Pending
                 {applications.filter((a) => a.status === "pending").length > 0 && (
                   <Badge variant="destructive" className="ml-1">
                     {applications.filter((a) => a.status === "pending").length}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="denied" className="gap-2">
+                <XCircle className="w-4 h-4" />
+                Denied
               </TabsTrigger>
               <TabsTrigger value="active" className="gap-2">
                 <UserCheck className="w-4 h-4" />
@@ -696,24 +736,15 @@ const AdminAdvisors = () => {
                   className="pl-10"
                 />
               </div>
-              {activeTab === "applications" && (
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="denied">Denied</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+
             </div>
 
-            <TabsContent value="applications">
+            <TabsContent value={activeTab === "denied" ? "denied" : "applications"}>
               {filteredApplications.length === 0 ? (
                 <div className="text-center py-16 border border-dashed border-border rounded-lg">
-                  <p className="text-muted-foreground">No pending applications</p>
+                  <p className="text-muted-foreground">
+                    {activeTab === "denied" ? "No denied applications" : "No pending applications"}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1019,53 +1050,58 @@ const AdminAdvisors = () => {
                 )}
               </div>
 
-              {/* Verification Documents */}
+              {/* Identity check: live selfie vs government ID, compared by eye */}
               <div>
                 <Label className="text-muted-foreground text-xs mb-2 block">
-                  Verification Documents
+                  Identity check: is the person in the live selfie the same as on the ID?
                 </Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border border-border rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-2">Liveness / Selfie</p>
-                    {selectedApplication.selfie_url ? (
-                      <img
-                        src={selectedApplication.selfie_url}
-                        alt="Selfie"
-                        className="w-full aspect-square object-cover rounded"
-                      />
-                    ) : (
-                      <div className="aspect-square bg-muted flex flex-col items-center justify-center rounded">
-                        <AlertTriangle className="w-8 h-8 text-yellow-500 mb-2" />
-                        <span className="text-muted-foreground text-sm text-center px-2">
-                          Not uploaded during signup
-                        </span>
-                      </div>
-                    )}
-                    {selectedApplication.liveness_verified && (
-                      <Badge variant="outline" className="mt-2 gap-1">
-                        <Shield className="w-3 h-3" />
-                        Liveness Verified
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="border border-border rounded-lg p-4">
-                    <p className="text-xs text-muted-foreground mb-2">Government ID</p>
-                    {selectedApplication.id_document_url ? (
-                      <img
-                        src={selectedApplication.id_document_url}
-                        alt="ID Document"
-                        className="w-full aspect-video object-cover rounded"
-                      />
-                    ) : (
-                      <div className="aspect-video bg-muted flex flex-col items-center justify-center rounded">
-                        <AlertTriangle className="w-8 h-8 text-yellow-500 mb-2" />
-                        <span className="text-muted-foreground text-sm text-center px-2">
-                          Not uploaded during signup
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {([
+                    ["Live selfie", verificationImages.selfie, "aspect-[3/4]"],
+                    ["Government ID", verificationImages.id, "aspect-[3/4]"],
+                  ] as const).map(([label, src, aspect]) => (
+                    <div key={label} className="border border-border rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground mb-2">{label}</p>
+                      {verificationImages.loading ? (
+                        <div className={`${aspect} bg-muted animate-pulse rounded`} />
+                      ) : src ? (
+                        <a href={src} target="_blank" rel="noopener noreferrer" title="Open full size">
+                          <img src={src} alt={label} className={`w-full ${aspect} object-contain bg-muted rounded`} />
+                        </a>
+                      ) : (
+                        <div className={`${aspect} bg-muted flex flex-col items-center justify-center rounded`}>
+                          <AlertTriangle className="w-8 h-8 text-yellow-500 mb-2" />
+                          <span className="text-muted-foreground text-sm text-center px-2">
+                            Not available (not uploaded, or already deleted after review)
+                          </span>
+                        </div>
+                      )}
+                      {label === "Live selfie" && selectedApplication.liveness_verified && (
+                        <Badge variant="outline" className="mt-2 gap-1">
+                          <Shield className="w-3 h-3" />
+                          Live camera capture
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
                 </div>
+                {selectedApplication.status === "pending" && (
+                  <label className="mt-3 flex items-start gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={identityConfirmed}
+                      disabled={!verificationImages.selfie || !verificationImages.id}
+                      onChange={(e) => setIdentityConfirmed(e.target.checked)}
+                    />
+                    <span>
+                      I compared the live selfie with the ID photo and they show the same person, and the ID looks genuine.
+                      {(!verificationImages.selfie || !verificationImages.id) && !verificationImages.loading && (
+                        <span className="block text-xs text-destructive mt-0.5">Both images are needed to approve.</span>
+                      )}
+                    </span>
+                  </label>
+                )}
               </div>
 
               {/* Admin Notes */}
@@ -1095,7 +1131,8 @@ const AdminAdvisors = () => {
                   </Button>
                   <Button
                     onClick={() => setConfirmAction("approve")}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !identityConfirmed}
+                    title={identityConfirmed ? undefined : "Confirm the identity check first"}
                     className="flex-1 gap-2"
                   >
                     <CheckCircle className="w-4 h-4" />
@@ -1117,7 +1154,7 @@ const AdminAdvisors = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === "approve"
-                ? "This will approve the application. The advisor will then need to toggle their visibility ON to appear publicly."
+                ? "This approves the advisor and moves them to All Advisors. They go live once they finish setup (including portfolio photos) and turn visibility on."
                 : "This will deny the application. The applicant will be notified via email."}
             </AlertDialogDescription>
           </AlertDialogHeader>
