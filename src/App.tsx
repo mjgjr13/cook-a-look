@@ -36,6 +36,7 @@ const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 const AdminRewards = lazy(() => import("./pages/admin/AdminRewards"));
 const AdminDisputes = lazy(() => import("./pages/admin/AdminDisputes"));
 const AdminCancellations = lazy(() => import("./pages/admin/AdminCancellations"));
+const AdminConcierge = lazy(() => import("./pages/admin/AdminConcierge"));
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -140,6 +141,11 @@ const App = () => (
             <Route path="/admin/cancellations" element={
               <AdminRoute>
                 <AdminCancellations />
+              </AdminRoute>
+            } />
+            <Route path="/admin/concierge" element={
+              <AdminRoute>
+                <AdminConcierge />
               </AdminRoute>
             } />
             

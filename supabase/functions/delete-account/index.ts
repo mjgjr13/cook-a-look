@@ -111,6 +111,7 @@ serve(async (req) => {
     await admin.from("advisor_applications").delete().eq("user_id", user.id);
     await admin.from("advisor_profiles").delete().eq("user_id", user.id);
     await admin.from("user_roles").delete().eq("user_id", user.id);
+    await admin.from("concierge_profiles").delete().eq("user_id", user.id);
     if (user.email) await admin.from("booking_waitlist").delete().eq("email", user.email.toLowerCase());
 
     // 5. Remove personal data from the login and block it.

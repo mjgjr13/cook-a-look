@@ -319,8 +319,21 @@ const PrivacyPolicy = () => {
                   The "AI Concierge" chat feature is an automated system powered by a
                   third-party AI model, not a human advisor. Messages you send it, along with
                   publicly listed advisor information, are sent to our AI infrastructure provider
-                  to generate a response; we do not use your chat content to train AI models, and
-                  conversation content is not persisted by us beyond your session. See our{" "}
+                  to generate a response. We do not use your chat content to train AI models.
+                </p>
+                <p className="text-muted-foreground leading-relaxed mt-4">
+                  To improve the Concierge, we keep the questions you send it, with email addresses
+                  and phone numbers removed and without linking them to your account, and any
+                  feedback you choose to give (thumbs up or down, an optional comment, and the
+                  answer it refers to). Our team reviews these to fix gaps in the Concierge's
+                  instructions. They are deleted automatically after 90 days. If you are signed in,
+                  the Concierge also keeps a short note of style preferences you share (for example
+                  budget, fit, or what you dress for) so it doesn't have to ask again. Only you can
+                  see that note, and you can clear it at any time under Account settings → Security.
+                  Please don't share sensitive personal information in the chat.
+                </p>
+                <p className="text-muted-foreground leading-relaxed mt-4">
+                  See our{" "}
                   <a href="/terms" className="text-gold hover:underline">
                     Terms of Use
                   </a>{" "}

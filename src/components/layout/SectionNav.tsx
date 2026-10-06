@@ -15,6 +15,7 @@ const ADMIN_SECTIONS: Section[] = [
   { label: "Cancellations", to: "/admin/cancellations" },
   { label: "Disputes", to: "/admin/disputes" },
   { label: "Rewards", to: "/admin/rewards" },
+  { label: "AI Concierge", to: "/admin/concierge" },
 ];
 
 const ADVISOR_SECTIONS: Section[] = [

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import { ArrowUp, Loader2, MapPin, RotateCcw, Video } from "lucide-react";
+import { ArrowUp, Calendar, Loader2, MapPin, RotateCcw, ThumbsDown, ThumbsUp, Video } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,103 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
-import { streamConcierge, extractAdvisorIds, extractCorporateAdvisorIds, type ConciergeMessage } from "@/lib/conciergeStream";
+import {
+  streamConcierge,
+  extractAdvisorIds,
+  extractCorporateAdvisorIds,
+  parseConciergeReply,
+  type ConciergeMessage,
+} from "@/lib/conciergeStream";
+import type { User } from "@supabase/supabase-js";
 
 const STORAGE_KEY = "cal_concierge_conversation";
+const SESSION_KEY = "cal_concierge_session";
+
+// Random id per browser session, used only to group anonymised logs.
+const getSessionId = (): string => {
+  try {
+    const existing = sessionStorage.getItem(SESSION_KEY);
+    if (existing) return existing;
+    const id = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, id);
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+};
+
+// Light scrub before feedback text is stored (the server scrubs logs too).
+const scrub = (text: string) =>
+  text
+    .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[email]")
+    .replace(/\+?\d[\d\s().-]{7,}\d/g, "[number]");
+
+const FeedbackControls = ({ question, answer, sessionId }: { question: string; answer: string; sessionId: string }) => {
+  const [state, setState] = useState<"idle" | "up" | "down" | "sent">("idle");
+  const [comment, setComment] = useState("");
+
+  const submit = async (rating: 1 | -1, note?: string) => {
+    await supabase.from("concierge_feedback").insert({
+      rating,
+      comment: note ? scrub(note).slice(0, 1000) : null,
+      question: scrub(question).slice(0, 2000),
+      answer: scrub(answer).slice(0, 6000),
+      session_id: sessionId,
+    });
+  };
+
+  if (state === "sent" || state === "up") {
+    return <p className="mt-2 text-xs text-muted-foreground">Thanks for the feedback.</p>;
+  }
+  return (
+    <div className="mt-2">
+      {state === "idle" ? (
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <span className="mr-1 text-xs">Helpful?</span>
+          <button
+            type="button"
+            aria-label="Helpful"
+            className="rounded p-1.5 hover:bg-muted hover:text-foreground"
+            onClick={() => {
+              setState("up");
+              void submit(1);
+            }}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label="Not helpful"
+            className="rounded p-1.5 hover:bg-muted hover:text-foreground"
+            onClick={() => setState("down")}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <form
+          className="flex flex-col gap-2 sm:flex-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setState("sent");
+            void submit(-1, comment.trim() || undefined);
+          }}
+        >
+          <input
+            autoFocus
+            value={comment}
+            maxLength={1000}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="What was wrong or missing? (optional)"
+            aria-label="What was wrong or missing?"
+            className="h-9 flex-1 border border-border bg-background px-3 text-sm focus:border-foreground focus:outline-none"
+          />
+          <Button type="submit" size="sm" variant="outline">Send feedback</Button>
+        </form>
+      )}
+    </div>
+  );
+};
 
 const STARTERS = [
   "I have a wedding coming up and don't know what to wear",
@@ -50,10 +144,8 @@ const saveConversation = (messages: ConciergeMessage[]) => {
 };
 
 const AdvisorSuggestion = ({ advisor, corporate = false }: { advisor: AdvisorCard; corporate?: boolean }) => (
-  <Link
-    to={corporate ? `/advisors/${advisor.id}?book=corporate` : `/advisors/${advisor.id}`}
-    className="flex gap-3 border border-border bg-background p-3 transition-colors hover:border-foreground"
-  >
+  <div className="flex flex-col border border-border bg-background transition-colors hover:border-foreground">
+  <Link to={`/advisors/${advisor.id}`} className="flex gap-3 p-3">
     <div className="h-20 w-16 shrink-0 overflow-hidden bg-muted">
       {advisor.avatar_url && (
         <img
@@ -88,6 +180,16 @@ const AdvisorSuggestion = ({ advisor, corporate = false }: { advisor: AdvisorCar
       {advisor.isSample && <p className="mt-1 text-xs text-muted-foreground">Sample profile</p>}
     </div>
   </Link>
+  {!advisor.isSample && (
+    <Link
+      to={`/advisors/${advisor.id}?book=${corporate ? "corporate" : "personal"}`}
+      className="flex items-center justify-center gap-1.5 border-t border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+    >
+      <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+      {corporate ? "Book corporate services" : "Check availability"}
+    </Link>
+  )}
+  </div>
 );
 
 const StyleConcierge = () => {
@@ -100,6 +202,30 @@ const StyleConcierge = () => {
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const startedRef = useRef(false);
+  const [sessionId] = useState(getSessionId);
+  const [user, setUser] = useState<User | null>(null);
+  const [memory, setMemory] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  // Signed-in visitors: load what the concierge remembers about them.
+  useEffect(() => {
+    const load = (u: User | null) => {
+      setUser(u);
+      if (!u) {
+        setMemory(null);
+        return;
+      }
+      supabase
+        .from("concierge_profiles")
+        .select("summary")
+        .eq("user_id", u.id)
+        .maybeSingle()
+        .then(({ data }) => setMemory(data?.summary || null));
+    };
+    supabase.auth.getSession().then(({ data: { session } }) => load(session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => load(session?.user ?? null));
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     supabase.rpc("get_public_advisor_profiles").then(({ data }) => {
@@ -125,9 +251,24 @@ const StyleConcierge = () => {
       const next: ConciergeMessage[] = [...messages, { role: "user", content }];
       setMessages(next);
       setInput("");
+      setSuggestions([]);
       setIsLoading(true);
       try {
-        await streamConcierge(next, (reply) => setMessages([...next, { role: "assistant", content: reply }]));
+        const raw = await streamConcierge(
+          next,
+          (reply) => setMessages([...next, { role: "assistant", content: parseConciergeReply(reply).display }]),
+          undefined,
+          { memoryEnabled: !!user, profile: memory, sessionId },
+        );
+        const parsed = parseConciergeReply(raw);
+        setMessages([...next, { role: "assistant", content: parsed.display }]);
+        setSuggestions(parsed.suggestions);
+        if (user && parsed.profile && parsed.profile !== memory) {
+          setMemory(parsed.profile);
+          await supabase
+            .from("concierge_profiles")
+            .upsert({ user_id: user.id, summary: parsed.profile, updated_at: new Date().toISOString() });
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
         setMessages(next);
@@ -136,7 +277,7 @@ const StyleConcierge = () => {
         inputRef.current?.focus();
       }
     },
-    [isLoading, messages],
+    [isLoading, messages, user, memory, sessionId],
   );
 
   // Conversation started from the homepage "What are you dressing for?" buttons.
@@ -151,6 +292,7 @@ const StyleConcierge = () => {
 
   const reset = () => {
     setMessages([]);
+    setSuggestions([]);
     setError(null);
     inputRef.current?.focus();
   };
@@ -245,6 +387,28 @@ const StyleConcierge = () => {
                             ))}
                         </div>
                       )}
+                      {!(isLoading && i === messages.length - 1) && m.content && (
+                        <FeedbackControls
+                          key={`fb-${i}-${m.content.length}`}
+                          question={messages[i - 1]?.content ?? ""}
+                          answer={m.content}
+                          sessionId={sessionId}
+                        />
+                      )}
+                      {i === messages.length - 1 && !isLoading && suggestions.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {suggestions.map((sug) => (
+                            <button
+                              key={sug}
+                              type="button"
+                              onClick={() => send(sug)}
+                              className="min-h-9 border border-border bg-card px-3 py-1.5 text-sm text-foreground transition-colors hover:border-foreground"
+                            >
+                              {sug}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </li>
                   ),
                 )}
@@ -295,11 +459,15 @@ const StyleConcierge = () => {
               </Button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              AI assistant, not a human stylist. It can make mistakes. For personal advice,{" "}
-              <Link to="/advisors" className="underline underline-offset-4">
-                book an advisor
-              </Link>
-              .
+              AI assistant, not a human stylist. It can make mistakes. Questions are saved anonymously for up to 90 days
+              to improve the Concierge (
+              <Link to="/privacy" className="underline underline-offset-4">privacy</Link>).
+              {user ? (
+                <>
+                  {" "}It remembers your style preferences between visits;{" "}
+                  <Link to="/settings#concierge-memory" className="underline underline-offset-4">manage</Link>.
+                </>
+              ) : null}
             </p>
           </form>
         </div>

@@ -6,6 +6,8 @@
 |---|---|---|---|
 | Account (profile, login) | Until the user deletes it. Deletion now runs server-side (anonymize + disable login), pending deploy of `delete-account`. | Same; deletion completed within 30 days of a request | `delete-account` function; manual for email requests |
 | Advisor ID + selfie documents | Kept. Deletion job exists but isn't scheduled. | Delete 30 days after the application decision (approved or denied) | Schedule `delete-expired-verifications` (E7) |
+| AI Concierge questions (`concierge_logs`) and feedback (`concierge_feedback`) | Anonymised (no user id; emails/phone numbers scrubbed). 90 days. | Same | `purge_old_concierge_data()` daily via pg_cron, plus an occasional run from `advisor-chat` |
+| AI Concierge memory (`concierge_profiles`) | Short style-preference note for signed-in users, until they clear it or delete their account | Same | Owner can clear it in Settings → Security; `delete-account` removes it (and it cascades if the login is deleted) |
 | Advisor date of birth | Kept indefinitely | Keep while the application or advisor account exists; delete with the account | `delete-account` (rows deleted) |
 | Advisor applications (denied) | Kept | Delete 12 months after denial | New scheduled job (to build) |
 | Booking & payment records | Kept; anonymized on account deletion | Keep for the period required by tax law (**accountant to confirm**; often 6 years in Canada) | Keep rows; anonymize profile |

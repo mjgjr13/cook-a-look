@@ -32,6 +32,7 @@ import { useProfile } from "@/hooks/useProfile";
 
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
+import ConciergeMemoryCard from "@/components/profile/ConciergeMemoryCard";
 import CorporateServicesFields, { type CorporateServicesValue, corporateError, corporateFromProfile, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
 
 // Separate component for Security Tab to manage delete account flow
@@ -191,7 +192,10 @@ const AccountSettings = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("profile");
+  // /settings#concierge-memory (linked from the AI Concierge) opens the Security tab.
+  const [activeTab, setActiveTab] = useState(() =>
+    typeof window !== "undefined" && window.location.hash === "#concierge-memory" ? "security" : "profile"
+  );
   const { 
     advisorProfile, 
     completionStatus, 
@@ -773,7 +777,10 @@ const AccountSettings = () => {
 
           {/* Security Tab */}
           {activeTab === "security" && (
-            <SecurityTab userId={userId} navigate={navigate} toast={toast} />
+            <>
+              <ConciergeMemoryCard userId={userId} />
+              <SecurityTab userId={userId} navigate={navigate} toast={toast} />
+            </>
           )}
         </div>
       </section>

@@ -15,10 +15,20 @@ const CHAT_URL = `${SUPABASE_URL}/functions/v1/advisor-chat`;
  * Sends the conversation to the AI Concierge edge function and streams the
  * reply (OpenAI-style SSE). Calls onDelta with the full reply so far.
  */
+export interface ConciergeOptions {
+  /** Signed-in visitor: lets the concierge use and update its memory. */
+  memoryEnabled?: boolean;
+  /** What the concierge remembers about a signed-in visitor. */
+  profile?: string | null;
+  /** Random per-browser-session id, used to group anonymised logs. */
+  sessionId?: string;
+}
+
 export async function streamConcierge(
   messages: ConciergeMessage[],
   onDelta: (fullText: string) => void,
   signal?: AbortSignal,
+  options: ConciergeOptions = {},
 ): Promise<string> {
   const resp = await fetch(CHAT_URL, {
     method: "POST",
@@ -27,7 +37,12 @@ export async function streamConcierge(
       apikey: PUBLISHABLE_KEY,
       Authorization: `Bearer ${PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({
+      messages,
+      memoryEnabled: !!options.memoryEnabled,
+      profile: options.memoryEnabled ? options.profile ?? null : null,
+      sessionId: options.sessionId,
+    }),
     signal,
   });
 
@@ -77,3 +92,32 @@ export const extractAdvisorIds = (text: string): string[] => [
 /** Advisors the concierge suggested for a corporate engagement ([Name](advisor-corporate:ID)). */
 export const extractCorporateAdvisorIds = (text: string): Set<string> =>
   new Set([...text.matchAll(/\]\(advisor-corporate:([0-9a-f-]{36})\)/gi)].map((m) => m[1]));
+
+export interface ParsedReply {
+  /** Text to show (hidden control lines removed). */
+  display: string;
+  /** Tappable follow-up replies. */
+  suggestions: string[];
+  /** Updated memory summary, when the concierge learned something lasting. */
+  profile: string | null;
+}
+
+/**
+ * Splits the concierge's hidden control lines ([[suggestions: a | b]] and
+ * [[profile: ...]]) from the visible reply. While streaming, anything from a
+ * trailing "[[" onward is hidden so half-written control lines never flash.
+ */
+export const parseConciergeReply = (text: string): ParsedReply => {
+  const suggestionsMatch = text.match(/\[\[suggestions:([^\]]*)\]\]/i);
+  const profileMatch = text.match(/\[\[profile:([^\]]*)\]\]/i);
+  let display = text.replace(/\[\[(suggestions|profile):[^\]]*\]\]/gi, "");
+  const open = display.indexOf("[[");
+  if (open !== -1) display = display.slice(0, open);
+  return {
+    display: display.trim(),
+    suggestions: suggestionsMatch
+      ? suggestionsMatch[1].split("|").map((x) => x.trim()).filter(Boolean).slice(0, 3)
+      : [],
+    profile: profileMatch ? profileMatch[1].trim().slice(0, 600) || null : null,
+  };
+};

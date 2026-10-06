@@ -59,6 +59,8 @@ const AdvisorProfile = () => {
   const initialBookingSlot = searchParams.get("bookingSlot");
   // Direct corporate booking link: /advisors/:id?book=corporate
   const wantsCorporate = searchParams.get("book") === "corporate";
+  // "Check availability" links (e.g. from the AI Concierge): /advisors/:id?book=personal
+  const wantsPersonal = searchParams.get("book") === "personal";
   const [bookingKind, setBookingKind] = useState<"personal" | "corporate">("personal");
 
   const [corporate, setCorporate] = useState<CorporateInfo | null>(null);
@@ -110,6 +112,15 @@ const AdvisorProfile = () => {
       setSearchParams({}, { replace: true });
     }
   }, [loading, advisor, initialBookingDate]);
+
+  useEffect(() => {
+    if (!loading && advisor && !advisor.isSample && wantsPersonal && !initialBookingDate) {
+      setBookingKind("personal");
+      setCalendarOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, advisor, wantsPersonal]);
 
   // Open straight into corporate booking from the direct link / button.
   useEffect(() => {

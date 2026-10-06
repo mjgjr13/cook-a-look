@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      concierge_feedback: {
+        Row: {
+          answer: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          question: string | null
+          rating: number
+          session_id: string | null
+        }
+        Insert: {
+          answer?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          question?: string | null
+          rating: number
+          session_id?: string | null
+        }
+        Update: {
+          answer?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          question?: string | null
+          rating?: number
+          session_id?: string | null
+        }
+        Relationships: []
+      }
+      concierge_logs: {
+        Row: {
+          created_at: string
+          id: string
+          question: string
+          session_id: string | null
+          signed_in: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question: string
+          session_id?: string | null
+          signed_in?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question?: string
+          session_id?: string | null
+          signed_in?: boolean
+        }
+        Relationships: []
+      }
+      concierge_profiles: {
+        Row: {
+          summary: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          summary?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          summary?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_messages: {
         Row: {
           created_at: string
@@ -1607,6 +1679,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      purge_old_concierge_data: { Args: never; Returns: undefined }
       admin_override_refund: {
         Args: {
           p_booking_id: string
