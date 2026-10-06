@@ -219,7 +219,7 @@ const AdminCancellations = () => {
         </Card>
 
         <Dialog open={!!overrideTarget} onOpenChange={(o) => !o && setOverrideTarget(null)}>
-          <DialogContent>
+          <DialogContent className="max-h-[90svh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Override refund</DialogTitle>
               <DialogDescription>

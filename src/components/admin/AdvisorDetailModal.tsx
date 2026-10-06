@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   User,
   DollarSign,
@@ -185,7 +184,7 @@ export const AdvisorDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90svh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Advisor Details</DialogTitle>
           <DialogDescription>
@@ -193,7 +192,7 @@ export const AdvisorDetailModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)]">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {isLoading ? (
             <div className="space-y-4 p-4">
               <div className="animate-pulse flex items-center gap-4">
@@ -425,7 +424,7 @@ export const AdvisorDetailModal = ({
               <p>Unable to load advisor details</p>
             </div>
           )}
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -309,7 +309,7 @@ const AdminRewards = () => {
                 Manual Award
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90svh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Manual Points/Credit Award</DialogTitle>
                 <DialogDescription>

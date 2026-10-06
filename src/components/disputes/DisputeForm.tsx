@@ -123,7 +123,7 @@ const DisputeForm = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-xl">Report an Issue</DialogTitle>
           <DialogDescription>
