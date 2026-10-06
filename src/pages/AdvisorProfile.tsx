@@ -324,6 +324,15 @@ const AdvisorProfile = () => {
                     <Link to="/terms" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
                   </div>
                 )}
+                <div className="mt-5 p-4 bg-background border border-border">
+                  <h2 className="font-serif text-lg font-medium mb-3">How a session works</h2>
+                  <ol className="space-y-2 text-sm font-sans text-muted-foreground">
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Choose a date, time, and length (1 to 3 hours), and whether to meet by video or in person{advisor.virtual_available && !advisor.in_person_available ? ` (${firstName} offers video sessions)` : !advisor.virtual_available && advisor.in_person_available ? ` (${firstName} offers in-person sessions)` : ""}.</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You see the full price first, including any in-person fee.</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Get a confirmation email and message {firstName} from your dashboard. For in-person sessions you'll agree on a public meeting place.</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>On the day, join the video call from your dashboard (no app needed), or meet {firstName} at the agreed location.</span></li>
+                  </ol>
+                </div>
             </motion.div>
 
             {/* Right Column - Details */}
@@ -361,7 +370,7 @@ const AdvisorProfile = () => {
               {corporate && (
                 <span className="mb-5 lg:mb-6 -mt-2 inline-flex items-center gap-1.5 border border-border bg-background px-2 py-1 font-sans text-[11px] uppercase tracking-wider text-foreground">
                   <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
-                  Corporate services
+                  Corporate services offered
                 </span>
               )}
 
@@ -408,16 +417,6 @@ const AdvisorProfile = () => {
                 </div>
               )}
 
-              <div className="mb-4 p-4 sm:p-5 bg-background border border-border">
-                <h2 className="font-serif text-lg font-medium mb-3">How a session works</h2>
-                <ol className="space-y-2 text-sm font-sans text-muted-foreground">
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Choose a date, time, and length (1 to 3 hours), and whether to meet by video or in person{advisor.virtual_available && !advisor.in_person_available ? ` (${firstName} offers video sessions)` : !advisor.virtual_available && advisor.in_person_available ? ` (${firstName} offers in-person sessions)` : ""}.</span></li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You see the full price first, including any in-person fee.</span></li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Get a confirmation email and message {firstName} from your dashboard. For in-person sessions you'll agree on a public meeting place.</span></li>
-                  <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>On the day, join the video call from your dashboard (no app needed), or meet {firstName} at the agreed location.</span></li>
-                </ol>
-              </div>
-
               <div className="hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-5 lg:p-6 bg-background border border-border">
                 <div>
                   <span className="font-sans text-2xl font-medium">${displayPrice}</span>
@@ -432,7 +431,8 @@ const AdvisorProfile = () => {
                 </Button>
               </div>
               {corporate && !isSample && (
-                <div className="mt-4 p-5 lg:p-6 bg-background border border-border">
+                <div className="mt-4 p-5 lg:p-6 bg-background border border-border sm:flex sm:items-end sm:justify-between sm:gap-6">
+                  <div className="min-w-0">
                   <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
                     <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
                     Corporate services
@@ -467,7 +467,8 @@ const AdvisorProfile = () => {
                       </dd>
                     </div>
                   </dl>
-                  <Button variant="outline" className="mt-5 w-full sm:w-auto gap-2" asChild>
+                  </div>
+                  <Button variant="outline" className="mt-5 sm:mt-0 w-full sm:w-auto shrink-0 gap-2" asChild>
                     <Link to={`/advisors/${advisor.id}?book=corporate`} replace>
                       <Briefcase className="w-4 h-4" aria-hidden="true" />
                       Book corporate services

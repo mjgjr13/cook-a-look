@@ -71,5 +71,9 @@ export async function streamConcierge(
 
 /** Advisor ids referenced as [Name](advisor:ID) in a reply, in order, de-duplicated. */
 export const extractAdvisorIds = (text: string): string[] => [
-  ...new Set([...text.matchAll(/\]\(advisor:([0-9a-f-]{36})\)/gi)].map((m) => m[1])),
+  ...new Set([...text.matchAll(/\]\(advisor(?:-corporate)?:([0-9a-f-]{36})\)/gi)].map((m) => m[1])),
 ];
+
+/** Advisors the concierge suggested for a corporate engagement ([Name](advisor-corporate:ID)). */
+export const extractCorporateAdvisorIds = (text: string): Set<string> =>
+  new Set([...text.matchAll(/\]\(advisor-corporate:([0-9a-f-]{36})\)/gi)].map((m) => m[1]));

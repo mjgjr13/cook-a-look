@@ -298,8 +298,8 @@ const Advisors = () => {
                     {advisor.corporate && (
                       <div className="mb-1.5 min-w-0" title={advisor.corporate.corporate_services.join(", ") || undefined}>
                         <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wider text-foreground">
-                          <Briefcase className="w-3 h-3" aria-hidden="true" />
-                          Corporate services
+                          <Briefcase className="w-3 h-3 shrink-0" aria-hidden="true" />
+                          Corporate services offered
                         </span>
                         {advisor.corporate.corporate_industries && (
                           <p className="mt-0.5 font-sans text-[11px] text-muted-foreground line-clamp-1">

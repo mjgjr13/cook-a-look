@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
-import { streamConcierge, extractAdvisorIds, type ConciergeMessage } from "@/lib/conciergeStream";
+import { streamConcierge, extractAdvisorIds, extractCorporateAdvisorIds, type ConciergeMessage } from "@/lib/conciergeStream";
 
 const STORAGE_KEY = "cal_concierge_conversation";
 
@@ -49,9 +49,9 @@ const saveConversation = (messages: ConciergeMessage[]) => {
   }
 };
 
-const AdvisorSuggestion = ({ advisor }: { advisor: AdvisorCard }) => (
+const AdvisorSuggestion = ({ advisor, corporate = false }: { advisor: AdvisorCard; corporate?: boolean }) => (
   <Link
-    to={`/advisors/${advisor.id}`}
+    to={corporate ? `/advisors/${advisor.id}?book=corporate` : `/advisors/${advisor.id}`}
     className="flex gap-3 border border-border bg-background p-3 transition-colors hover:border-foreground"
   >
     <div className="h-20 w-16 shrink-0 overflow-hidden bg-muted">
@@ -69,7 +69,11 @@ const AdvisorSuggestion = ({ advisor }: { advisor: AdvisorCard }) => (
       <p className="font-semibold text-foreground">{advisor.full_name}</p>
       {advisor.specialty && <p className="text-muted-foreground truncate">{advisor.specialty}</p>}
       <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-        {advisor.price_per_session ? <span className="text-foreground">${advisor.price_per_session}/hour</span> : null}
+        {corporate ? (
+          <span className="text-foreground">Corporate services offered</span>
+        ) : advisor.price_per_session ? (
+          <span className="text-foreground">${advisor.price_per_session}/hour</span>
+        ) : null}
         {advisor.virtual_available && (
           <span className="inline-flex items-center gap-1">
             <Video className="h-3 w-3" aria-hidden="true" /> Video
@@ -156,7 +160,11 @@ const StyleConcierge = () => {
   const markdownComponents = useMemo(
     () => ({
       a: ({ href, children }: { href?: string; children?: React.ReactNode }) =>
-        href?.startsWith("advisor:") ? (
+        href?.startsWith("advisor-corporate:") ? (
+          <Link to={`/advisors/${href.slice(18)}?book=corporate`} className="font-semibold text-gold underline underline-offset-4">
+            {children}
+          </Link>
+        ) : href?.startsWith("advisor:") ? (
           <Link to={`/advisors/${href.slice(8)}`} className="font-semibold text-gold underline underline-offset-4">
             {children}
           </Link>
@@ -229,7 +237,11 @@ const StyleConcierge = () => {
                           {extractAdvisorIds(m.content)
                             .filter((id) => advisors[id])
                             .map((id) => (
-                              <AdvisorSuggestion key={id} advisor={advisors[id]} />
+                              <AdvisorSuggestion
+                                key={id}
+                                advisor={advisors[id]}
+                                corporate={extractCorporateAdvisorIds(m.content).has(id)}
+                              />
                             ))}
                         </div>
                       )}
