@@ -1129,6 +1129,9 @@ export type Database = {
           advisor_status: string | null
           avatar_url: string | null
           bio: string | null
+          corporate_industries: string | null
+          corporate_services: string[]
+          corporate_starting_price: number | null
           created_at: string | null
           demo_availability_enabled: boolean | null
           email: string | null
@@ -1142,6 +1145,7 @@ export type Database = {
           is_demo: boolean
           languages: string[] | null
           location: string | null
+          offers_corporate: boolean
           onboarding_acknowledged_at: string | null
           personal_philosophy: string | null
           portfolio_images: string[] | null
@@ -1171,6 +1175,9 @@ export type Database = {
           advisor_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          corporate_industries?: string | null
+          corporate_services?: string[]
+          corporate_starting_price?: number | null
           created_at?: string | null
           demo_availability_enabled?: boolean | null
           email?: string | null
@@ -1184,6 +1191,7 @@ export type Database = {
           is_demo?: boolean
           languages?: string[] | null
           location?: string | null
+          offers_corporate?: boolean
           onboarding_acknowledged_at?: string | null
           personal_philosophy?: string | null
           portfolio_images?: string[] | null
@@ -1213,6 +1221,9 @@ export type Database = {
           advisor_status?: string | null
           avatar_url?: string | null
           bio?: string | null
+          corporate_industries?: string | null
+          corporate_services?: string[]
+          corporate_starting_price?: number | null
           created_at?: string | null
           demo_availability_enabled?: boolean | null
           email?: string | null
@@ -1226,6 +1237,7 @@ export type Database = {
           is_demo?: boolean
           languages?: string[] | null
           location?: string | null
+          offers_corporate?: boolean
           onboarding_acknowledged_at?: string | null
           personal_philosophy?: string | null
           portfolio_images?: string[] | null
@@ -1824,6 +1836,15 @@ export type Database = {
           target_demographics: string[]
           verified: boolean
           virtual_available: boolean
+        }[]
+      }
+      get_public_corporate_advisors: {
+        Args: never
+        Returns: {
+          corporate_industries: string
+          corporate_services: string[]
+          corporate_starting_price: number
+          id: string
         }[]
       }
       get_public_featured_advisors: {
