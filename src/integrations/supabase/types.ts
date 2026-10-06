@@ -1765,6 +1765,7 @@ export type Database = {
         Args: { p_booking_id: string; p_client_id: string }
         Returns: undefined
       }
+      contains_profanity: { Args: { p_text: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
