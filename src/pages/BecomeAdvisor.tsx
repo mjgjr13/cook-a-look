@@ -49,7 +49,8 @@ import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
 import BiometricConsentScreen from "@/components/advisor/BiometricConsentScreen";
 import { InternationalPhoneInput } from "@/components/ui/international-phone-input";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
-import CorporateServicesFields, { EMPTY_CORPORATE, corporateError, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
+import CorporateServicesFields, { CorporateRatesFields, EMPTY_CORPORATE, corporateError, corporateFreeText, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
 
 type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
@@ -217,11 +218,15 @@ const BecomeAdvisor = () => {
     if (!canProceed()) {
       // Shows the specific missing field (rate) or the terms reminder.
       const priceNum = parseFloat(formData.price);
+      const corpError = corporateError(formData.corporate);
+      if (corpError) setErrors((prev) => ({ ...prev, corporate: corpError }));
       toast({
         title: "Almost there",
         description: !formData.price || isNaN(priceNum) || priceNum < 25
           ? "Please set an hourly rate (minimum $25/hour)."
-          : "Please agree to the Advisor Terms to submit your application.",
+          : corpError
+            ? corpError
+            : "Please agree to the Advisor Terms to submit your application.",
         variant: "destructive",
       });
       return;
@@ -744,8 +749,10 @@ const BecomeAdvisor = () => {
         stepErrors.languages = "Please select at least one language";
       }
 
-      // Corporate / B2B: if opted in, at least one rate is needed to be bookable
-      stepErrors.corporate = corporateError(formData.corporate) ?? undefined;
+      // No offensive language in anything shown on the profile
+      if (containsProfanity(formData.firstName, formData.lastName, formData.bio, formData.location, corporateFreeText(formData.corporate))) {
+        stepErrors.bio = PROFANITY_MESSAGE;
+      }
     } else if (currentStep === 2) {
       stepErrors.instagram = validateField('instagram', formData.instagram);
       if (formData.portfolio) {
@@ -823,7 +830,7 @@ const BecomeAdvisor = () => {
         return getVerificationError() === null;
       case 4: {
         const priceNum = parseFloat(formData.price);
-        return formData.agreeTerms && formData.price && !isNaN(priceNum) && priceNum >= 25;
+        return formData.agreeTerms && formData.price && !isNaN(priceNum) && priceNum >= 25 && !corporateError(formData.corporate);
       }
       default:
         return false;
@@ -1209,7 +1216,7 @@ const BecomeAdvisor = () => {
                         setFormData({ ...formData, corporate });
                         setErrors((prev) => ({ ...prev, corporate: undefined }));
                       }}
-                      error={errors.corporate}
+                      showRates={false}
                     />
                   </motion.div>
                 )}
@@ -1554,6 +1561,18 @@ const BecomeAdvisor = () => {
                         }}
                         error={errors.price}
                       />
+                      {formData.corporate.offersCorporate && (
+                        <div className="mt-6 border-t border-gold/20 pt-6">
+                          <CorporateRatesFields
+                            value={formData.corporate}
+                            onChange={(corporate) => {
+                              setFormData({ ...formData, corporate });
+                              setErrors((prev) => ({ ...prev, corporate: undefined }));
+                            }}
+                            error={errors.corporate}
+                          />
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground mt-4">
                         You can adjust your pricing anytime from your dashboard settings.
                       </p>

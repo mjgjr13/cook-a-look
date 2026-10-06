@@ -16,6 +16,7 @@ import {
   parseConciergeReply,
   type ConciergeMessage,
 } from "@/lib/conciergeStream";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import type { User } from "@supabase/supabase-js";
 
 const STORAGE_KEY = "cal_concierge_conversation";
@@ -87,6 +88,10 @@ const FeedbackControls = ({ question, answer, sessionId }: { question: string; a
           className="flex flex-col gap-2 sm:flex-row"
           onSubmit={(e) => {
             e.preventDefault();
+            if (containsProfanity(comment)) {
+              setComment("");
+              return;
+            }
             setState("sent");
             void submit(-1, comment.trim() || undefined);
           }}
@@ -247,6 +252,10 @@ const StyleConcierge = () => {
     async (text: string) => {
       const content = text.trim();
       if (!content || isLoading) return;
+      if (containsProfanity(content)) {
+        setError(PROFANITY_MESSAGE);
+        return;
+      }
       setError(null);
       const next: ConciergeMessage[] = [...messages, { role: "user", content }];
       setMessages(next);

@@ -33,7 +33,8 @@ import { useProfile } from "@/hooks/useProfile";
 import CategorySelect, { CLIENT_FOCUS_OPTIONS, USE_CASE_OPTIONS, STYLE_CATEGORY_OPTIONS } from "@/components/advisor/CategorySelect";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
 import ConciergeMemoryCard from "@/components/profile/ConciergeMemoryCard";
-import CorporateServicesFields, { type CorporateServicesValue, corporateError, corporateFromProfile, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
+import CorporateServicesFields, { type CorporateServicesValue, corporateError, corporateFreeText, corporateFromProfile, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
 
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
@@ -260,6 +261,10 @@ const AccountSettings = () => {
     if (!profile) return;
     if (corporateValidation) {
       toast({ title: "Corporate rates needed", description: corporateValidation, variant: "destructive" });
+      return;
+    }
+    if (containsProfanity(profile.full_name, profile.bio, profile.personal_philosophy, profile.location, corporateValue ? corporateFreeText(corporateValue) : null)) {
+      toast({ title: "Offensive language", description: PROFANITY_MESSAGE, variant: "destructive" });
       return;
     }
 

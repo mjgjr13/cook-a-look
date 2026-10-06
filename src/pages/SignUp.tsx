@@ -12,6 +12,7 @@ import { signUpSchema, type SignUpFormData } from "@/lib/validations";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleSignInSection } from "@/components/auth/GoogleSignInButton";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import { getSafeRedirect } from "@/lib/safeRedirect";
 
 const SignUp = () => {
@@ -63,6 +64,10 @@ const SignUp = () => {
         fieldErrors[field] = issue.message;
       });
       setErrors(fieldErrors);
+      return;
+    }
+    if (containsProfanity(formData.firstName, formData.lastName)) {
+      setErrors({ firstName: PROFANITY_MESSAGE });
       return;
     }
 

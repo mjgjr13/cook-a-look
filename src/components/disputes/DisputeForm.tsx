@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import { useToast } from "@/hooks/use-toast";
 
 interface DisputeFormProps {
@@ -69,6 +70,10 @@ const DisputeForm = ({
         description: "Describe the issue in at least 20 characters.",
         variant: "destructive",
       });
+      return;
+    }
+    if (containsProfanity(description)) {
+      toast({ title: "Offensive language", description: PROFANITY_MESSAGE, variant: "destructive" });
       return;
     }
 

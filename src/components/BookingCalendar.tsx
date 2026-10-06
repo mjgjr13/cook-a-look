@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Globe, Info, Video, MapPin, Briefcase, User as UserIcon } from "lucide-react";
 import { CORPORATE_VIRTUAL_HOURS, type CorporateInfo } from "@/lib/corporateAdvisors";
 import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/google-places-autocomplete";
 
 interface BookingCalendarProps {
@@ -252,6 +253,7 @@ const BookingCalendar = ({
     if (!corpDetails.company.trim()) return "Enter your company or organization.";
     if (corpFormat === "on_site" && corpDetails.location.trim().length < 5) return "Enter the address where the session will take place.";
     if (corpDetails.about.trim().length < 10) return "Tell the advisor a little about who you are and what you're looking for.";
+    if (containsProfanity(corpDetails.company, corpDetails.location, corpDetails.about)) return PROFANITY_MESSAGE;
     return null;
   };
 

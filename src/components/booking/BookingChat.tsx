@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Loader2, User } from "lucide-react";
 import { format } from "date-fns";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -102,6 +103,10 @@ const BookingChat = ({ bookingId, currentUserId, otherParticipant }: BookingChat
 
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
+    if (containsProfanity(newMessage)) {
+      toast({ title: "Offensive language", description: PROFANITY_MESSAGE, variant: "destructive" });
+      return;
+    }
 
     const messageContent = newMessage.trim();
     setIsSending(true);

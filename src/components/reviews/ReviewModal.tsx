@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import { cn } from "@/lib/utils";
 
 interface ReviewModalProps {
@@ -37,6 +38,10 @@ const ReviewModal = ({
         description: "Please select a star rating before submitting.",
         variant: "destructive",
       });
+      return;
+    }
+    if (containsProfanity(reviewText)) {
+      toast({ title: "Offensive language", description: PROFANITY_MESSAGE, variant: "destructive" });
       return;
     }
 
