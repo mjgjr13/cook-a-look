@@ -9,6 +9,7 @@ SELECT p.user_id,
 FROM public.profiles p
 WHERE p.is_advisor = true
   AND p.advisor_approved = true
+  AND p.user_id IS NOT NULL -- sample profiles seeded by migrations have no account
   AND NOT EXISTS (
     SELECT 1 FROM public.advisor_profiles ap WHERE ap.user_id = p.user_id
   );

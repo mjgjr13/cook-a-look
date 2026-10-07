@@ -35,7 +35,10 @@ END $$;
 -- Public read of the B2B fields only, for approved advisors who opted in.
 -- The directory and profile page merge this with their existing RPC results,
 -- so the existing public functions are left untouched.
-CREATE OR REPLACE FUNCTION public.get_public_corporate_advisors()
+-- Drop first: Lovable's copy of 20261006180000 (applied earlier as 20261006030821)
+-- may already have created the newer signature; 20261006180000 recreates it.
+DROP FUNCTION IF EXISTS public.get_public_corporate_advisors();
+CREATE FUNCTION public.get_public_corporate_advisors()
 RETURNS TABLE (
   id uuid,
   corporate_services text[],
