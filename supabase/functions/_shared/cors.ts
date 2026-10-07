@@ -7,8 +7,6 @@ export const SITE_URL = "https://www.cookalook.com";
 const ALLOWED_ORIGINS = [
   SITE_URL,
   "https://cookalook.com",
-  "https://id-preview--1c46abdc-cec7-4209-a14b-719c7e387fb4.lovable.app",
-  "https://1c46abdc-cec7-4209-a14b-719c7e387fb4.lovableproject.com",
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:8080",

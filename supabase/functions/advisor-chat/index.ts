@@ -1,4 +1,4 @@
-// AI Concierge: the AI assistant on /ai-concierge.
+// AI Concierge: the AI assistant on /ai-concierge (Anthropic Claude).
 // Public (no sign-in needed), so input is validated and rate-limited per IP.
 // It interviews the visitor (occasion, work/lifestyle, style, budget), answers
 // style questions, recommends item types and brands, and suggests matching
@@ -16,6 +16,57 @@ interface ChatMessage {
 const MAX_MESSAGES = 30;
 const MAX_CHARS_PER_MESSAGE = 2000;
 const MAX_PROFILE_CHARS = 600;
+
+// AI provider: Anthropic Claude when ANTHROPIC_API_KEY is set, otherwise the
+// Lovable AI gateway (kept only as a fallback during the backend move).
+const CLAUDE_MODEL = "claude-sonnet-5-5";
+
+/**
+ * Claude's streaming events -> the OpenAI-style SSE the website already reads
+ * (data: {"choices":[{"delta":{"content":"..."}}]} ... data: [DONE]).
+ */
+const claudeToOpenAiStream = (body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> => {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+  return body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        buffer += decoder.decode(chunk, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line.startsWith("data:")) continue;
+          try {
+            const event = JSON.parse(line.slice(5).trim());
+            if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: event.delta.text } }] })}\n\n`));
+            } else if (event.type === "message_stop") {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            } else if (event.type === "error") {
+              console.error("Claude stream error:", JSON.stringify(event.error));
+            }
+          } catch {
+            // ignore keep-alives / partial lines
+          }
+        }
+      },
+    }),
+  );
+};
+
+/** Claude needs the conversation to start with the user and alternate roles. */
+const toClaudeMessages = (messages: ChatMessage[]) => {
+  const out: ChatMessage[] = [];
+  for (const m of messages) {
+    if (out.length === 0 && m.role !== "user") continue;
+    const last = out[out.length - 1];
+    if (last && last.role === m.role) last.content += `\n\n${m.content}`;
+    else out.push({ ...m });
+  }
+  return out;
+};
 
 // Remove obvious personal identifiers before a question is stored for review.
 const scrub = (text: string): string =>
@@ -128,8 +179,9 @@ serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !LOVABLE_API_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || (!ANTHROPIC_API_KEY && !LOVABLE_API_KEY)) {
       throw new Error("Server configuration missing");
     }
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -176,16 +228,33 @@ serve(async (req) => {
       };
     });
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: SYSTEM_PROMPT(advisorContext, profile, memoryEnabled) }, ...messages],
-        max_tokens: 900,
-        stream: true,
-      }),
-    });
+    const systemPrompt = SYSTEM_PROMPT(advisorContext, profile, memoryEnabled);
+    const response = ANTHROPIC_API_KEY
+      ? await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: CLAUDE_MODEL,
+            system: systemPrompt,
+            messages: toClaudeMessages(messages),
+            max_tokens: 900,
+            stream: true,
+          }),
+        })
+      : await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [{ role: "system", content: systemPrompt }, ...messages],
+            max_tokens: 900,
+            stream: true,
+          }),
+        });
 
     // Anonymised question log for improving the concierge (90-day retention).
     const { error: logError } = await supabase.from("concierge_logs").insert({
@@ -200,14 +269,15 @@ serve(async (req) => {
       if (purgeError) console.error("concierge purge error:", purgeError.message);
     }
 
-    if (!response.ok) {
-      if (response.status === 429) return json({ error: "The concierge is busy right now. Please try again in a moment." }, 429);
+    if (!response.ok || !response.body) {
+      if (response.status === 429 || response.status === 529) return json({ error: "The concierge is busy right now. Please try again in a moment." }, 429);
       if (response.status === 402) return json({ error: "The concierge is unavailable right now. Please try again later." }, 503);
       console.error("AI gateway error:", response.status, await response.text());
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    const stream = ANTHROPIC_API_KEY ? claudeToOpenAiStream(response.body) : response.body;
+    return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (error) {
     console.error("advisor-chat error:", error);
     return json({ error: "Something went wrong. Please try again." }, 500);
