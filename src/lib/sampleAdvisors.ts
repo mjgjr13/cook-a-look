@@ -13,7 +13,8 @@ import { TEST_ADVISOR_ACTS_AS_REAL } from "./featureFlags";
  * A profile is a sample if the DB flag `profiles.is_demo` is true OR its id is
  * listed below. The id list is a fallback until migration
  * 20261003000000 (which sets is_demo and the polished copy in the DB) has been
- * applied via Lovable; after that it is harmless and can be removed.
+ * applied; it has been on CAL since the October 2026 move, so this is harmless
+ * and can be removed.
  *
  * Prices are intentionally NOT overridden - rates always come from the DB.
  */

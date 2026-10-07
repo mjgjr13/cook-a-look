@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx supabase secrets list *)",
+      "Bash(npx supabase functions list *)",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "mcp__claude-in-chrome__get_page_text",
+      "mcp__claude_ai_Gmail__search_threads"
+    ]
+  }
+}

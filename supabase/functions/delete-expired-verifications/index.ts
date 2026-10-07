@@ -6,7 +6,7 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 // (selfie + government ID) once they're past the retention schedule
 // published at /privacy#biometric-data. Not user-facing: invoked by a
 // pg_cron job (see supabase/migrations/20260704010000_...sql) using the
-// vault-stored service_role key, same pattern as process-email-queue.
+// vault-stored service_role key.
 // verify_jwt=true at the gateway already requires a valid JWT; the explicit
 // role check below is defense in depth so only service-role callers
 // (i.e. the cron job, not a logged-in user) can trigger deletion.

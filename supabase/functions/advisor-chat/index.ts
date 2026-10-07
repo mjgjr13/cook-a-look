@@ -17,8 +17,7 @@ const MAX_MESSAGES = 30;
 const MAX_CHARS_PER_MESSAGE = 2000;
 const MAX_PROFILE_CHARS = 600;
 
-// AI provider: Anthropic Claude when ANTHROPIC_API_KEY is set, otherwise the
-// Lovable AI gateway (kept only as a fallback during the backend move).
+// AI provider: Anthropic Claude (ANTHROPIC_API_KEY).
 const CLAUDE_MODEL = "claude-sonnet-5-5";
 
 /**
@@ -180,8 +179,7 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || (!ANTHROPIC_API_KEY && !LOVABLE_API_KEY)) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !ANTHROPIC_API_KEY) {
       throw new Error("Server configuration missing");
     }
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -229,32 +227,21 @@ serve(async (req) => {
     });
 
     const systemPrompt = SYSTEM_PROMPT(advisorContext, profile, memoryEnabled);
-    const response = ANTHROPIC_API_KEY
-      ? await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "x-api-key": ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            model: CLAUDE_MODEL,
-            system: systemPrompt,
-            messages: toClaudeMessages(messages),
-            max_tokens: 900,
-            stream: true,
-          }),
-        })
-      : await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
-            messages: [{ role: "system", content: systemPrompt }, ...messages],
-            max_tokens: 900,
-            stream: true,
-          }),
-        });
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        system: systemPrompt,
+        messages: toClaudeMessages(messages),
+        max_tokens: 900,
+        stream: true,
+      }),
+    });
 
     // Anonymised question log for improving the concierge (90-day retention).
     const { error: logError } = await supabase.from("concierge_logs").insert({
@@ -276,8 +263,7 @@ serve(async (req) => {
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    const stream = ANTHROPIC_API_KEY ? claudeToOpenAiStream(response.body) : response.body;
-    return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    return new Response(claudeToOpenAiStream(response.body), { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (error) {
     console.error("advisor-chat error:", error);
     return json({ error: "Something went wrong. Please try again." }, 500);

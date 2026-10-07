@@ -180,7 +180,7 @@ system doesn't keep.
 - **Fee typo fix**: while reading the existing Terms of Use to draft this
   work, found §4 stated the reduced advisor fee as "five percent (5%)"
   after 9 bookings/month — the actual implemented and documented rule
-  (`.lovable/memory/features/payments/platform-fee-structure.md`, which
+  (`docs/notes/features/payments/platform-fee-structure.md`, which
   explicitly says "never '5%'") is 10%. Fixed to 10% in both the Terms of
   Use and the already-existing `BecomeAdvisor.tsx` benefits copy. This
   wasn't part of the request but was a factual misstatement in a legal

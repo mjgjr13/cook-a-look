@@ -1,7 +1,7 @@
 // Daily.co is the primary video provider for Cook A Look.
 // If Daily fails to create or fetch a room (network, quota, bad/missing key),
 // we fall back to a deterministic Jitsi room on meet.ffmuc.net so the call
-// never breaks for the user. See .lovable/memory/technical/video-provider.md.
+// never breaks for the user. See docs/notes/technical/video-provider.md.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { isTestBookableAdvisor } from "./testMode.ts";

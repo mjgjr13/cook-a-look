@@ -1,73 +1,41 @@
-# Welcome to your Lovable project
+# Cook A Look
 
-## Project info
+Marketplace connecting clients with style advisors for video and in-person styling sessions — https://www.cookalook.com
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+| Piece | Where |
+|---|---|
+| Code | GitHub (`main` deploys automatically) |
+| Website hosting | Cloudflare Pages |
+| Database, sign-in, file storage, server functions | Supabase project **CAL** (`qdpqfsqjtbvlulekfhoy`) |
+| Payments | Stripe (Checkout + webhook `stripe-webhook`) |
+| Video | Daily.co (Jitsi fallback) |
+| Email | Resend (transactional emails and Supabase Auth SMTP) |
+| AI Concierge | Anthropic Claude |
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Local development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm run dev        # http://localhost:8080
+npm run build
+npm run lint
+npm run check:functions
 ```
 
-**Edit a file directly in GitHub**
+The site reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` from `.env`, falling back to CAL's public values in `src/integrations/supabase/client.ts`. Google Places autocomplete needs `VITE_GOOGLE_MAPS_BROWSER_KEY`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Backend
 
-**Use GitHub Codespaces**
+```sh
+npx supabase login
+npx supabase link --project-ref qdpqfsqjtbvlulekfhoy
+npx supabase db push --linked                                   # apply new migrations
+npx supabase functions deploy <name> --project-ref qdpqfsqjtbvlulekfhoy --use-api
+npx supabase secrets list --project-ref qdpqfsqjtbvlulekfhoy    # names only
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Edge-function secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `DAILY_API_KEY`, `RESEND_API_KEY`, `ANTHROPIC_API_KEY`, `CRON_SECRET`, `ADMIN_EMAIL`.
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+See `CLAUDE.md` for architecture and conventions and `docs/notes/` for business rules.

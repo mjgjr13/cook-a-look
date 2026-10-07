@@ -4,9 +4,8 @@ Last reviewed: 2026-10-04. Items marked **UNKNOWN** need checking in the vendor'
 
 | Vendor | Role | Personal data it receives | Location | Contract / DPA | Retention | Notes |
 |---|---|---|---|---|---|---|
-| **Supabase via Lovable Cloud** | Database, auth, file storage, edge functions | Everything in the app database and storage (accounts, profiles, bookings, messages, ID documents) | Region **UNKNOWN** (check Lovable Cloud) | Lovable terms; Supabase DPA via Lovable **UNKNOWN** | Until deleted; backups **UNKNOWN** | Primary system of record |
-| **Lovable** | Development platform; hosts the AI gateway | Code; concierge chat text (via AI Gateway) | US (assumed) | Lovable terms | AI request logs **UNKNOWN** | Has admin-level access to the project |
-| **Google (Gemini via Lovable AI Gateway)** | AI model for the Style Concierge | Visitor chat messages; public advisor profile data | US/global | Via Lovable | **UNKNOWN**; check whether prompts are used for training | No account data is sent. Visitors are told it's AI. |
+| **Supabase (project CAL)** | Database, auth, file storage, edge functions, scheduled jobs | Everything in the app database and storage (accounts, profiles, bookings, messages, ID documents) | us-east-1 (AWS) | Supabase Terms + DPA (account owner) | Until deleted; backups per Supabase plan | Primary system of record since Oct 2026 (previously Supabase via Lovable Cloud) |
+| **Anthropic (Claude)** | AI model for the Style Concierge | Visitor chat messages; public advisor profile data | US | Anthropic Commercial Terms + DPA | API inputs/outputs retained per Anthropic's commercial data policy; not used for training | No account data is sent. Visitors are told it's AI. |
 | **Stripe** | Payments, refunds, tax calculation | Name, email, billing address, card (Stripe only), amounts, booking metadata (ids) | US/global | Stripe Services Agreement + DPA (standard) | Stripe policy | Cook A Look never sees card numbers |
 | **Daily.co** | Video calls + cloud recording | Video/audio of sessions, participant names, IP | US | Daily terms/DPA **UNKNOWN** | Recordings: Terms promise ≤90 days; setting **UNKNOWN** | Rooms are public-by-URL (VID-01) |
 | **meet.ffmuc.net (Freifunk München, Jitsi)** | Fallback video if Daily fails | Video/audio, IP | Germany | **None**: community service | **UNKNOWN** | Recommend removing or disclosing (VID-01) |
@@ -29,6 +28,6 @@ Visitor browser ──HTTPS──> Cloudflare Pages (static site)
        │        ├──> Stripe (checkout session, refunds)  <── Stripe webhook
        │        ├──> Daily.co (create room)  [fallback: meet.ffmuc.net]
        │        ├──> Resend (emails)
-       │        └──> Lovable AI Gateway → Google Gemini (concierge messages)
+       │        └──> Anthropic Claude (concierge messages)
        └──> Stripe Checkout (redirect; card data entered at Stripe only)
 ```

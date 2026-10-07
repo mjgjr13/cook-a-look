@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Cook A Look (cookalook.com) — a two-sided marketplace connecting clients with style advisors for video and in-person styling sessions. Originally scaffolded and still actively edited via [Lovable](https://lovable.dev) (`.lovable/` directory holds Lovable's persistent project memory — see below).
+Cook A Look (cookalook.com) — a two-sided marketplace connecting clients with style advisors for video and in-person styling sessions. Originally scaffolded with Lovable; since October 2026 it runs on GitHub + Cloudflare Pages (frontend) and its own Supabase project **CAL** (`qdpqfsqjtbvlulekfhoy`) for database, auth, storage and edge functions. Lovable is no longer part of the stack.
 
 ## Commands
 
@@ -19,16 +19,18 @@ npm run preview       # preview a production build
 
 There is no test suite configured in this repo.
 
-Edge functions (`supabase/functions/*`) are Deno-based Supabase Edge Functions, deployed via the Supabase CLI (`supabase functions deploy <name>`), not built/run by the Vite toolchain. Each function's JWT-verification requirement is set per-function in `supabase/config.toml` (`verify_jwt`), not in code.
+Edge functions (`supabase/functions/*`) are Deno-based Supabase Edge Functions, deployed with `npx supabase functions deploy <name> --project-ref qdpqfsqjtbvlulekfhoy --use-api` (no Docker needed), not built/run by the Vite toolchain. Each function's JWT-verification requirement is set per-function in `supabase/config.toml` (`verify_jwt`), not in code.
 
 ## Tech stack
 
 - **Frontend**: Vite + React 18 + TypeScript, React Router v7, TanStack Query, react-hook-form + zod, Tailwind CSS + shadcn-ui (Radix primitives), framer-motion.
 - **Backend**: Supabase (Postgres + Auth + Storage + Edge Functions). Edge Functions are Deno, written in TS, importing Stripe/Supabase client libs from `esm.sh`.
 - **Payments**: Stripe, called only from Edge Functions (see Conventions below).
-- **Video**: Daily.co (`@daily-co/daily-js`, prebuilt UI) is primary; falls back automatically to a Jitsi room (`meet.ffmuc.net`) if the Daily API call fails. See `.lovable/memory/technical/video-provider.md`.
+- **Video**: Daily.co (`@daily-co/daily-js`, prebuilt UI) is primary; falls back automatically to a Jitsi room (`meet.ffmuc.net`) if the Daily API call fails. See `docs/notes/technical/video-provider.md`.
 - **Email**: Resend, called from several `send-*` Edge Functions.
-- **Auth**: Supabase Auth, plus an additional Lovable-hosted OAuth wrapper (`@lovable.dev/cloud-auth-js`) in `src/integrations/lovable/index.ts` for Google/Apple/Microsoft/Lovable sign-in, which then hands the resulting tokens to `supabase.auth.setSession`.
+- **Auth**: Supabase Auth (email + password; Google sign-in via Supabase OAuth behind `GOOGLE_SIGN_IN_ENABLED` in `src/lib/featureFlags.ts`). Auth emails are sent by Supabase through Resend SMTP.
+- **AI Concierge**: `advisor-chat` edge function calls Anthropic Claude (`ANTHROPIC_API_KEY`) and converts the stream to the OpenAI-style SSE the frontend reads.
+- **Scheduled jobs**: pg_cron on CAL calls `send-session-reminders` (24h/1h), `mark-completed-bookings`, `send-review-request` (with `x-cron-secret`, value in Vault `cron_secret` and function secret `CRON_SECRET`) and `delete-expired-verifications` (service-role key in Vault).
 
 ## Key directories
 
@@ -37,11 +39,10 @@ Edge functions (`supabase/functions/*`) are Deno-based Supabase Edge Functions, 
 - `src/hooks/` — data-fetching/domain hooks (e.g. `useAdvisorAvailability`, `useAdvisorBreaks`, `useLookbookItems`, `useProfile`).
 - `src/contexts/AuthContext.tsx` — auth/session context provider.
 - `src/integrations/supabase/` — `client.ts` (Supabase client, reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` from env) and `types.ts` (auto-generated DB types — do not hand-edit; regenerate via Supabase CLI).
-- `src/integrations/lovable/` — Lovable OAuth wrapper (auto-generated, do not hand-edit).
 - `src/lib/` — `utils.ts`, `validations.ts` (zod schemas), `phone-utils.ts`.
 - `supabase/functions/` — one directory per Edge Function, plus `_shared/` (`cors.ts` for CORS headers, `daily.ts` for the Daily.co room helper `getOrCreateVideoRoomForBooking`).
-- `supabase/migrations/` — timestamped SQL migrations (Lovable-generated filenames: `<timestamp>_<uuid>.sql`). This is the source of truth for schema, RLS policies, and DB functions/triggers.
-- `.lovable/memory/` — persistent project notes written by Lovable across sessions, split into `features/` and `technical/`. Check here first for non-obvious business rules before re-deriving them from code (e.g. platform fee tiers, in-person location rules, the June 2026 security-hardening pass).
+- `supabase/migrations/` — timestamped SQL migrations (`<timestamp>_<uuid>.sql`). They rebuild the full database from scratch and are the source of truth for schema, RLS policies, and DB functions/triggers.
+- `docs/notes/` — business-rule notes (originally Lovable's project memory), split into `features/` and `technical/`. Check here first for non-obvious business rules before re-deriving them from code (e.g. platform fee tiers, in-person location rules, the June 2026 security-hardening pass).
 - `scripts/generate-sitemap.ts` — runs automatically before `dev`/`build` via `predev`/`prebuild`.
 
 ## Database schema (high level)
@@ -58,7 +59,7 @@ Content/marketing: `lookbook_categories`, `lookbook_items`, `featured_advisors`,
 
 Support/ops: `disputes`, `booking_messages`, `admin_messages`, `advisor_applications`, `advisor_verification_archive`, `user_roles`.
 
-Email infra: `email_send_log`, `email_send_state`, `email_unsubscribe_tokens`, `suppressed_emails` (queue-based email sending processed by `process-email-queue`).
+Email infra: `email_send_log`, `email_send_state`, `email_unsubscribe_tokens`, `suppressed_emails` (left over from Lovable's email queue, which is no longer used; transactional emails go straight to Resend from the `send-*` functions).
 
 Most privileged writes go through `SECURITY DEFINER` RPC functions rather than direct table access from clients — e.g. `book_slot`, `confirm_paid_booking`, `cancel_booking_with_refund`, `advisor_respond_booking`, `respond_location_proposal`, `get_advisor_reviews` (never join `advisor_reviews` to `profiles` directly — see security memory below), `get_active_published_advisors` / `get_public_advisor_profiles` (public-safe advisor listings).
 
@@ -70,10 +71,10 @@ Most privileged writes go through `SECURITY DEFINER` RPC functions rather than d
 - **Per-function JWT verification** is declared in `supabase/config.toml` (`[functions.<name>] verify_jwt = true|false`), not inferred from code — check this file when reasoning about whether a function's auth is platform-enforced or handler-enforced.
 - **Manual input validation** at the top of handlers (e.g. `isValidUUID`, `isValidISO8601`, `isValidStripeSessionId`) before touching the DB or Stripe.
 - **Error responses**: handlers wrap logic in try/catch, map error message patterns (e.g. `/authorization|authenticated/i`) to appropriate HTTP status codes, and always return JSON with CORS headers attached.
-- **Migrations are append-only and Lovable-generated**; treat `supabase/migrations/*.sql` as the authoritative, current schema — don't hand-roll schema assumptions from `types.ts` alone.
+- **Migrations are append-only**; treat `supabase/migrations/*.sql` as the authoritative, current schema. Apply with `npx supabase db push --linked` and regenerate types with `npx supabase gen types typescript --project-id qdpqfsqjtbvlulekfhoy --schema public > src/integrations/supabase/types.ts`.
 - Before pushing Edge Function changes run `npm run check:functions` (a syntax error makes the function fail to boot in production). `npm run test:security` re-checks live database permissions (read-only).
 - Cloudflare Pages installs with Bun (`bun.lock`, frozen): after changing dependencies run `npx bun@1.2 install --lockfile-only` and commit `bun.lock`, or the deploy fails.
-- Business rules that aren't obvious from code are recorded in `.lovable/memory/` — read the relevant file before changing booking, payments, reviews, or location logic.
+- Business rules that aren't obvious from code are recorded in `docs/notes/` — read the relevant file before changing booking, payments, reviews, or location logic.
 
 ## Standing rules (autonomous work)
 
@@ -82,4 +83,4 @@ Most privileged writes go through `SECURITY DEFINER` RPC functions rather than d
 - Push straight to main (Cloudflare Pages auto-deploys the live site), but only after `npm run build` passes. Use small commits with clear messages. After each deploy, check the live site still loads; if you broke something, fix it or revert immediately.
 - Never: change prices, commission rates, or advisor rates; create fake reviews, fake urgency, fake scarcity, or invented testimonials presented as real; send emails to real users; delete user data or database tables; change DNS, email routing, billing, or plans; switch Stripe to live mode; print secrets in chat or save them in files.
 - Payments: Stripe is in TEST mode. You may complete checkouts using Stripe test card 4242 4242 4242 4242, any future expiry, any CVC. If a checkout page ever shows live mode (no "test mode" indicator), stop that test and note it.
-- Database changes: the database is on Lovable Cloud (Supabase project chjmyzzczwattluqpbat) and can't be migrated from here. For needed database changes, write the migration file in supabase/migrations, push it, then use Lovable's chat to ask it to apply exactly that migration and make no other code changes. Only additive changes (new columns, tables, policies). Then pull any commits Lovable makes.
+- Database changes: write a new migration in supabase/migrations and apply it to CAL with `npx supabase db push --linked` (needs the CAL database password). Only additive changes (new columns, tables, policies). The old Lovable Cloud project (chjmyzzczwattluqpbat) is retired; don't write to it.
