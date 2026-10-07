@@ -5,8 +5,8 @@ import { brokeredPreviewStorage } from './previewAuthStorage';
 
 // Public, non-secret values. Kept as fallbacks so the published build never
 // initializes with `undefined` if build-time env vars are missing.
-const FALLBACK_SUPABASE_URL = 'https://chjmyzzczwattluqpbat.supabase.co';
-const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoam15enpjendhdHRsdXFwYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDM3NjksImV4cCI6MjA4MzgxOTc2OX0.Y6N53UNdAZ5x02ADZNo7KMbjxEIsAmu8tq5OShOIHOs';
+const FALLBACK_SUPABASE_URL = 'https://qdpqfsqjtbvlulekfhoy.supabase.co';
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkcHFmc3FqdGJ2bHVsZWtmaG95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgyODksImV4cCI6MjA4NTAxNDI4OX0.Rqw-1Lx1Uo5Ar8stFQv4fPE7OkmAlamz21T3BAZocPw';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? FALLBACK_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? FALLBACK_SUPABASE_PUBLISHABLE_KEY;

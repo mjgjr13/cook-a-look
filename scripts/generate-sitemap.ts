@@ -4,10 +4,10 @@ import { resolve } from "node:path";
 import { SAMPLE_ADVISOR_IDS } from "../src/lib/sampleAdvisors";
 
 const BASE_URL = "https://www.cookalook.com";
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://chjmyzzczwattluqpbat.supabase.co";
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://qdpqfsqjtbvlulekfhoy.supabase.co";
 const SUPABASE_KEY =
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoam15enpjendhdHRsdXFwYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDM3NjksImV4cCI6MjA4MzgxOTc2OX0.Y6N53UNdAZ5x02ADZNo7KMbjxEIsAmu8tq5OShOIHOs";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkcHFmc3FqdGJ2bHVsZWtmaG95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgyODksImV4cCI6MjA4NTAxNDI4OX0.Rqw-1Lx1Uo5Ar8stFQv4fPE7OkmAlamz21T3BAZocPw";
 
 interface Entry {
   path: string;
