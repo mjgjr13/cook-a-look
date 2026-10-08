@@ -160,7 +160,12 @@ const AdvisorEarnings = () => {
         // If no meeting time, fall back to escrow_release_at or escrow_status
         let isReleased = false;
         
-        if (p.escrow_status === 'released') {
+        if (p.escrow_status === 'refunded') {
+          return;
+        } else if (p.escrow_status === 'disputed') {
+          // Held until an admin resolves the client's dispute.
+          isReleased = false;
+        } else if (p.escrow_status === 'released') {
           isReleased = true;
         } else if (meetingStartTime) {
           const releaseTime = new Date(meetingStartTime.getTime() + escrowReleaseHours * 60 * 60 * 1000);

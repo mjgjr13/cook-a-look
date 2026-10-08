@@ -154,15 +154,17 @@ export const useProfile = (): UseProfileResult => {
  */
 export const calculatePlatformFee = async (advisorProfileId: string): Promise<{ feePercent: number; bookingsThisMonth: number }> => {
   try {
+    // Same rule as the server when it records a payment (confirmPayment.ts):
+    // bookings completed since the start of this calendar month, UTC.
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
     const { data, error } = await supabase
       .from("bookings")
       .select("id")
       .eq("advisor_id", advisorProfileId)
       .eq("status", "completed")
-      .gte("created_at", startOfMonth.toISOString());
+      .gte("completed_at", startOfMonth.toISOString());
 
     if (error) {
       console.error("Error fetching bookings for fee calculation:", error);

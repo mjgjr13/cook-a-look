@@ -14,6 +14,7 @@ import ClientRewardsCard from "@/components/dashboard/ClientRewardsCard";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import CancelBookingDialog from "@/components/booking/CancelBookingDialog";
 import ReviewModal from "@/components/reviews/ReviewModal";
+import DisputeForm from "@/components/disputes/DisputeForm";
 import { useProfile } from "@/hooks/useProfile";
 import { useReviewPrompt } from "@/hooks/useReviewPrompt";
 
@@ -36,7 +37,19 @@ interface Booking {
     avatar_url: string;
     user_id: string;
   };
+  payments?: { id: string; status: string }[];
+  disputes?: { id: string; status: string }[];
 }
+
+// Clients can raise a dispute within 48 hours of the session start (Terms §10).
+const DISPUTE_WINDOW_MS = 48 * 60 * 60 * 1000;
+const openDispute = (b: Booking) => b.disputes?.find((d) => d.status === "open" || d.status === "under_review");
+const disputablePayment = (b: Booking) => {
+  const start = new Date(b.slot.start_time).getTime();
+  const now = Date.now();
+  if (now < start || now > start + DISPUTE_WINDOW_MS || openDispute(b)) return undefined;
+  return b.payments?.find((p) => p.status === "completed");
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -50,6 +63,7 @@ const Dashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modalTab, setModalTab] = useState<"details" | "chat">("details");
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [disputeTarget, setDisputeTarget] = useState<Booking | null>(null);
 
   // Check for pending reviews
   const { pendingReview, dismissReview } = useReviewPrompt(profile?.user_id || undefined);
@@ -104,7 +118,9 @@ const Dashboard = () => {
         .select(`
           *,
           slot:availability_slots(*),
-          advisor:profiles!bookings_advisor_id_fkey(id, full_name, specialty, avatar_url, user_id)
+          advisor:profiles!bookings_advisor_id_fkey(id, full_name, specialty, avatar_url, user_id),
+          payments(id, status),
+          disputes(id, status)
         `)
         .eq("client_id", profile.id)
         .order("created_at", { ascending: false });
@@ -433,7 +449,14 @@ const Dashboard = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground capitalize">{booking.status}</span>
+                      <span className="text-sm text-muted-foreground capitalize">
+                        {openDispute(booking) ? "Dispute under review" : booking.status}
+                      </span>
+                      {disputablePayment(booking) && (
+                        <Button variant="ghost" size="sm" onClick={() => setDisputeTarget(booking)}>
+                          Report a problem
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" onClick={() => { setModalTab("details"); setSelectedBooking(booking); }}>
                         {isVirtualBooking(booking) ? "Details & recording" : "Details"}
                       </Button>
@@ -445,6 +468,17 @@ const Dashboard = () => {
           )}
         </div>
       </section>
+      {disputeTarget && disputablePayment(disputeTarget) && (
+        <DisputeForm
+          bookingId={disputeTarget.id}
+          paymentId={disputablePayment(disputeTarget)!.id}
+          advisorName={disputeTarget.advisor?.full_name ?? "your advisor"}
+          sessionDate={new Date(disputeTarget.slot.start_time).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          isOpen
+          onClose={() => setDisputeTarget(null)}
+          onSuccess={() => { setDisputeTarget(null); loadBookings(); }}
+        />
+      )}
       <CancelBookingDialog
         bookingId={cancelTarget?.id ?? null}
         appointmentAt={cancelTarget?.slot.start_time ?? null}

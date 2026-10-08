@@ -65,8 +65,9 @@ export async function confirmPaidCheckoutSession(
   const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
   const taxAmount = session.total_details?.amount_tax ? session.total_details.amount_tax / 100 : 0;
   const baseAmount = totalAmount - taxAmount;
-  const platformFee = Number((baseAmount * 0.15).toFixed(2));
-  const advisorPayout = Number((baseAmount * 0.85).toFixed(2));
+  const feePercent = await platformFeePercent(supabaseAdmin, advisorId);
+  const platformFee = Number((baseAmount * feePercent / 100).toFixed(2));
+  const advisorPayout = Number((baseAmount - platformFee).toFixed(2));
   const escrowReleaseAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
   const { error: insertError } = await supabaseAdmin.from("payments").insert({
@@ -109,4 +110,40 @@ export async function confirmPaidCheckoutSession(
   }
 
   return { bookingId, totalPaid: totalAmount, taxPaid: taxAmount, alreadyProcessed: false };
+}
+
+/**
+ * Platform fee for a new booking: the default rate (15%), or the reduced rate
+ * (10%) once the advisor already has `advisor_fee_reduction_threshold` (9)
+ * completed bookings this calendar month (UTC). Values come from reward_settings.
+ */
+async function platformFeePercent(
+  supabaseAdmin: SupabaseAdmin,
+  advisorId: string,
+): Promise<number> {
+  const { data: settings } = await supabaseAdmin
+    .from("reward_settings")
+    .select("setting_key, setting_value")
+    .in("setting_key", ["advisor_default_fee_percent", "advisor_reduced_fee_percent", "advisor_fee_reduction_threshold"]);
+  const get = (key: string, fallback: number) => {
+    const v = Number(settings?.find((s: { setting_key: string }) => s.setting_key === key)?.setting_value);
+    return Number.isFinite(v) && v >= 0 ? v : fallback;
+  };
+  const defaultPercent = get("advisor_default_fee_percent", 15);
+  const reducedPercent = get("advisor_reduced_fee_percent", 10);
+  const threshold = get("advisor_fee_reduction_threshold", 9);
+
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const { count, error } = await supabaseAdmin
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .eq("advisor_id", advisorId)
+    .eq("status", "completed")
+    .gte("completed_at", monthStart);
+  if (error) {
+    console.error("Fee tier lookup failed; using default fee:", error.message);
+    return defaultPercent;
+  }
+  return (count ?? 0) >= threshold ? reducedPercent : defaultPercent;
 }
