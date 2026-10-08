@@ -325,6 +325,7 @@ const BookingCalendar = ({
           sessionDate,
           sessionTime: selectedSlot.time,
           isDynamicSlot: true,
+          timezone: getBrowserTimezone(),
           corporate: {
             format: corpFormat,
             date: format(selectedDate, "yyyy-MM-dd"),
@@ -340,6 +341,7 @@ const BookingCalendar = ({
           sessionDate,
           sessionTime: selectedSlot.time,
           isDynamicSlot: true,
+          timezone: getBrowserTimezone(),
           hours,
           meetingType,
           locationId: meetingType === "in_person" && locationChoice !== "suggest" ? locationChoice : null,

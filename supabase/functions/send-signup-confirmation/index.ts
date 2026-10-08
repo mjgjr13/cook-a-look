@@ -1,9 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { SITE_URL, button, escapeHtml, heading, list, paragraph, renderEmail, sendEmail } from "../_shared/emailLayout.ts";
 
 interface SignupConfirmationRequest {
   email: string;
@@ -87,107 +85,45 @@ const handler = async (req: Request): Promise<Response> => {
       ? "Welcome to Cook A Look - Advisor Application Received"
       : "Welcome to Cook A Look!";
 
+    const safeFirstName = escapeHtml(firstName);
     const html = isAdvisor
-      ? `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>${subject}</title>
-            <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-              .header { text-align: center; margin-bottom: 40px; }
-              .logo { font-size: 24px; font-weight: bold; color: #1a1a1a; }
-              h1 { color: #1a1a1a; font-size: 24px; margin-bottom: 20px; }
-              .content { background: #f9f9f9; padding: 30px; border-radius: 8px; margin-bottom: 30px; }
-              .highlight { color: #c9a227; font-weight: 600; }
-              .footer { text-align: center; color: #666; font-size: 14px; }
-              .steps { margin: 20px 0; }
-              .step { margin: 15px 0; padding-left: 25px; position: relative; }
-              .step::before { content: "✓"; position: absolute; left: 0; color: #c9a227; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <div class="logo">Cook A Look</div>
-              </div>
-              <h1>Thank you for applying, ${firstName}!</h1>
-              <div class="content">
-                <p>We've received your application to become a Style Advisor on Cook A Look.</p>
-                <p class="highlight">What happens next?</p>
-                <div class="steps">
-                  <div class="step">Our team will review your application and portfolio</div>
-                  <div class="step">We'll verify your credentials and social presence</div>
-                  <div class="step">You'll receive a decision within 2-5 business days</div>
-                </div>
-                <p>If approved, you'll receive onboarding instructions to set up your availability and start accepting bookings.</p>
-              </div>
-              <div class="footer">
-                <p>Questions? Reply to this email and we'll help you out.</p>
-                <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `
-      : `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>${subject}</title>
-            <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-              .header { text-align: center; margin-bottom: 40px; }
-              .logo { font-size: 24px; font-weight: bold; color: #1a1a1a; }
-              h1 { color: #1a1a1a; font-size: 24px; margin-bottom: 20px; }
-              .content { background: #f9f9f9; padding: 30px; border-radius: 8px; margin-bottom: 30px; }
-              .highlight { color: #c9a227; font-weight: 600; }
-              .cta { display: inline-block; background: #1a1a1a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; margin-top: 20px; }
-              .footer { text-align: center; color: #666; font-size: 14px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <div class="logo">Cook A Look</div>
-              </div>
-              <h1>Welcome to Cook A Look, ${firstName}!</h1>
-              <div class="content">
-                <p>Your account has been created successfully. You're now ready to discover your personal style with the help of our expert advisors.</p>
-                <p class="highlight">Here's what you can do:</p>
-                <ul>
-                  <li>Browse our curated selection of style advisors</li>
-                  <li>Book virtual or in-person consultations</li>
-                  <li>Explore our lookbook for style inspiration</li>
-                  <li>Earn rewards with every booking</li>
-                </ul>
-                <p style="text-align: center;">
-                  <a href="https://www.cookalook.com/advisors" class="cta">Browse Advisors</a>
-                </p>
-              </div>
-              <div class="footer">
-                <p>Questions? Reply to this email and we'll help you out.</p>
-                <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `;
+      ? renderEmail({
+          title: subject,
+          preheader: "We've received your Style Advisor application.",
+          body: [
+            heading(`Thank you for applying, ${safeFirstName}`),
+            paragraph("We've received your application to become a Style Advisor on Cook A Look."),
+            paragraph("<strong>What happens next?</strong>"),
+            list([
+              "Our team will review your application and portfolio",
+              "We'll verify your credentials and social presence",
+              "You'll receive a decision within 2–5 business days",
+            ]),
+            paragraph("If approved, you'll receive onboarding instructions to set up your availability and start accepting bookings."),
+          ].join(""),
+        })
+      : renderEmail({
+          title: subject,
+          preheader: "Your account is ready. Meet our style advisors.",
+          body: [
+            heading(`Welcome to Cook A Look, ${safeFirstName}`),
+            paragraph("Your account has been created. You're ready to discover your personal style with the help of our expert advisors."),
+            paragraph("<strong>Here's what you can do:</strong>"),
+            list([
+              "Browse our curated selection of style advisors",
+              "Book virtual or in-person consultations",
+              "Explore our lookbook for style inspiration",
+              "Earn rewards with every booking",
+            ]),
+            button("Browse advisors", `${SITE_URL}/advisors`),
+          ].join(""),
+        });
 
-    const emailResponse = await resend.emails.send({
-      from: "Cook A Look <notify@cookalook.com>",
-      to: [user.email as string],
-      subject,
-      html,
-    });
+    const emailResponse = await sendEmail({ to: user.email as string, subject, html, throwOnError: true });
 
     console.log("Email sent successfully to", email, "for user", user.id);
 
-    return new Response(JSON.stringify({ success: true, ...emailResponse }), {
+    return new Response(JSON.stringify({ success: true, ...(emailResponse ?? {}) }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",

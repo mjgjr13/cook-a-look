@@ -26,6 +26,8 @@ interface CheckoutRequest {
   meetingType?: "virtual" | "in_person";
   locationId?: string | null;
   suggestedLocation?: { name?: string; address?: string; note?: string } | null;
+  /** The client's browser time zone (IANA name), used for their emails. */
+  timezone?: string;
   corporate?: {
     format?: "virtual" | "on_site";
     date?: string;
@@ -61,7 +63,9 @@ serve(async (req) => {
     const {
       advisorId, slotId, slotStartTime, slotEndTime, sessionDate, sessionTime, isDynamicSlot,
       hours: rawHours, meetingType: rawMeetingType, locationId, suggestedLocation, corporate: rawCorporate,
+      timezone: rawTimezone,
     } = body as CheckoutRequest;
+    const clientTimezone = isValidTimeZone(rawTimezone) ? rawTimezone : null;
 
     const isCorporate = !!rawCorporate;
     const corporateFormat: "virtual" | "on_site" = rawCorporate?.format === "on_site" ? "on_site" : "virtual";
@@ -261,6 +265,12 @@ serve(async (req) => {
         .from("bookings")
         .update({ duration_hours: hours })
         .eq("id", pendingBookingId);
+    }
+
+    // Remember the client's time zone so their emails show local times.
+    if (clientTimezone) {
+      await supabaseAdmin.from("bookings").update({ client_timezone: clientTimezone }).eq("id", pendingBookingId);
+      await supabaseAdmin.from("profiles").update({ timezone: clientTimezone }).eq("user_id", user.id).is("timezone", null);
     }
 
     const hourlyRate = advisor.price_per_session;

@@ -2,23 +2,13 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import {
+  SITE_URL, advisorTimeZone, button, clientTimeZone, detailRows, escapeHtml, formatDate, formatTime,
+  heading, paragraph, renderEmail, sendEmail,
+} from "../_shared/emailLayout.ts";
 
 interface Req {
   bookingId: string;
-}
-
-async function sendEmail(to: string, subject: string, html: string) {
-  const key = Deno.env.get("RESEND_API_KEY");
-  if (!key) return;
-  try {
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: "Cook A Look <notify@cookalook.com>", to, subject, html }),
-    });
-  } catch (e) {
-    console.error("email_failed", e);
-  }
 }
 
 serve(async (req) => {
@@ -42,7 +32,7 @@ serve(async (req) => {
 
     const { data: booking, error: bErr } = await admin
       .from("bookings")
-      .select("id, status, refund_status, refund_amount_cents, refund_percentage, cancelled_by, advisor_id, client_id, advisor:profiles!bookings_advisor_id_fkey(full_name, user_id), client:profiles!bookings_client_id_fkey(full_name, user_id)")
+      .select("id, status, refund_status, refund_amount_cents, refund_percentage, cancelled_by, advisor_id, client_id, client_timezone, slot:availability_slots(start_time), advisor:profiles!bookings_advisor_id_fkey(full_name, user_id, timezone), client:profiles!bookings_client_id_fkey(full_name, user_id, timezone)")
       .eq("id", bookingId)
       .single();
     if (bErr || !booking) return new Response(JSON.stringify({ error: "booking_not_found" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
@@ -142,29 +132,56 @@ serve(async (req) => {
       const currency = (payment?.currency ?? "usd").toUpperCase();
       const cancelledBy = booking.cancelled_by ?? "system";
 
+      const startTime = (booking.slot as { start_time?: string } | null)?.start_time ?? null;
+      const advisorRow = booking.advisor as { full_name?: string; user_id?: string; timezone?: string | null } | null;
+      const clientRow = booking.client as { full_name?: string; user_id?: string; timezone?: string | null } | null;
+      const refundLine = `${pct}% (${refundDollars} ${currency})`;
+      const sessionRows = (tz: string): Array<[string, string]> => startTime
+        ? [["Date", escapeHtml(formatDate(startTime, tz))], ["Time", escapeHtml(formatTime(startTime, tz))]]
+        : [];
+
       if (clientEmail) {
+        const tz = clientTimeZone(booking as { client_timezone?: string | null }, clientRow);
         const subject =
           cancelledBy === "advisor"
             ? "Your Cook A Look booking was cancelled — full refund issued"
             : "Your Cook A Look booking has been cancelled";
-        const html = `
-          <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#FAF8F5;color:#1f1f1f;">
-            <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:24px;margin:0 0 16px;">Booking Cancelled</h1>
-            <p>Your consultation has been cancelled${cancelledBy === "advisor" ? " by your advisor" : ""}.</p>
-            <p><strong>Refund:</strong> ${pct}% — ${refundDollars} ${currency}</p>
-            <p style="color:#555;font-size:14px;">${refundResult.status === "succeeded" ? "Your refund has been issued and will appear on your statement within 5–10 business days." : refundResult.status === "voided" ? "The pending charge has been released — no funds were captured." : refundResult.status === "failed" ? "Your refund is being reviewed by our team — we'll be in touch shortly." : refundResult.status === "none" ? "Per the cancellation policy, no refund is due." : "Your refund is processing."}</p>
-          </div>`;
-        await sendEmail(clientEmail, subject, html);
+        const refundNote = refundResult.status === "succeeded"
+          ? "Your refund has been issued and will appear on your statement within 5–10 business days."
+          : refundResult.status === "voided"
+          ? "The pending charge has been released — no funds were captured."
+          : refundResult.status === "failed"
+          ? "Your refund is being reviewed by our team — we'll be in touch shortly."
+          : refundResult.status === "none"
+          ? "Per the cancellation policy, no refund is due."
+          : "Your refund is processing.";
+        const html = renderEmail({
+          title: "Booking cancelled",
+          preheader: `Refund: ${refundLine}`,
+          body: [
+            heading("Booking cancelled"),
+            paragraph(`Your consultation${advisorRow?.full_name ? ` with <strong>${escapeHtml(advisorRow.full_name)}</strong>` : ""} has been cancelled${cancelledBy === "advisor" ? " by your advisor" : ""}.`),
+            detailRows([...sessionRows(tz), ["Refund", escapeHtml(refundLine)]]),
+            paragraph(refundNote, { muted: true }),
+            button("Find another time", `${SITE_URL}/advisors`),
+          ].join(""),
+        });
+        await sendEmail({ to: clientEmail, subject, html });
       }
       if (advisorEmail) {
-        const html = `
-          <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#FAF8F5;color:#1f1f1f;">
-            <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:24px;margin:0 0 16px;">Booking Cancelled</h1>
-            <p>The booking has been cancelled${cancelledBy === "client" ? " by the client" : cancelledBy === "advisor" ? " (by you)" : ""}.</p>
-            <p>Client refund: ${pct}% (${refundDollars} ${currency}).</p>
-            <p style="color:#555;font-size:14px;">The time slot has been freed.</p>
-          </div>`;
-        await sendEmail(advisorEmail, "Booking cancelled — Cook A Look", html);
+        const tz = await advisorTimeZone(admin, advisorRow);
+        const html = renderEmail({
+          title: "Booking cancelled",
+          preheader: "The time slot has been freed.",
+          body: [
+            heading("Booking cancelled"),
+            paragraph(`The booking${clientRow?.full_name ? ` with <strong>${escapeHtml(clientRow.full_name)}</strong>` : ""} has been cancelled${cancelledBy === "client" ? " by the client" : cancelledBy === "advisor" ? " (by you)" : ""}.`),
+            detailRows([...sessionRows(tz), ["Client refund", escapeHtml(refundLine)]]),
+            paragraph("The time slot has been freed.", { muted: true }),
+            button("Open your dashboard", `${SITE_URL}/advisor`),
+          ].join(""),
+        });
+        await sendEmail({ to: advisorEmail, subject: "Booking cancelled — Cook A Look", html });
       }
     } catch (emailErr) {
       console.error("cancellation_email_failed", emailErr instanceof Error ? emailErr.message : String(emailErr));

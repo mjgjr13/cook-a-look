@@ -28,6 +28,7 @@ import {
   Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getBrowserTimezone } from "@/hooks/useTimezone";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   advisorApplicationSchema, 
@@ -306,6 +307,7 @@ const BecomeAdvisor = () => {
           options: {
             data: {
               full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+              timezone: getBrowserTimezone(),
             },
           },
         });

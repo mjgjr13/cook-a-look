@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { SITE_URL, button, detailRows, escapeHtml, heading, paragraph, renderEmail, sendEmail } from "../_shared/emailLayout.ts";
 
 // Input validation helpers
 const validateEmail = (email: string): boolean => {
@@ -432,32 +433,22 @@ const handler = async (req: Request): Promise<Response> => {
     // Notify admin (best-effort, never blocks success)
     try {
       const adminEmail = Deno.env.get("ADMIN_EMAIL");
-      const resendKey = Deno.env.get("RESEND_API_KEY");
-      if (adminEmail && resendKey) {
+      if (adminEmail) {
         const fullName = `${body.firstName.trim()} ${body.lastName.trim()}`;
-        const html = `<!DOCTYPE html><html><body style="font-family:Georgia,serif;color:#1a1a1a;background:#FAF8F5;padding:24px;">
-          <div style="max-width:560px;margin:0 auto;background:#fff;padding:32px;">
-            <div style="text-align:center;letter-spacing:2px;font-weight:500;font-size:18px;margin-bottom:24px;">COOK A LOOK</div>
-            <h1 style="font-weight:400;font-size:22px;text-align:center;">New advisor awaiting approval</h1>
-            <p><strong>${fullName}</strong> has submitted an advisor application.</p>
-            <ul>
-              <li><strong>Email:</strong> ${body.email}</li>
-              <li><strong>Specialty:</strong> ${body.specialty}</li>
-            </ul>
-            <p style="text-align:center;margin:28px 0;">
-              <a href="https://cookalook.com/admin/advisors" style="background:#1a1a1a;color:#fff;padding:12px 28px;text-decoration:none;letter-spacing:1px;font-size:14px;">REVIEW IN ADMIN</a>
-            </p>
-          </div></body></html>`;
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
-          body: JSON.stringify({
-            from: "Cook A Look <notify@cookalook.com>",
-            to: adminEmail,
-            subject: `New advisor application: ${fullName}`,
-            html,
-          }),
+        const html = renderEmail({
+          title: "New advisor awaiting approval",
+          preheader: `${fullName} applied to be a Style Advisor.`,
+          body: [
+            heading("New advisor awaiting approval"),
+            paragraph(`<strong>${escapeHtml(fullName)}</strong> has submitted an advisor application.`),
+            detailRows([
+              ["Email", escapeHtml(body.email)],
+              ["Specialty", escapeHtml(body.specialty)],
+            ]),
+            button("Review in admin", `${SITE_URL}/admin/advisors`),
+          ].join(""),
         });
+        await sendEmail({ to: adminEmail, subject: `New advisor application: ${fullName}`, html });
       }
     } catch (e) {
       console.error("admin notify failed", e);

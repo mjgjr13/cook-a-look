@@ -1,38 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import {
+  SITE_URL, advisorTimeZone, button, callout, clientTimeZone, escapeHtml, heading, paragraph,
+  renderEmail, sendEmail,
+} from "../_shared/emailLayout.ts";
 
 interface ChatNotificationRequest {
   bookingId: string;
   messagePreview: string;
-}
-
-async function sendEmail(to: string, subject: string, html: string) {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  if (!resendApiKey) {
-    throw new Error("RESEND_API_KEY not configured");
-  }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${resendApiKey}`,
-    },
-    body: JSON.stringify({
-      from: "Cook A Look <notify@cookalook.com>",
-      to: [to],
-      subject,
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to send email: ${error}`);
-  }
-
-  return response.json();
 }
 
 serve(async (req) => {
@@ -87,9 +63,9 @@ serve(async (req) => {
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
       .select(`
-        id,
-        client:profiles!bookings_client_id_fkey(id, user_id, full_name, email),
-        advisor:profiles!bookings_advisor_id_fkey(id, user_id, full_name, email),
+        id, client_timezone,
+        client:profiles!bookings_client_id_fkey(id, user_id, full_name, email, timezone),
+        advisor:profiles!bookings_advisor_id_fkey(id, user_id, full_name, email, timezone),
         slot:availability_slots(start_time)
       `)
       .eq("id", bookingId)
@@ -104,8 +80,8 @@ serve(async (req) => {
     }
 
     // Type assertions for joined data
-    const client = booking.client as unknown as { id: string; user_id: string; full_name: string; email: string } | null;
-    const advisor = booking.advisor as unknown as { id: string; user_id: string; full_name: string; email: string } | null;
+    const client = booking.client as unknown as { id: string; user_id: string; full_name: string; email: string; timezone: string | null } | null;
+    const advisor = booking.advisor as unknown as { id: string; user_id: string; full_name: string; email: string; timezone: string | null } | null;
     const slot = booking.slot as unknown as { start_time: string } | null;
 
     // Determine who should receive the notification (the other participant)
@@ -147,16 +123,18 @@ serve(async (req) => {
       });
     }
 
+    const recipientTz = recipientRole === "advisor"
+      ? await advisorTimeZone(supabaseAdmin, advisor)
+      : clientTimeZone(booking as { client_timezone?: string | null }, client);
     const sessionDate = slot?.start_time ? new Date(slot.start_time) : new Date();
     const formattedDate = sessionDate.toLocaleDateString("en-US", {
+      timeZone: recipientTz,
       weekday: "short",
       month: "short",
       day: "numeric",
     });
 
     // HTML-escape user-controlled values before email interpolation
-    const escapeHtml = (s: string) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     const rawPreview = messagePreview.length > 100
       ? messagePreview.substring(0, 100) + "..."
       : messagePreview;
@@ -164,63 +142,27 @@ serve(async (req) => {
     const senderName = escapeHtml(sender?.full_name || "your contact");
 
     const dashboardUrl = recipientRole === "advisor" 
-      ? "https://www.cookalook.com/advisor" 
-      : "https://www.cookalook.com/dashboard";
+      ? `${SITE_URL}/advisor`
+      : `${SITE_URL}/dashboard`;
 
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: 'Georgia', serif; line-height: 1.6; color: #1a1a1a; }
-            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .logo { font-size: 24px; font-weight: 500; letter-spacing: 2px; }
-            .message-box { background: #f9f8f6; padding: 20px; border-left: 3px solid #8b7355; margin: 20px 0; }
-            .message-preview { font-style: italic; color: #555; }
-            .cta-button { 
-              display: inline-block; 
-              background: #1a1a1a; 
-              color: white !important; 
-              padding: 12px 24px; 
-              text-decoration: none; 
-              margin: 20px 0;
-            }
-            .footer { text-align: center; color: #666; font-size: 14px; margin-top: 40px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <div class="logo">COOK A LOOK</div>
-            </div>
-            
-            <h2 style="font-weight: 400;">New Message from ${senderName}</h2>
-            
-            <p>You have a new message regarding your ${formattedDate} consultation:</p>
-            
-            <div class="message-box">
-              <p class="message-preview">"${preview}"</p>
-            </div>
-            
-            <p style="text-align: center;">
-              <a href="${dashboardUrl}" class="cta-button">View Full Conversation</a>
-            </p>
-            
-            <div class="footer">
-              <p>You're receiving this because you have an active booking on Cook A Look.</p>
-              <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const emailHtml = renderEmail({
+      title: `New message from ${sender?.full_name || "your contact"}`,
+      preheader: rawPreview,
+      body: [
+        heading(`New message from ${senderName}`),
+        paragraph(`You have a new message about your ${escapeHtml(formattedDate)} consultation:`),
+        callout(`&ldquo;${preview}&rdquo;`),
+        button("View full conversation", dashboardUrl),
+      ].join(""),
+      footer: "You're receiving this because you have an active booking on Cook A Look.",
+    });
 
-    await sendEmail(
-      recipient.email,
-      `New message from ${sender?.full_name || "your contact"}`.slice(0, 200),
-      emailHtml
-    );
+    await sendEmail({
+      to: recipient.email,
+      subject: `New message from ${sender?.full_name || "your contact"}`.slice(0, 200),
+      html: emailHtml,
+      throwOnError: true,
+    });
 
     console.log(`Chat notification sent to ${recipientRole}:`, recipient.email);
 

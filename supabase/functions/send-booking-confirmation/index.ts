@@ -2,6 +2,10 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { getOrCreateVideoRoomForBooking } from "../_shared/daily.ts";
+import {
+  SITE_URL, advisorTimeZone, button, clientTimeZone, detailRows, escapeHtml, formatDate,
+  formatTime, heading, paragraph, renderEmail, sendEmail,
+} from "../_shared/emailLayout.ts";
 
 interface BookingConfirmationRequest {
   bookingId: string;
@@ -21,45 +25,6 @@ function encodeBase64(str: string): string {
     binary += String.fromCharCode(data[i]);
   }
   return globalThis.btoa(binary);
-}
-
-async function sendEmail(to: string[], subject: string, html: string, icsContent?: string) {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  if (!resendApiKey) {
-    throw new Error("RESEND_API_KEY not configured");
-  }
-
-  const payload: Record<string, unknown> = {
-    from: "Cook A Look <notify@cookalook.com>",
-    to,
-    subject,
-    html,
-  };
-
-  if (icsContent) {
-    payload.attachments = [
-      {
-        filename: "consultation.ics",
-        content: encodeBase64(icsContent),
-      },
-    ];
-  }
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${resendApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to send email: ${error}`);
-  }
-
-  return response.json();
 }
 
 serve(async (req) => {
@@ -118,8 +83,8 @@ serve(async (req) => {
       .select(`
         *,
         slot:availability_slots(*),
-        client:profiles!bookings_client_id_fkey(id, user_id, full_name, email),
-        advisor:profiles!bookings_advisor_id_fkey(id, user_id, full_name, email, specialty, price_per_session)
+        client:profiles!bookings_client_id_fkey(id, user_id, full_name, email, timezone),
+        advisor:profiles!bookings_advisor_id_fkey(id, user_id, full_name, email, specialty, price_per_session, timezone)
       `)
       .eq("id", bookingId)
       .single();
@@ -144,18 +109,10 @@ serve(async (req) => {
       });
     }
 
-    const sessionDate = new Date(booking.slot.start_time);
-    const formattedDate = sessionDate.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const formattedTime = sessionDate.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZoneName: "short",
-    });
+    // Each person sees the time in their own zone.
+    const clientTz = clientTimeZone(booking, booking.client);
+    const advisorTz = await advisorTimeZone(supabaseAdmin, booking.advisor);
+    const start = booking.slot.start_time;
 
     // Pre-create the video room so both parties get a join link in their email
     let videoJoinUrl: string | null = null;
@@ -165,153 +122,86 @@ serve(async (req) => {
         // where the Join Call button issues a token. Pre-creating the room here
         // still makes sure it exists before the session.
         await getOrCreateVideoRoomForBooking(supabaseAdmin, bookingId);
-        videoJoinUrl = "https://www.cookalook.com/signin";
+        videoJoinUrl = `${SITE_URL}/signin`;
       } catch (e) {
         console.error("Pre-create video room failed:", e);
       }
     }
 
-    // Generate ICS calendar invite content
+    // Calendar invite (times in UTC, which every calendar converts to the viewer's zone)
     const icsContent = generateICS({
+      uid: `${bookingId}@cookalook.com`,
       title: `Style Consultation with ${booking.advisor.full_name}`,
-      description: `Virtual styling session with ${booking.advisor.full_name} (${booking.advisor.specialty})`,
+      description: `Styling session with ${booking.advisor.full_name} (${booking.advisor.specialty ?? "Style Advisor"})`,
       startTime: booking.slot.start_time,
       endTime: booking.slot.end_time,
       isVirtual: booking.slot.is_virtual,
       joinUrl: videoJoinUrl,
     });
+    const attachments = [{ filename: "consultation.ics", content: encodeBase64(icsContent) }];
 
-    // Send email to client
-    const clientEmailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: 'Georgia', serif; line-height: 1.6; color: #1a1a1a; }
-            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-            .header { text-align: center; margin-bottom: 40px; }
-            .logo { font-size: 24px; font-weight: 500; letter-spacing: 2px; }
-            .details { background: #f9f8f6; padding: 30px; margin: 30px 0; }
-            .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e5e5; }
-            .detail-label { color: #666; }
-            .detail-value { font-weight: 500; }
-            .footer { text-align: center; color: #666; font-size: 14px; margin-top: 40px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <div class="logo">COOK A LOOK</div>
-            </div>
-            
-            <h1 style="text-align: center; font-weight: 400;">Your Consultation is Confirmed</h1>
-            
-            <p>Dear ${booking.client.full_name},</p>
-            
-            <p>Thank you for booking a style consultation. We're excited to help you elevate your personal style.</p>
-            
-            <div class="details">
-              <div class="detail-row">
-                <span class="detail-label">Advisor</span>
-                <span class="detail-value">${booking.advisor.full_name}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Specialty</span>
-                <span class="detail-value">${booking.advisor.specialty}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Date</span>
-                <span class="detail-value">${formattedDate}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Time</span>
-                <span class="detail-value">${formattedTime}</span>
-              </div>
-              <div class="detail-row" style="border-bottom: none;">
-                <span class="detail-label">Type</span>
-                <span class="detail-value">${booking.slot.is_virtual ? "Virtual Session" : "In-Person"}</span>
-              </div>
-            </div>
-            
-            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">OPEN YOUR DASHBOARD</a></p><p style="text-align:center;font-size:12px;color:#666;">Sign in and press Join Call. The video room opens 15 minutes before your session.</p>` : ""}
+    const sessionType = booking.slot.is_virtual ? "Virtual session" : "In person";
+    const advisorName = escapeHtml(booking.advisor.full_name);
+    const clientName = escapeHtml(booking.client.full_name);
+    const joinBlock = videoJoinUrl
+      ? button("Open your dashboard", videoJoinUrl) +
+        paragraph("Sign in and press Join Call. The video room opens 15 minutes before your session.", { muted: true, center: true, small: true })
+      : "";
 
-            <p>A calendar invite is attached. ${videoJoinUrl ? "The calendar event links to your dashboard, where you join the call." : "You'll receive a video call link before your session."}</p>
-            
-            <div class="footer">
-              <p>Questions? Reply to this email or visit our help center.</p>
-              <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const clientEmailHtml = renderEmail({
+      title: "Your consultation is confirmed",
+      preheader: `${formatDate(start, clientTz)} at ${formatTime(start, clientTz)} with ${booking.advisor.full_name}`,
+      body: [
+        heading("Your consultation is confirmed"),
+        paragraph(`Dear ${clientName},`),
+        paragraph("Thank you for booking a style consultation. We're excited to help you elevate your personal style."),
+        detailRows([
+          ["Advisor", advisorName],
+          ["Specialty", escapeHtml(booking.advisor.specialty ?? "Style Advisor")],
+          ["Date", escapeHtml(formatDate(start, clientTz))],
+          ["Time", escapeHtml(formatTime(start, clientTz))],
+          ["Type", sessionType],
+        ]),
+        joinBlock,
+        paragraph(`A calendar invite is attached. ${videoJoinUrl ? "The calendar event links to your dashboard, where you join the call." : "You'll receive the session details in your dashboard."}`),
+      ].join(""),
+    });
 
-    // Send email to advisor
-    const advisorEmailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: 'Georgia', serif; line-height: 1.6; color: #1a1a1a; }
-            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-            .header { text-align: center; margin-bottom: 40px; }
-            .logo { font-size: 24px; font-weight: 500; letter-spacing: 2px; }
-            .details { background: #f9f8f6; padding: 30px; margin: 30px 0; }
-            .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e5e5e5; }
-            .detail-label { color: #666; }
-            .detail-value { font-weight: 500; }
-            .footer { text-align: center; color: #666; font-size: 14px; margin-top: 40px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <div class="logo">COOK A LOOK</div>
-            </div>
-            
-            <h1 style="text-align: center; font-weight: 400;">New Booking Received</h1>
-            
-            <p>Dear ${booking.advisor.full_name},</p>
-            
-            <p>You have a new consultation booked. Here are the details:</p>
-            
-            <div class="details">
-              <div class="detail-row">
-                <span class="detail-label">Client</span>
-                <span class="detail-value">${booking.client.full_name}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Date</span>
-                <span class="detail-value">${formattedDate}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Time</span>
-                <span class="detail-value">${formattedTime}</span>
-              </div>
-              <div class="detail-row" style="border-bottom: none;">
-                <span class="detail-label">Type</span>
-                <span class="detail-value">${booking.slot.is_virtual ? "Virtual Session" : "In-Person"}</span>
-              </div>
-            </div>
-            
-            ${videoJoinUrl ? `<p style="text-align:center;margin:32px 0;"><a href="${videoJoinUrl}" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;letter-spacing:1px;font-size:14px;">OPEN YOUR DASHBOARD</a></p><p style="text-align:center;font-size:12px;color:#666;">Sign in and press Join Call. The video room opens 15 minutes before your session.</p>` : ""}
+    const advisorEmailHtml = renderEmail({
+      title: "New booking received",
+      preheader: `${booking.client.full_name} on ${formatDate(start, advisorTz)} at ${formatTime(start, advisorTz)}`,
+      body: [
+        heading("New booking received"),
+        paragraph(`Dear ${advisorName},`),
+        paragraph("You have a new consultation booked. Here are the details:"),
+        detailRows([
+          ["Client", clientName],
+          ["Date", escapeHtml(formatDate(start, advisorTz))],
+          ["Time", escapeHtml(formatTime(start, advisorTz))],
+          ["Type", sessionType],
+        ]),
+        joinBlock,
+        paragraph("A calendar invite is attached. Please make sure you're available and prepared for the session."),
+      ].join(""),
+      footer: "Manage your bookings in your advisor dashboard.",
+    });
 
-            <p>A calendar invite is attached. Please ensure you're available and prepared for the session.</p>
-            
-            <div class="footer">
-              <p>Manage your bookings in your advisor dashboard.</p>
-              <p>&copy; ${new Date().getFullYear()} Cook A Look. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    // Send emails
     console.log("Sending confirmation emails for booking:", bookingId);
     const [clientEmail, advisorEmail] = await Promise.all([
-      sendEmail([booking.client.email], `Booking Confirmed: Style Consultation on ${formattedDate}`, clientEmailHtml, icsContent),
-      sendEmail([booking.advisor.email], `New Booking: ${booking.client.full_name} on ${formattedDate}`, advisorEmailHtml, icsContent),
+      sendEmail({
+        to: booking.client.email,
+        subject: `Booking Confirmed: Style Consultation on ${formatDate(start, clientTz)}`,
+        html: clientEmailHtml,
+        attachments,
+        throwOnError: true,
+      }),
+      sendEmail({
+        to: booking.advisor.email,
+        subject: `New Booking: ${booking.client.full_name} on ${formatDate(start, advisorTz)}`,
+        html: advisorEmailHtml,
+        attachments,
+        throwOnError: true,
+      }),
     ]);
 
     console.log("Emails sent successfully:", { clientEmail, advisorEmail });
@@ -330,7 +220,13 @@ serve(async (req) => {
   }
 });
 
-function generateICS({ title, description, startTime, endTime, isVirtual, joinUrl }: {
+// RFC 5545 text escaping
+function icsText(s: string) {
+  return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+function generateICS({ uid, title, description, startTime, endTime, isVirtual, joinUrl }: {
+  uid: string;
   title: string;
   description: string;
   startTime: string;
@@ -338,28 +234,31 @@ function generateICS({ title, description, startTime, endTime, isVirtual, joinUr
   isVirtual: boolean;
   joinUrl?: string | null;
 }) {
-  const formatDate = (date: string) => {
-    return new Date(date).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-  };
+  // UTC ("Z") times: calendar apps show them in each attendee's own zone.
+  const formatDate = (date: string | Date) =>
+    new Date(date).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 
-  const location = isVirtual
-    ? (joinUrl ?? "Virtual - Video link will be provided")
-    : "In-Person";
-  const fullDescription = joinUrl
-    ? `${description}\\n\\nJoin: ${joinUrl}`
-    : description;
+  const location = isVirtual ? (joinUrl ?? "Virtual session") : "In person";
+  const fullDescription = joinUrl ? `${description}\n\nJoin: ${joinUrl}` : description;
 
-  return `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Cook A Look//Consultation//EN
-BEGIN:VEVENT
-UID:${Date.now()}@cookalook.com
-DTSTART:${formatDate(startTime)}
-DTEND:${formatDate(endTime)}
-SUMMARY:${title}
-DESCRIPTION:${fullDescription}
-LOCATION:${location}
-STATUS:CONFIRMED
-END:VEVENT
-END:VCALENDAR`;
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Cook A Look//Consultation//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${formatDate(new Date())}`,
+    `DTSTART:${formatDate(startTime)}`,
+    `DTEND:${formatDate(endTime)}`,
+    `SUMMARY:${icsText(title)}`,
+    `DESCRIPTION:${icsText(fullDescription)}`,
+    `LOCATION:${icsText(location)}`,
+    ...(joinUrl ? [`URL:${joinUrl}`] : []),
+    "STATUS:CONFIRMED",
+    "END:VEVENT",
+    "END:VCALENDAR",
+    "",
+  ].join("\r\n");
 }
