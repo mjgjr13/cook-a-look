@@ -2,7 +2,7 @@
 
 > Cook A Look connects clients with professional style advisors for virtual or in-person personal styling consultations.
 
-Cook A Look is a marketplace where vetted style advisors offer one-on-one fashion consultations. Clients browse advisors by specialty, focus, and price; book a 60-minute session; and meet via video or in person.
+Cook A Look is a marketplace where vetted style advisors offer one-on-one fashion consultations. Clients browse advisors by specialty, focus, and price; book a session of 1 to 3 hours; and meet via video or in person. Teams can also book corporate styling sessions.
 
 ## Pages
 

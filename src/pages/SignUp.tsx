@@ -91,7 +91,14 @@ const SignUp = () => {
             description: error.message,
             variant: "destructive",
           });
+        } else if (/sending confirmation email/i.test(error.message)) {
+          toast({
+            title: "Sign up failed",
+            description: "We couldn't send your confirmation email. Please try again in a few minutes.",
+            variant: "destructive",
+          });
         } else {
+          console.error("Sign up error:", error.message);
           toast({
             title: "Sign up failed",
             description: "An unexpected error occurred. Please try again.",

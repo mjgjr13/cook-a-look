@@ -153,14 +153,15 @@ const AdminAdvisors = () => {
   // Sample advisors to remove from the site (one, or all when bulk-removing)
   const [samplesToRemove, setSamplesToRemove] = useState<ActiveAdvisor[] | null>(null);
 
+  // Load applications and advisors together so every tab count is right on arrival.
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      if (activeTab === "applications" || activeTab === "denied") {
+      {
         // Fetch applications with profile data for avatar
         const { data, error } = await supabase
           .from("advisor_applications")
@@ -194,7 +195,8 @@ const AdminAdvisors = () => {
         ) || [];
         
         setApplications(enrichedApplications);
-      } else {
+      }
+      {
         // Fetch ALL advisors (approved, not approved, etc.)
         const { data: profiles, error: profilesError } = await supabase
           .from("profiles")

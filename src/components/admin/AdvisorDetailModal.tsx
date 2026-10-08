@@ -117,7 +117,10 @@ export const AdvisorDetailModal = ({
         ...profileData,
         is_listed: advisorProfileData?.is_listed ?? false,
         application_status: advisorProfileData?.application_status ?? "unknown",
-        portfolio_images: advisorProfileData?.portfolio_images ?? profileData.portfolio_images,
+        // advisor_profiles.portfolio_images defaults to an empty array, so only prefer it when it has images.
+        portfolio_images: advisorProfileData?.portfolio_images?.length
+          ? advisorProfileData.portfolio_images
+          : profileData.portfolio_images,
       });
 
       // Fetch booking stats
