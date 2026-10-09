@@ -26,7 +26,7 @@ ask() { # name, prompt, required prefix regex
 echo "Setting Cook A Look secrets on CAL ($REF)."
 ask STRIPE_SECRET_KEY     "Stripe secret key (TEST mode, starts with sk_test_)"            '^(sk|rk)_test_'
 ask STRIPE_WEBHOOK_SECRET "Stripe webhook signing secret (starts with whsec_)"             '^whsec_'
-ask DAILY_API_KEY         "Daily.co API key (Daily dashboard → Developers)"               '^[A-Za-z0-9]{32,}$'
+ask DAILY_API_KEY         "Daily.co API key (Daily dashboard → Developers)"               '^[^[:space:]]{20,}$'
 ask RESEND_API_KEY        "Resend API key (starts with re_)"                              '^re_'
 ask ANTHROPIC_API_KEY     "Anthropic API key for the AI Concierge (starts with sk-ant-)"  '^sk-ant-'
 
