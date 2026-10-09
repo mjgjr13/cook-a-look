@@ -17,7 +17,8 @@ ask() { # name, prompt, required prefix regex
     v="${v//[[:space:]]/}"
     if [[ -z "$v" ]]; then echo "  - $1 skipped"; unset v; return; fi
     if [[ "$v" =~ $3 ]]; then break; fi
-    echo "  ✗ That doesn't look like a $1 (expected: $2). Try again, or press Enter to skip."
+    echo "  ✗ That doesn't look like a $1. What you pasted starts with \"${v[1,8]}\" (${#v} characters)."
+    echo "    Expected: $2. Try again, or press Enter to skip."
   done
   npx supabase secrets set "$1=$v" --project-ref $REF >/dev/null 2>&1 && echo "  ✓ $1 set" || echo "  ✗ $1 failed"
   unset v
