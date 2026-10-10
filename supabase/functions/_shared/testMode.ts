@@ -14,3 +14,15 @@ export const isStripeTestMode = (): boolean => {
 /** True for a designated test advisor while Stripe is in test mode. */
 export const isTestBookableAdvisor = (advisorId: string | null | undefined): boolean =>
   !!advisorId && isStripeTestMode() && TEST_BOOKABLE_SAMPLE_ADVISOR_IDS.includes(advisorId);
+
+/** Which kind of Stripe key is configured (never the key itself), for error messages. */
+export const stripeKeyKind = (): string => {
+  const key = Deno.env.get("STRIPE_SECRET_KEY") || "";
+  if (!key) return "missing";
+  if (/^(sk|rk)_test_/.test(key)) return "test";
+  if (/^(sk|rk)_live_/.test(key)) return "live";
+  if (/^pk_/.test(key)) return "publishable (wrong key)";
+  if (/^\s/.test(key)) return "starts with a space";
+  if (/^["']/.test(key)) return "starts with a quote";
+  return "unrecognized";
+};

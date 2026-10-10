@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders, getSafeOrigin, handleCorsPreflightRequest } from "../_shared/cors.ts";
-import { isTestBookableAdvisor } from "../_shared/testMode.ts";
+import { isTestBookableAdvisor, stripeKeyKind } from "../_shared/testMode.ts";
 import { isValidTimeZone } from "../_shared/emailLayout.ts";
 
 const isValidUUID = (str: string): boolean => {
@@ -105,7 +105,8 @@ serve(async (req) => {
     // Exception: designated test advisors stay bookable while Stripe uses TEST keys, so the
     // full booking/payment/video flow can be tested. Switching to live keys blocks them.
     if (advisor.is_demo && !isTestBookableAdvisor(advisor.id)) {
-      throw new Error("This is a sample profile and can't be booked yet");
+      console.warn(`Sample advisor ${advisor.id} refused; Stripe key kind: ${stripeKeyKind()}`);
+      throw new Error(`This is a sample profile and can't be booked yet (Stripe key: ${stripeKeyKind()})`);
     }
     // Corporate: validate the request and the advisor's corporate rate.
     let corporateRate = 0;
