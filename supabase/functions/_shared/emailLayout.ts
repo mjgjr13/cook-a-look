@@ -8,7 +8,7 @@ export const SITE_URL = "https://www.cookalook.com";
 export const FROM_EMAIL = "Cook A Look <notify@cookalook.com>";
 export const DEFAULT_TIMEZONE = "America/Toronto";
 
-const LOGO_URL = `${SITE_URL}/brand/cook-a-look-logo-512.png?v=2`;
+const LOGO_URL = `${SITE_URL}/brand/cook-a-look-logo-512.png?v=3`;
 
 export const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 export const BODY_FONT = "Manrope, Helvetica, Arial, sans-serif";
