@@ -2,7 +2,8 @@
 # Sets the edge-function secrets on the CAL Supabase project.
 # Run in the Terminal app:  zsh scripts/set-cal-secrets.sh
 # Only some keys:           zsh scripts/set-cal-secrets.sh STRIPE_SECRET_KEY DAILY_API_KEY RESEND_API_KEY
-# Nothing you type is shown or saved; press Enter on a prompt to skip it.
+# For each key: copy it (the copy icon in the dashboard), then press Enter — the script reads the
+# clipboard, so there is nothing to paste. Type s + Enter to skip a key. The clipboard is cleared after.
 # CRON_SECRET is only (re)generated on a full run with no names given.
 set -u
 REF=qdpqfsqjtbvlulekfhoy
@@ -12,19 +13,28 @@ ONLY=("$@")
 ask() { # name, prompt, required prefix regex
   local v
   if (( ${#ONLY[@]} )) && (( ! ${ONLY[(Ie)$1]} )); then return; fi
+  local a
   while true; do
-    read -rs "v?$2: "; echo
+    echo "$2"
+    read -r "a?  Click the copy icon next to the key, then press Enter here (or type s and Enter to skip): "
+    if [[ "$a" == [sS] ]]; then echo "  - $1 skipped"; return; fi
+    v="$(pbpaste)"
     v="${v//[[:space:]]/}"
-    if [[ -z "$v" ]]; then echo "  - $1 skipped"; unset v; return; fi
+    if [[ -z "$v" ]]; then echo "  ✗ Nothing was copied. Click the copy icon again, then press Enter."; continue; fi
     if [[ "$v" =~ $3 ]]; then break; fi
-    echo "  ✗ That doesn't look like a $1. What you pasted starts with \"${v[1,8]}\" (${#v} characters)."
-    echo "    Expected: $2. Try again, or press Enter to skip."
+    echo "  ✗ What you copied isn't a $1. It starts with \"${v[1,8]}\" (${#v} characters). Copy the right key and try again."
   done
+  echo "  Got it: ${v[1,8]}… (${#v} characters)"
+  print -n "" | pbcopy  # clear the key from the clipboard
   npx supabase secrets set "$1=$v" --project-ref $REF >/dev/null 2>&1 && echo "  ✓ $1 set" || echo "  ✗ $1 failed"
   unset v
 }
 
 echo "Setting Cook A Look secrets on CAL ($REF)."
+if ! npx supabase secrets list --project-ref $REF >/dev/null 2>&1; then
+  echo "First, log in to Supabase (a browser window opens; approve it, then come back here)."
+  npx supabase login || { echo "  ✗ Supabase login failed. Nothing was changed."; exit 1; }
+fi
 ask STRIPE_SECRET_KEY     "Stripe secret key (TEST mode, starts with sk_test_)"            '^(sk|rk)_test_'
 ask STRIPE_WEBHOOK_SECRET "Stripe webhook signing secret (starts with whsec_)"             '^whsec_'
 ask DAILY_API_KEY         "Daily.co API key (Daily dashboard → Developers)"               '^[^[:space:]]{20,}$'
