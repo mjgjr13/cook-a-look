@@ -54,25 +54,21 @@ const nutritionLabelRows: {
   {
     category: "AI concierge chat content",
     collected: "Yes, if you use it",
-    purpose: "Advisor recommendations (sent to our AI provider)",
-    sharedWith: "AI infrastructure provider",
-    retention: "Not persisted after your session ends",
+    purpose: "Advisor recommendations (sent to Anthropic, our AI provider)",
+    sharedWith: "Anthropic (AI provider)",
+    retention: "Questions: 90 days, not linked to your account. Style notes: until you clear them",
   },
   {
     category: "Device & usage data",
     collected: "Yes",
-    purpose: "Security, analytics, service improvement",
-    sharedWith: "Analytics/hosting providers",
+    purpose: "Security and keeping the service running",
+    sharedWith: "Hosting providers (Cloudflare, Supabase)",
     retention: "Up to 2 years",
   },
 ];
 
 const PrivacyPolicy = () => {
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const lastUpdated = "October 15, 2026";
 
   return (
     <Layout>
@@ -159,6 +155,8 @@ const PrivacyPolicy = () => {
                     <li>Phone number</li>
                     <li>Profile photos and, for advisors, verification documents (see "Biometric Data" below)</li>
                     <li>Social media handles and portfolio links (for advisors)</li>
+                    <li>For advisors, date of birth, to confirm you are at least 18</li>
+                    <li>If you join a waitlist, your email and the optional name and note you give</li>
                     <li>Payment card details are collected and stored directly by Stripe, our payment processor — we never receive or store your full card number</li>
                   </ul>
                   <p><strong className="text-foreground">Usage Information:</strong></p>
@@ -264,7 +262,7 @@ const PrivacyPolicy = () => {
                   information with:
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                  <li><strong>Service Providers:</strong> payment processors (Stripe), video call providers (Daily.co, Google Meet), email delivery (Resend), hosting and infrastructure, and our AI infrastructure provider for the concierge chat feature</li>
+                  <li><strong>Service Providers:</strong> Stripe (payments), Daily.co (video calls; only if Daily is unavailable, the Jitsi service run by Freifunk München in Germany), Resend (email), Supabase (hosting and database), Cloudflare (website delivery), Anthropic (the AI model behind the Concierge), and Google (fonts, and address search for in-person sessions). Each receives only what it needs to perform its service</li>
                   <li><strong>Other Users:</strong> your public profile information, reviews, and (for bookings) chat messages are visible to the relevant counterparty or the public as applicable</li>
                   <li><strong>Legal Requirements:</strong> when required by law, valid legal process, or to protect the rights, property, or safety of Cook A Look, our users, or the public</li>
                   <li><strong>Business Transfers:</strong> in connection with a merger, acquisition, financing, or sale of assets, subject to standard confidentiality protections</li>
@@ -314,10 +312,30 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
+                <h2 className="font-serif text-2xl font-medium mb-4">
+                  8A. Your Privacy Rights (Canada)
+                </h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  Canadian privacy law (including PIPEDA) gives you the right to know what personal
+                  information we hold about you, to get a copy of it, and to ask us to correct it.
+                  You can also withdraw consent to optional uses, such as waitlist emails, at any
+                  time. Most details can be edited in Account settings, and you can delete your
+                  account there. When you delete your account, your profile details, photos and
+                  documents are removed and your login is disabled; booking and payment records are
+                  kept without your personal details, for accounting. For anything else, email{" "}
+                  <a href="mailto:privacy@cookalook.com" className="text-gold hover:underline">
+                    privacy@cookalook.com
+                  </a>
+                  ; we'll respond within 30 days. If you're not satisfied with our answer, you can
+                  complain to the Office of the Privacy Commissioner of Canada (priv.gc.ca).
+                </p>
+              </section>
+
+              <section>
                 <h2 className="font-serif text-2xl font-medium mb-4">9. AI Concierge</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  The "AI Concierge" chat feature is an automated system powered by a
-                  third-party AI model, not a human advisor. Messages you send it, along with
+                  The "AI Concierge" chat feature is an automated system powered by Anthropic's
+                  Claude AI model, not a human advisor. Messages you send it, along with
                   publicly listed advisor information, are sent to our AI infrastructure provider
                   to generate a response. We do not use your chat content to train AI models.
                 </p>
@@ -345,10 +363,10 @@ const PrivacyPolicy = () => {
               <section>
                 <h2 className="font-serif text-2xl font-medium mb-4">10. Cookies and Tracking</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  We use cookies and similar technologies to keep you signed in, remember
-                  preferences, analyze usage patterns, and improve the Platform. You can control
-                  cookie preferences through your browser settings; blocking some cookies may
-                  affect Platform functionality.
+                  We don't use advertising or analytics trackers. We use your browser's storage
+                  only for things the Platform needs: keeping you signed in, remembering your
+                  preferences, and keeping your current Concierge conversation. You can clear this
+                  storage through your browser settings; doing so signs you out.
                 </p>
               </section>
 
@@ -374,11 +392,11 @@ const PrivacyPolicy = () => {
               <section>
                 <h2 className="font-serif text-2xl font-medium mb-4">12. International Users</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  The Platform is operated from, and your information is generally stored and
-                  processed in, the United States. If you access the Platform from outside the
-                  United States, you understand your information will be transferred to, and
-                  processed in, the United States, which may not offer the same level of data
-                  protection as your home jurisdiction.
+                  Cook A Look is operated from Ontario, Canada. Our service providers (listed in
+                  Section 6) store and process information outside Canada, mainly in the United
+                  States, and, for the backup video service only, in Germany. While your
+                  information is there, it is subject to the laws of that country, which may allow
+                  government authorities to access it.
                 </p>
               </section>
 
