@@ -5,7 +5,7 @@ export interface ConciergeMessage {
 
 // Same fallbacks as src/integrations/supabase/client.ts: the Cloudflare build
 // doesn't set VITE_SUPABASE_* env vars, so they must not be required here.
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://chjmyzzczwattluqpbat.supabase.co";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://qdpqfsqjtbvlulekfhoy.supabase.co";
 const PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoam15enpjendhdHRsdXFwYmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyNDM3NjksImV4cCI6MjA4MzgxOTc2OX0.Y6N53UNdAZ5x02ADZNo7KMbjxEIsAmu8tq5OShOIHOs";
