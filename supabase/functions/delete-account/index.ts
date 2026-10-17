@@ -66,7 +66,7 @@ serve(async (req) => {
         .limit(1);
       if (pendingWithdrawals && pendingWithdrawals.length > 0) {
         return json(
-          { error: "You have a withdrawal in progress. Please contact info@cookalook.com so we can pay you out before deleting your account." },
+          { error: "You have a withdrawal in progress. Please contact support@cookalook.com so we can pay you out before deleting your account." },
           409,
         );
       }
@@ -128,6 +128,6 @@ serve(async (req) => {
     return json({ ok: true });
   } catch (e) {
     console.error("delete-account error:", e instanceof Error ? e.message : String(e));
-    return json({ error: "We couldn't delete your account. Please contact info@cookalook.com." }, 500);
+    return json({ error: "We couldn't delete your account. Please contact support@cookalook.com." }, 500);
   }
 });

@@ -69,9 +69,9 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
       if (error) {
         const ctx = (error as unknown as { context?: Response }).context;
         const body = ctx && typeof ctx.json === "function" ? await ctx.clone().json().catch(() => null) : null;
-        throw new Error(body?.error || "We couldn't delete your account. Please contact info@cookalook.com.");
+        throw new Error(body?.error || "We couldn't delete your account. Please contact support@cookalook.com.");
       }
-      if (!data?.ok) throw new Error("We couldn't delete your account. Please contact info@cookalook.com.");
+      if (!data?.ok) throw new Error("We couldn't delete your account. Please contact support@cookalook.com.");
 
       await supabase.auth.signOut();
       toast({
@@ -83,7 +83,7 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
       console.error("Delete account error:", err);
       toast({
         title: "Couldn't delete your account",
-        description: err instanceof Error ? err.message : "Please contact info@cookalook.com.",
+        description: err instanceof Error ? err.message : "Please contact support@cookalook.com.",
         variant: "destructive",
       });
     } finally {

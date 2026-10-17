@@ -36,8 +36,8 @@ const FAQSection = () => (
         <h2 className="font-serif text-4xl md:text-5xl">Questions, answered</h2>
         <p className="mt-4 text-muted-foreground">
           Something else? Email{" "}
-          <a href="mailto:info@cookalook.com" className="text-foreground underline underline-offset-4">
-            info@cookalook.com
+          <a href="mailto:support@cookalook.com" className="text-foreground underline underline-offset-4">
+            support@cookalook.com
           </a>
           .
         </p>

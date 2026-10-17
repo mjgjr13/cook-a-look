@@ -59,7 +59,7 @@ const SampleAdvisorWaitlistDialog = ({ isOpen, onClose, advisorId, advisorName }
     if (insertError) {
       console.error("Waitlist insert failed:", insertError);
       setError(
-        "Sorry, we couldn't save your spot just now. Please try again, or email info@cookalook.com and we'll add you by hand."
+        "Sorry, we couldn't save your spot just now. Please try again, or email support@cookalook.com and we'll add you by hand."
       );
       return;
     }

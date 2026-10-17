@@ -26,6 +26,7 @@ const Footer = () => {
               <li><Link to="/ai-concierge" className={linkClass}>AI Concierge</Link></li>
               <li><Link to="/become-advisor" className={linkClass}>Become an Advisor</Link></li>
               <li><Link to="/faq" className={linkClass}>FAQ</Link></li>
+              <li><Link to="/support" className={linkClass}>Support</Link></li>
             </ul>
           </nav>
 
@@ -39,9 +40,10 @@ const Footer = () => {
 
           <div className="col-span-2 sm:col-span-1">
             <h2 className="font-sans text-xs font-semibold uppercase tracking-wider text-primary-foreground/50 mb-3">Contact</h2>
-            <a href="mailto:info@cookalook.com" className={`inline-flex items-center gap-2 text-sm ${linkClass}`}>
+            <Link to="/support" className={`block mb-2 text-sm ${linkClass}`}>Help &amp; support</Link>
+            <a href="mailto:support@cookalook.com" className={`inline-flex items-center gap-2 text-sm ${linkClass}`}>
               <Mail size={15} aria-hidden="true" />
-              info@cookalook.com
+              support@cookalook.com
             </a>
             <div className="mt-3 flex justify-center">
               <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 text-sm ${linkClass}`} aria-label="Cook A Look on Instagram: cookalookofficial">

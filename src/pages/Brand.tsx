@@ -146,10 +146,10 @@ const Brand = () => {
             <p className="font-sans text-sm text-muted-foreground leading-relaxed">
               For partnership inquiries or custom asset requests, contact{" "}
               <a
-                href="mailto:info@cookalook.com"
+                href="mailto:support@cookalook.com"
                 className="underline underline-offset-4 hover:text-primary"
               >
-                info@cookalook.com
+                support@cookalook.com
               </a>
               .
             </p>

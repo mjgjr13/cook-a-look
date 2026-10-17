@@ -21,7 +21,7 @@ const FAQ = () => (
         <h1 className="font-serif text-4xl sm:text-5xl">Frequently asked questions</h1>
         <p className="mt-3 text-muted-foreground">
           Can't find what you need? Email{" "}
-          <a href="mailto:info@cookalook.com" className="text-foreground underline underline-offset-4">info@cookalook.com</a>{" "}
+          <a href="mailto:support@cookalook.com" className="text-foreground underline underline-offset-4">support@cookalook.com</a>{" "}
           or ask the <Link to="/ai-concierge" className="text-foreground underline underline-offset-4">AI Concierge</Link>.
         </p>
         <Accordion type="single" collapsible className="mt-8">

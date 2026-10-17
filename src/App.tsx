@@ -29,6 +29,7 @@ const OgPreview = lazy(() => import("./pages/OgPreview"));
 const Brand = lazy(() => import("./pages/Brand"));
 const AIConcierge = lazy(() => import("./pages/StyleConcierge"));
 const FAQ = lazy(() => import("./pages/FAQ"));
+const Support = lazy(() => import("./pages/Support"));
 const AdminBookings = lazy(() => import("./pages/admin/AdminBookings"));
 const AdminAdvisors = lazy(() => import("./pages/admin/AdminAdvisors"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/style-concierge" element={<Navigate to="/ai-concierge" replace />} />
             <Route path="/lookbook" element={<Navigate to="/ai-concierge" replace />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/become-advisor" element={<BecomeAdvisor />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
