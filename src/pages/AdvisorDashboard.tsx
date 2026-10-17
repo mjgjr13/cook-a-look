@@ -417,7 +417,7 @@ const AdvisorDashboard = () => {
                     });
                   } else {
                     toast({
-                      title: "🎉 You're Live!",
+                      title: "You're live",
                       description: "Your profile is now visible on the Style Advisors page.",
                     });
                     refetchAdvisorProfile();

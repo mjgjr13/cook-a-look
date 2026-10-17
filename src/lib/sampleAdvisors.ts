@@ -61,7 +61,7 @@ export const SAMPLE_ADVISOR_CONTENT: Record<string, SampleAdvisorContent> = {
       "What you wear speaks before you do. I help professionals build polished, comfortable workwear that fits their role and their personality - from a capsule for a new position to a look for a keynote or video interview. Expect practical advice, honest feedback, and a plan you can follow.",
     experience_years: 15,
     style_tags: ["Workwear", "Executive Presence", "Capsule Wardrobe", "On-Camera"],
-    target_demographics: ["Women", "Professionals"],
+    target_demographics: ["Women", "Men", "Professionals"],
   },
   // Previously "Chris Test"
   "50ed9a7f-d7f0-447c-9ec6-b55ec9b6d10f": {
