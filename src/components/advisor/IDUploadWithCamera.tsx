@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, Camera, Shield, X } from "lucide-react";
+import { Upload, Camera, Shield, X, SwitchCamera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { validateFile } from "@/lib/validations";
 import {
@@ -24,15 +24,33 @@ const IDUploadWithCamera = ({ idPreview, onCapture, onRemove }: IDUploadWithCame
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Which way the camera faces. A front (selfie) camera is shown mirrored while
+  // lining up the ID, like a mirror, so moving the card left moves it left on
+  // screen; the saved photo is not mirrored, so the ID text reads correctly.
+  const [facing, setFacing] = useState<"user" | "environment">("environment");
+  const [mirrored, setMirrored] = useState(false);
+  const [canSwitch, setCanSwitch] = useState(false);
 
-  const startCamera = async () => {
+  const startCamera = async (want: "user" | "environment" = facing) => {
     try {
+      stream?.getTracks().forEach((track) => track.stop());
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: 1280, height: 720 },
+        video: { facingMode: { ideal: want }, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
+      const settings = mediaStream.getVideoTracks()[0]?.getSettings?.() ?? {};
+      // Laptops usually have only a front webcam and report no facing mode.
+      const actual = settings.facingMode === "environment" ? "environment" : "user";
+      setFacing(actual);
+      setMirrored(actual === "user");
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        setCanSwitch(devices.filter((d) => d.kind === "videoinput").length > 1);
+      } catch {
+        setCanSwitch(false);
+      }
       setStream(mediaStream);
       setShowCameraModal(true);
-      
+
       // Wait for modal to render before setting video source
       setTimeout(() => {
         if (videoRef.current) {
@@ -66,8 +84,11 @@ const IDUploadWithCamera = ({ idPreview, onCapture, onRemove }: IDUploadWithCame
 
     if (!ctx) return;
 
+    // The raw camera frame is never mirrored, so the saved ID reads correctly
+    // even though the live preview was shown mirrored.
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(video, 0, 0);
 
     canvas.toBlob((blob) => {
@@ -143,7 +164,7 @@ const IDUploadWithCamera = ({ idPreview, onCapture, onRemove }: IDUploadWithCame
             type="button"
             variant="outline"
             className="h-24 flex-col gap-2"
-            onClick={startCamera}
+            onClick={() => startCamera()}
           >
             <Camera className="w-8 h-8 text-muted-foreground" />
             <span className="text-sm">Take Photo</span>
@@ -187,14 +208,27 @@ const IDUploadWithCamera = ({ idPreview, onCapture, onRemove }: IDUploadWithCame
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover ${mirrored ? "scale-x-[-1]" : ""}`}
               />
               <div className="absolute inset-4 border-2 border-dashed border-white/50 rounded-lg pointer-events-none" />
             </div>
 
             <p className="text-sm text-muted-foreground text-center">
               Position your ID within the frame and ensure all text is clearly visible
+              {mirrored && <span className="block text-xs mt-1">The preview is mirrored to help you line it up. Your photo will be saved the right way round.</span>}
             </p>
+
+            {canSwitch && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => startCamera(facing === "user" ? "environment" : "user")}
+              >
+                <SwitchCamera className="w-4 h-4 mr-2" />
+                {facing === "user" ? "Use back camera" : "Use front camera"}
+              </Button>
+            )}
 
             <div className="flex gap-3">
               <Button
