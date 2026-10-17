@@ -612,7 +612,7 @@ const BookingCalendar = ({
                     onClick={() => setKind(value)}
                     aria-pressed={kind === value}
                     className={cn(
-                      "min-h-11 px-2 py-2 text-sm font-sans border transition-colors flex items-center justify-center gap-1.5",
+                      "min-h-11 px-2 py-2 text-sm font-sans border transition-[color,background-color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] motion-reduce:active:scale-100 flex items-center justify-center gap-1.5",
                       kind === value
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-background border-border hover:border-primary"
@@ -635,7 +635,7 @@ const BookingCalendar = ({
                     onClick={() => setCorpFormat("virtual")}
                     aria-pressed={corpFormat === "virtual"}
                     className={cn(
-                      "min-h-11 px-2 py-2 text-sm font-sans border transition-colors flex items-center justify-center gap-1.5",
+                      "min-h-11 px-2 py-2 text-sm font-sans border transition-[color,background-color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] motion-reduce:active:scale-100 flex items-center justify-center gap-1.5",
                       corpFormat === "virtual"
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-background border-border hover:border-primary"
@@ -650,7 +650,7 @@ const BookingCalendar = ({
                     onClick={() => setCorpFormat("on_site")}
                     aria-pressed={corpFormat === "on_site"}
                     className={cn(
-                      "min-h-11 px-2 py-2 text-sm font-sans border transition-colors flex items-center justify-center gap-1.5",
+                      "min-h-11 px-2 py-2 text-sm font-sans border transition-[color,background-color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] motion-reduce:active:scale-100 flex items-center justify-center gap-1.5",
                       corpFormat === "on_site"
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-background border-border hover:border-primary"
@@ -695,7 +695,7 @@ const BookingCalendar = ({
           )}
 
           {selectedDate && (
-            <div className="mt-6 scroll-mt-4" ref={timesRef}>
+            <div className="mt-6 scroll-mt-4 motion-safe:animate-rise" ref={timesRef}>
               <h4 className="font-sans font-medium mb-3">
                 {isCorporate && corpFormat === "on_site" ? "Availability for" : "Available times for"} {format(selectedDate, "MMMM d, yyyy")}
               </h4>
@@ -713,7 +713,7 @@ const BookingCalendar = ({
                       onClick={() => handleSelectSlot(slot)}
                       aria-pressed={selectedSlot?.id === slot.id}
                       className={cn(
-                        "min-h-11 px-2 sm:px-4 py-2 text-sm font-sans border transition-colors",
+                        "min-h-11 px-2 sm:px-4 py-2 text-sm font-sans border transition-[color,background-color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] motion-reduce:active:scale-100",
                         selectedSlot?.id === slot.id
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background border-border hover:border-primary"
@@ -745,7 +745,7 @@ const BookingCalendar = ({
           )}
 
           {selectedDate && selectedSlot && (
-            <div ref={detailsRef} className="mt-6 p-4 bg-secondary border border-border space-y-4 scroll-mt-4">
+            <div ref={detailsRef} className="mt-6 p-4 bg-secondary border border-border space-y-4 scroll-mt-4 motion-safe:animate-rise">
               <div className="flex justify-between items-start gap-4">
                 <span className="font-sans text-sm">Your session</span>
                 <span className="font-sans font-medium text-right">
@@ -823,7 +823,7 @@ const BookingCalendar = ({
                       onClick={() => handleSelectHours(h as 1 | 2 | 3)}
                       aria-pressed={hours === h}
                       className={cn(
-                        "min-h-11 px-2 py-2 text-sm font-sans border transition-colors",
+                        "min-h-11 px-2 py-2 text-sm font-sans border transition-[color,background-color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] motion-reduce:active:scale-100",
                         hours === h
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background border-border hover:border-primary"
@@ -848,7 +848,7 @@ const BookingCalendar = ({
                       onClick={() => setMeetingType("virtual")}
                       aria-pressed={meetingType === "virtual"}
                       className={cn(
-                        "min-h-11 px-2 py-2 text-sm font-sans border transition-colors flex items-center justify-center gap-1",
+                        "min-h-11 px-2 py-2 text-sm font-sans border transition-[color,background-color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] motion-reduce:active:scale-100 flex items-center justify-center gap-1",
                         meetingType === "virtual"
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background border-border hover:border-primary"
@@ -861,7 +861,7 @@ const BookingCalendar = ({
                       onClick={() => setMeetingType("in_person")}
                       aria-pressed={meetingType === "in_person"}
                       className={cn(
-                        "min-h-11 px-2 py-2 text-sm font-sans border transition-colors flex items-center justify-center gap-1",
+                        "min-h-11 px-2 py-2 text-sm font-sans border transition-[color,background-color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] motion-reduce:active:scale-100 flex items-center justify-center gap-1",
                         meetingType === "in_person"
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background border-border hover:border-primary"

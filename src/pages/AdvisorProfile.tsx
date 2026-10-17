@@ -266,9 +266,9 @@ const AdvisorProfile = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[auto_1fr] gap-6 lg:gap-x-12 lg:gap-y-0">
             {/* Left Column - Photo & Quick Info */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, transform: "translateY(8px)" }}
+              animate={{ opacity: 1, transform: "translateY(0px)" }}
+              transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1] }}
               className="lg:col-span-1 lg:col-start-1 lg:row-start-1"
             >
               <div className="relative mx-auto aspect-[5/6] max-h-[410px] w-full overflow-hidden mb-4 lg:mx-0 lg:aspect-[4/5] lg:max-h-none lg:mb-6 bg-muted">
@@ -337,9 +337,9 @@ const AdvisorProfile = () => {
 
             {/* Right Column - Details */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+              initial={{ opacity: 0, transform: "translateY(8px)" }}
+              animate={{ opacity: 1, transform: "translateY(0px)" }}
+              transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1], delay: 0.05 }}
               className="lg:col-span-2 lg:col-start-2 lg:row-start-1 lg:row-span-2"
             >
               {isSample ? (
@@ -553,9 +553,9 @@ const AdvisorProfile = () => {
                   alt={hasPortfolio ? `Styling work by ${displayName}, image ${index + 1}` : `Style inspiration ${index + 1}`}
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700 ease-out-strong can-hover:group-hover:scale-[1.03] motion-reduce:transition-none"
                 />
-                <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors duration-300" />
+                
               </div>
             ))}
           </div>

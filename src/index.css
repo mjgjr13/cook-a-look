@@ -146,6 +146,22 @@
     html {
       scroll-behavior: auto;
     }
+
+    /* Dialogs, popovers and menus keep their fade but drop zoom and slide */
+    .animate-in,
+    .animate-out {
+      --tw-enter-scale: 1 !important;
+      --tw-exit-scale: 1 !important;
+    }
+
+    /* Centred dialogs animate from their -50% centring offset; leave that alone */
+    .animate-in:not([role="dialog"]):not([role="alertdialog"]),
+    .animate-out:not([role="dialog"]):not([role="alertdialog"]) {
+      --tw-enter-translate-x: 0 !important;
+      --tw-enter-translate-y: 0 !important;
+      --tw-exit-translate-x: 0 !important;
+      --tw-exit-translate-y: 0 !important;
+    }
   }
 }
 

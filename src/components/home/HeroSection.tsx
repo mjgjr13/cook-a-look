@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HowItWorksIllustration from "@/components/home/HowItWorksIllustration";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
+import { cn } from "@/lib/utils";
 import { useHomepageAdvisors, HERO_PORTRAIT_COUNT } from "@/hooks/useHomepageAdvisors";
 
 /** Advisor portraits, staggered in two columns. Each links to that advisor's profile. */
@@ -29,14 +30,18 @@ const HeroPortraits = () => {
       {hero.map((advisor, i) => {
         const name = advisor.full_name || "Style advisor";
         return (
-          <li key={advisor.id} className={i % 2 ? "mt-8 sm:mt-10" : undefined}>
+          <li
+            key={advisor.id}
+            className={cn("motion-safe:animate-rise motion-safe:[animation-duration:600ms]", i % 2 && "mt-8 sm:mt-10")}
+            style={{ animationDelay: `${i * 70}ms` }}
+          >
             <Link to={`/advisors/${advisor.id}`} className="group block">
               <div className="aspect-[4/5] overflow-hidden bg-muted">
                 <img
                   src={optimizedImageUrl(advisor.avatar_url!, 560, 700)}
                   onError={fallbackToOriginal(advisor.avatar_url!)}
                   alt={`${name}, style advisor`}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                  className="h-full w-full object-cover transition-transform duration-700 ease-out-strong can-hover:group-hover:scale-[1.03] motion-reduce:transition-none"
                   decoding="async"
                   {...(i === 0 ? { fetchpriority: "high" } : {})}
                 />
@@ -85,7 +90,7 @@ const HeroSection = () => (
         </div>
 
         <div className="lg:col-span-6">
-          <div className="mx-auto w-full max-w-[460px] lg:mr-0">
+          <div className="mx-auto w-full max-w-[310px] sm:max-w-[460px] lg:mr-0">
             <HeroPortraits />
           </div>
         </div>

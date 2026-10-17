@@ -201,9 +201,9 @@ const Advisors = () => {
       <section className="py-10 lg:py-16 bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, transform: "translateY(8px)" }}
+            animate={{ opacity: 1, transform: "translateY(0px)" }}
+            transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1] }}
             className="mb-8 lg:mb-12"
           >
             <h1 className="font-serif text-4xl md:text-5xl font-normal mb-3">
@@ -216,9 +216,9 @@ const Advisors = () => {
 
           {/* Enhanced Filters */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            initial={{ opacity: 0, transform: "translateY(8px)" }}
+            animate={{ opacity: 1, transform: "translateY(0px)" }}
+            transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1], delay: 0.05 }}
           >
             <AdvisorFilters
               filters={filters}
@@ -240,10 +240,10 @@ const Advisors = () => {
               return (
                 <motion.article
                   key={advisor.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.03 }}
-                   className="group flex min-w-0 flex-col bg-background border border-border overflow-hidden transition-colors hover:border-foreground cursor-pointer"
+                  initial={{ opacity: 0, transform: "translateY(8px)" }}
+                  animate={{ opacity: 1, transform: "translateY(0px)" }}
+                  transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1], delay: Math.min(index, 7) * 0.04 }}
+                   className="group flex min-w-0 flex-col bg-background border border-border overflow-hidden transition-colors duration-200 can-hover:hover:border-foreground cursor-pointer"
                   onClick={() => handleCardClick(advisor.id)}
                 >
                   <div className="relative aspect-[3/4] overflow-hidden bg-muted">
@@ -252,7 +252,7 @@ const Advisors = () => {
                         src={optimizedImageUrl(advisor.avatar_url, 480, 640)}
                         onError={fallbackToOriginal(advisor.avatar_url)}
                         alt={`${displayName}, style advisor`}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out-strong can-hover:group-hover:scale-[1.03] motion-reduce:transition-none"
                         loading={index < 4 ? "eager" : "lazy"}
                         decoding="async"
                       />

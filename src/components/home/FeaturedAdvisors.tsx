@@ -39,7 +39,7 @@ const FeaturedAdvisors = () => {
             {advisors.map((advisor, index) => (
               <article
                 key={advisor.id}
-                className="group flex flex-col bg-background border border-border overflow-hidden transition-colors hover:border-foreground cursor-pointer"
+                className="group flex flex-col bg-background border border-border overflow-hidden transition-colors duration-200 can-hover:hover:border-foreground cursor-pointer"
                 onClick={() => handleCardClick(advisor.id)}
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
@@ -48,7 +48,7 @@ const FeaturedAdvisors = () => {
                       src={optimizedImageUrl(advisor.avatar_url, 560, 700)}
                       onError={fallbackToOriginal(advisor.avatar_url)}
                       alt={`${advisor.full_name || 'Style Advisor'}, style advisor`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out-strong can-hover:group-hover:scale-[1.03] motion-reduce:transition-none"
                       loading="lazy"
                       decoding="async"
                     />
