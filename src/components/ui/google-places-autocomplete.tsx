@@ -7,8 +7,7 @@ import { cn } from "@/lib/utils";
  * Google Places (New) autocomplete input.
  *
  * Uses Places API New via the Maps JS loader. Needs a Google Maps browser key
- * (VITE_GOOGLE_MAPS_BROWSER_KEY) restricted to cookalook.com. The old
- * Lovable-managed VITE_LOVABLE_CONNECTOR_* key is still read as a fallback.
+ * (VITE_GOOGLE_MAPS_BROWSER_KEY, set in Cloudflare Pages) restricted to cookalook.com.
  */
 export interface SelectedPlace {
   placeId: string;
@@ -72,9 +71,7 @@ const loadGoogleMaps = (): Promise<void> => {
   if (window.google?.maps?.importLibrary) return Promise.resolve();
   if (loaderPromise) return loaderPromise;
 
-  const key = ((import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY ??
-    import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY) as string | undefined) ?? "";
-  const channel = (import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined) ?? "";
+  const key = (import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY as string | undefined) ?? "";
   if (!key) return Promise.reject(new Error("Google Maps browser key missing"));
 
   loaderPromise = new Promise((resolve, reject) => {
@@ -95,7 +92,7 @@ const loadGoogleMaps = (): Promise<void> => {
     s.async = true;
     s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
       key,
-    )}&libraries=places&v=weekly&loading=async&callback=initCookALookGoogleMaps${channel ? `&channel=${encodeURIComponent(channel)}` : ""}`;
+    )}&libraries=places&v=weekly&loading=async&callback=initCookALookGoogleMaps`;
     s.onerror = () => reject(new Error("Failed to load Google Maps"));
     document.head.appendChild(s);
   });
