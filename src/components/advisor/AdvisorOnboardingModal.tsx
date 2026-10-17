@@ -70,7 +70,7 @@ const AdvisorOnboardingModal = ({
         "Standard platform fee is 15% per booking",
         "After your 9th completed booking in a calendar month, every additional booking that month is charged a reduced 10% fee",
         "Your net payout is automatically calculated and shown in your dashboard",
-        "Funds are released 48 hours after successful sessions (no disputes), and you can request withdrawals once funds are available",
+        "Funds are released 48 hours after successful sessions (no disputes) and sent to your bank automatically once you've set up payouts",
       ],
     },
   ];

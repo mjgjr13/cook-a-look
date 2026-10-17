@@ -665,9 +665,9 @@ const AccountSettings = () => {
                       <div className="flex items-start gap-3">
                         <DollarSign className="w-5 h-5 text-gold mt-0.5" />
                         <div>
-                          <p className="font-medium text-sm">Earnings & Withdrawals</p>
+                          <p className="font-medium text-sm">Earnings & Payouts</p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            View your earnings, request withdrawals, and track payment history.
+                            View your earnings, set up payouts, and track payment history.
                           </p>
                         </div>
                       </div>

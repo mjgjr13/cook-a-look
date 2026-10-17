@@ -1,21 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -24,21 +11,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {  
-  DollarSign, 
-  TrendingUp, 
-  Clock, 
+import {
+  DollarSign,
+  TrendingUp,
+  Clock,
   Wallet,
   ArrowDownToLine,
-  Calendar,
   CheckCircle2,
-  XCircle,
   Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import PayoutSetupCard, { type PayoutStatus } from "@/components/advisor/PayoutSetupCard";
 
 interface Payment {
   id: string;
@@ -50,6 +36,10 @@ interface Payment {
   status: string;
   created_at: string;
   booking_id: string;
+  escrow_status: string | null;
+  stripe_transfer_id: string | null;
+  transferred_at?: string | null;
+  booking?: { status?: string | null; slot?: { start_time?: string | null; end_time?: string | null } | null } | null;
 }
 
 interface WithdrawalRequest {
@@ -63,35 +53,36 @@ interface WithdrawalRequest {
 
 interface EarningsSummary {
   totalEarnings: number;
-  availableBalance: number;
-  pendingWithdrawals: number;
-  totalWithdrawn: number;
+  paidOut: number;
+  onTheWay: number;
   totalSessions: number;
   thisMonthEarnings: number;
 }
+
+type PayoutState = "paid" | "scheduled" | "escrow" | "disputed" | "refunded" | "needs_setup";
+
+const ESCROW_HOURS = 48;
+
+const payoutOf = (p: Payment) => Number(p.advisor_payout || p.amount * 0.85);
 
 const AdvisorEarnings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [profileId, setProfileId] = useState<string | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [payoutsActive, setPayoutsActive] = useState(false);
   const [summary, setSummary] = useState<EarningsSummary>({
     totalEarnings: 0,
-    availableBalance: 0,
-    pendingWithdrawals: 0,
-    totalWithdrawn: 0,
+    paidOut: 0,
+    onTheWay: 0,
     totalSessions: 0,
     thisMonthEarnings: 0,
   });
-  
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -102,7 +93,6 @@ const AdvisorEarnings = () => {
         return;
       }
 
-      // Get profile ID
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, is_advisor")
@@ -119,92 +109,48 @@ const AdvisorEarnings = () => {
         return;
       }
 
-      setProfileId(profile.id);
-
-      // Load payments where this advisor received money
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from("payments")
-        .select("*, booking:bookings(slot:availability_slots(start_time))")
-        .eq("advisor_id", profile.id)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false });
+      const [{ data: paymentsData, error: paymentsError }, { data: withdrawalsData }] = await Promise.all([
+        supabase
+          .from("payments")
+          .select("*, booking:bookings(status, slot:availability_slots(start_time, end_time))")
+          .eq("advisor_id", profile.id)
+          .eq("status", "completed")
+          .order("created_at", { ascending: false }),
+        // Older manual withdrawal requests, shown only if there are any.
+        supabase
+          .from("withdrawal_requests")
+          .select("*")
+          .eq("advisor_id", profile.id)
+          .order("created_at", { ascending: false }),
+      ]);
 
       if (paymentsError) throw paymentsError;
-      setPayments(paymentsData || []);
-
-      // Load withdrawal requests
-      const { data: withdrawalsData, error: withdrawalsError } = await supabase
-        .from("withdrawal_requests")
-        .select("*")
-        .eq("advisor_id", profile.id)
-        .order("created_at", { ascending: false });
-
-      if (withdrawalsError) throw withdrawalsError;
+      const list = (paymentsData || []) as unknown as Payment[];
+      setPayments(list);
       setWithdrawals(withdrawalsData || []);
 
-      // Calculate earnings with escrow logic
-      // Funds are only available 48 hours after the meeting start time
+      let paidOut = 0;
+      let onTheWay = 0;
+      let totalEarnings = 0;
+      for (const p of list) {
+        if (p.escrow_status === "refunded" || p.booking?.status === "cancelled") continue;
+        totalEarnings += payoutOf(p);
+        if (p.stripe_transfer_id) paidOut += payoutOf(p);
+        else onTheWay += payoutOf(p);
+      }
       const now = new Date();
-      const escrowReleaseHours = 48;
-      
-      let availableEarnings = 0;
-      let pendingEscrowEarnings = 0;
-      
-      (paymentsData || []).forEach(p => {
-        const payout = Number(p.advisor_payout || p.amount * 0.85);
-        const meetingStartTime = p.booking?.slot?.start_time 
-          ? new Date(p.booking.slot.start_time)
-          : null;
-        
-        // Check if escrow should be released (48 hours after meeting)
-        // If no meeting time, fall back to escrow_release_at or escrow_status
-        let isReleased = false;
-        
-        if (p.escrow_status === 'refunded') {
-          return;
-        } else if (p.escrow_status === 'disputed') {
-          // Held until an admin resolves the client's dispute.
-          isReleased = false;
-        } else if (p.escrow_status === 'released') {
-          isReleased = true;
-        } else if (meetingStartTime) {
-          const releaseTime = new Date(meetingStartTime.getTime() + escrowReleaseHours * 60 * 60 * 1000);
-          isReleased = now >= releaseTime;
-        } else if (p.escrow_release_at) {
-          isReleased = now >= new Date(p.escrow_release_at);
-        }
-        
-        if (isReleased) {
-          availableEarnings += payout;
-        } else {
-          pendingEscrowEarnings += payout;
-        }
-      });
-
-      const totalEarnings = availableEarnings + pendingEscrowEarnings;
-
-      const pendingWithdrawals = (withdrawalsData || [])
-        .filter(w => w.status === "pending" || w.status === "approved")
-        .reduce((sum, w) => sum + Number(w.amount), 0);
-
-      const totalWithdrawn = (withdrawalsData || [])
-        .filter(w => w.status === "completed")
-        .reduce((sum, w) => sum + Number(w.amount), 0);
-
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const thisMonthEarnings = (paymentsData || [])
-        .filter(p => new Date(p.created_at) >= thisMonthStart)
-        .reduce((sum, p) => sum + Number(p.advisor_payout || p.amount * 0.85), 0);
+      const thisMonthEarnings = list
+        .filter((p) => new Date(p.created_at) >= thisMonthStart && p.escrow_status !== "refunded" && p.booking?.status !== "cancelled")
+        .reduce((sum, p) => sum + payoutOf(p), 0);
 
       setSummary({
         totalEarnings,
-        availableBalance: Math.max(0, availableEarnings - totalWithdrawn - pendingWithdrawals),
-        pendingWithdrawals: pendingWithdrawals + pendingEscrowEarnings,
-        totalWithdrawn,
-        totalSessions: (paymentsData || []).length,
+        paidOut,
+        onTheWay,
+        totalSessions: list.length,
         thisMonthEarnings,
       });
-
     } catch (error) {
       console.error("Error loading data:", error);
       toast({
@@ -217,70 +163,34 @@ const AdvisorEarnings = () => {
     }
   };
 
-  const handleWithdrawRequest = async () => {
-    const amount = parseFloat(withdrawAmount);
-    
-    if (isNaN(amount) || amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid withdrawal amount.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const payoutState = (p: Payment): PayoutState => {
+    if (p.stripe_transfer_id) return "paid";
+    if (p.escrow_status === "refunded" || p.booking?.status === "cancelled") return "refunded";
+    if (p.escrow_status === "disputed") return "disputed";
+    const end = p.booking?.slot?.end_time || p.booking?.slot?.start_time;
+    const cleared = end ? Date.now() >= new Date(end).getTime() + ESCROW_HOURS * 3600_000 : false;
+    if (!cleared) return "escrow";
+    return payoutsActive ? "scheduled" : "needs_setup";
+  };
 
-    if (amount > summary.availableBalance) {
-      toast({
-        title: "Insufficient balance",
-        description: "You cannot withdraw more than your available balance.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (amount < 25) {
-      toast({
-        title: "Minimum withdrawal",
-        description: "Minimum withdrawal amount is $25.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsWithdrawing(true);
-
-    try {
-      const { error } = await supabase
-        .from("withdrawal_requests")
-        .insert({
-          advisor_id: profileId,
-          amount,
-          payment_method: "bank_transfer",
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Withdrawal requested",
-        description: "Your withdrawal request has been submitted for review.",
-      });
-
-      setWithdrawDialogOpen(false);
-      setWithdrawAmount("");
-      loadData();
-    } catch (error) {
-      console.error("Withdrawal error:", error);
-      toast({
-        title: "Request failed",
-        description: "Failed to submit withdrawal request. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsWithdrawing(false);
+  const payoutBadge = (p: Payment) => {
+    switch (payoutState(p)) {
+      case "paid":
+        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Paid out</Badge>;
+      case "scheduled":
+        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Sending soon</Badge>;
+      case "escrow":
+        return <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">In escrow</Badge>;
+      case "disputed":
+        return <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20">On hold (problem reported)</Badge>;
+      case "refunded":
+        return <Badge variant="outline">Refunded</Badge>;
+      case "needs_setup":
+        return <Badge className="bg-gold/10 text-foreground border-gold/30">Set up payouts to receive</Badge>;
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const withdrawalBadge = (status: string) => {
     switch (status) {
       case "completed":
         return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Completed</Badge>;
@@ -305,192 +215,48 @@ const AdvisorEarnings = () => {
     );
   }
 
+  const cards = [
+    { title: "Paid Out", value: summary.paidOut, note: "Sent to your bank account", Icon: Wallet, tone: "text-green-600" },
+    { title: "Total Earnings", value: summary.totalEarnings, note: "Lifetime earnings", Icon: DollarSign, tone: "" },
+    { title: "This Month", value: summary.thisMonthEarnings, note: `${summary.totalSessions} sessions total`, Icon: TrendingUp, tone: "" },
+    { title: "On the Way", value: summary.onTheWay, note: "In escrow or about to be sent", Icon: Clock, tone: "text-yellow-600" },
+  ];
+
   return (
     <Layout>
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8 max-w-6xl">
-          {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <div>
-              <h1 className="font-serif text-3xl md:text-4xl font-medium">
-                Your Earnings & Withdrawals
-              </h1>
-            </div>
+            <h1 className="font-serif text-3xl md:text-4xl font-medium">
+              Your Earnings & Payouts
+            </h1>
           </div>
 
-          {/* Manual payout banner */}
-          <div className="mb-8 border border-gold/30 bg-gold/5 px-4 py-3 rounded-md">
-            <p className="font-sans text-sm text-foreground">
-              <strong>Payouts are processed manually</strong> within 7 days of a completed session.
-              Submit a withdrawal request below (minimum $25) or email{" "}
-              <a href="mailto:support@cookalook.com" className="underline">support@cookalook.com</a>.
-            </p>
-          </div>
-
-
+          <PayoutSetupCard onStatus={(s: PayoutStatus) => setPayoutsActive(!!s.transfers_active && !!s.payouts_enabled)} />
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Available Balance
-                  </CardTitle>
-                  <Wallet className="w-4 h-4 text-gold" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    ${summary.availableBalance.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cleared for withdrawal
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total Earnings
-                  </CardTitle>
-                  <DollarSign className="w-4 h-4 text-gold" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ${summary.totalEarnings.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Lifetime earnings
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    This Month
-                  </CardTitle>
-                  <TrendingUp className="w-4 h-4 text-gold" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ${summary.thisMonthEarnings.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {summary.totalSessions} sessions total
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Pending / In Escrow
-                  </CardTitle>
-                  <Clock className="w-4 h-4 text-gold" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    ${summary.pendingWithdrawals.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ${summary.totalWithdrawn.toFixed(2)} withdrawn
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
+            {cards.map(({ title, value, note, Icon, tone }, i) => (
+              <motion.div
+                key={title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * (i + 1) }}
+              >
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                    <Icon className="w-4 h-4 text-gold" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${tone}`}>${value.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">{note}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
 
-          {/* Withdraw Button */}
-          <div className="mb-8">
-            <Dialog open={withdrawDialogOpen} onOpenChange={setWithdrawDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  size="lg" 
-                  disabled={summary.availableBalance < 25}
-                  className="bg-gold hover:bg-gold/90 text-black"
-                >
-                  <ArrowDownToLine className="w-4 h-4 mr-2" />
-                  Request Withdrawal
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Request Withdrawal</DialogTitle>
-                  <DialogDescription>
-                    Enter the amount you'd like to withdraw. Minimum withdrawal is $25.
-                    Withdrawals are typically processed within 3-5 business days.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Withdrawal Amount ($)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      min="25"
-                      max={summary.availableBalance}
-                      step="0.01"
-                      value={withdrawAmount}
-                      onChange={(e) => setWithdrawAmount(e.target.value)}
-                      placeholder="Enter amount"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Available: ${summary.availableBalance.toFixed(2)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="link"
-                    className="p-0 h-auto"
-                    onClick={() => setWithdrawAmount(summary.availableBalance.toFixed(2))}
-                  >
-                    Withdraw full balance
-                  </Button>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setWithdrawDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleWithdrawRequest} disabled={isWithdrawing}>
-                    {isWithdrawing ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : null}
-                    Submit Request
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            {summary.availableBalance < 25 && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Minimum withdrawal amount is $25. Earn ${(25 - summary.availableBalance).toFixed(2)} more to withdraw.
-              </p>
-            )}
-          </div>
-
-          {/* Tabs for Payments and Withdrawals */}
           <div className="space-y-8">
             {/* Recent Payments */}
             <Card>
@@ -500,7 +266,7 @@ const AdvisorEarnings = () => {
                   Recent Payments
                 </CardTitle>
                 <CardDescription>
-                  Your earnings from completed sessions (after 15% platform fee)
+                  Your earnings from each session, after the platform fee
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -509,90 +275,79 @@ const AdvisorEarnings = () => {
                     No payments yet. Complete sessions to start earning!
                   </p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Session Total</TableHead>
-                        <TableHead>Platform Fee</TableHead>
-                        <TableHead>Your Earnings</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {payments.slice(0, 10).map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell>
-                            {format(new Date(payment.created_at), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            -${Number(payment.platform_fee || payment.amount * 0.15).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="font-semibold text-green-600">
-                            ${Number(payment.advisor_payout || payment.amount * 0.85).toFixed(2)}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Session Total</TableHead>
+                          <TableHead>Platform Fee</TableHead>
+                          <TableHead>Your Earnings</TableHead>
+                          <TableHead>Payout</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {payments.slice(0, 20).map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell>
+                              {format(new Date(payment.booking?.slot?.start_time || payment.created_at), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              -${Number(payment.platform_fee || payment.amount * 0.15).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="font-semibold text-green-600">
+                              ${payoutOf(payment).toFixed(2)}
+                            </TableCell>
+                            <TableCell>{payoutBadge(payment)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Withdrawal History */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ArrowDownToLine className="w-5 h-5 text-gold" />
-                  Withdrawal History
-                </CardTitle>
-                <CardDescription>
-                  Track your withdrawal requests and payouts
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {withdrawals.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No withdrawal requests yet.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date Requested</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Processed</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {withdrawals.map((withdrawal) => (
-                        <TableRow key={withdrawal.id}>
-                          <TableCell>
-                            {format(new Date(withdrawal.created_at), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            ${Number(withdrawal.amount).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {withdrawal.payment_method?.replace("_", " ") || "—"}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
-                          <TableCell>
-                            {withdrawal.processed_at 
-                              ? format(new Date(withdrawal.processed_at), "MMM d, yyyy")
-                              : "—"}
-                          </TableCell>
+            {withdrawals.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ArrowDownToLine className="w-5 h-5 text-gold" />
+                    Earlier Withdrawal Requests
+                  </CardTitle>
+                  <CardDescription>
+                    Requests made before automatic payouts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date Requested</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Processed</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {withdrawals.map((withdrawal) => (
+                          <TableRow key={withdrawal.id}>
+                            <TableCell>{format(new Date(withdrawal.created_at), "MMM d, yyyy")}</TableCell>
+                            <TableCell className="font-semibold">${Number(withdrawal.amount).toFixed(2)}</TableCell>
+                            <TableCell>{withdrawalBadge(withdrawal.status)}</TableCell>
+                            <TableCell>
+                              {withdrawal.processed_at ? format(new Date(withdrawal.processed_at), "MMM d, yyyy") : "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Info Box */}
@@ -601,20 +356,20 @@ const AdvisorEarnings = () => {
               <h3 className="font-medium mb-2">How Payouts Work</h3>
               <ul className="text-sm text-muted-foreground space-y-2">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                  You receive 85% of each session price (15% platform fee)
+                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  You keep 85% of each session price. After 9 completed bookings in a calendar month, the platform fee drops to 10% for the rest of that month.
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                  Minimum withdrawal amount is $25
+                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  Payment is held in escrow until 48 hours after your session, in case the client reports a problem.
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                  Withdrawals are processed within 3-5 business days
+                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  Then your share is sent to your Stripe account automatically. Nothing to request.
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5" />
-                  Payment is sent via bank transfer to your registered account
+                  <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  Stripe deposits it into your bank account, usually within 2 to 5 business days.
                 </li>
               </ul>
             </CardContent>

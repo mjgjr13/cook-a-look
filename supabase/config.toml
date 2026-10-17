@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.delete-expired-verifications]
 verify_jwt = true
+
+[functions.stripe-connect]
+verify_jwt = false
+
+[functions.release-advisor-payouts]
+verify_jwt = false

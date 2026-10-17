@@ -158,61 +158,19 @@ const AdvisorDashboard = () => {
       setBookings(bookingsResult.data || []);
       setPlatformFee(feeResult);
 
-      // Calculate earnings with escrow logic
-      // Funds are only available 48 hours after the meeting start time
+      // Paid out = transferred to the advisor's Stripe account (release-advisor-payouts);
+      // everything else that isn't refunded is in escrow or about to be sent.
       if (paymentsResult.data) {
-        const now = new Date();
-        const escrowReleaseHours = 48;
-        
-        let availableEarnings = 0;
-        let pendingEscrowEarnings = 0;
-        
+        let paidOut = 0;
+        let onTheWay = 0;
         paymentsResult.data
-          .filter(p => p.status === "completed")
+          .filter(p => p.status === "completed" && p.escrow_status !== "refunded")
           .forEach(p => {
             const payout = Number(p.advisor_payout || p.amount * (1 - feeResult.feePercent / 100));
-            const meetingStartTime = p.booking?.slot?.start_time 
-              ? new Date(p.booking.slot.start_time)
-              : null;
-            
-            let isReleased = false;
-            
-            if (p.escrow_status === 'released') {
-              isReleased = true;
-            } else if (meetingStartTime) {
-              const releaseTime = new Date(meetingStartTime.getTime() + escrowReleaseHours * 60 * 60 * 1000);
-              isReleased = now >= releaseTime;
-            } else if (p.escrow_release_at) {
-              isReleased = now >= new Date(p.escrow_release_at);
-            }
-            
-            if (isReleased) {
-              availableEarnings += payout;
-            } else {
-              pendingEscrowEarnings += payout;
-            }
+            if (p.stripe_transfer_id) paidOut += payout;
+            else onTheWay += payout;
           });
-
-        const total = availableEarnings + pendingEscrowEarnings;
-
-        const { data: withdrawalsData } = await supabase
-          .from("withdrawal_requests")
-          .select("*")
-          .eq("advisor_id", profile.id);
-
-        const pendingWithdrawals = (withdrawalsData || [])
-          .filter(w => w.status === "pending" || w.status === "approved")
-          .reduce((sum, w) => sum + Number(w.amount), 0);
-
-        const withdrawn = (withdrawalsData || [])
-          .filter(w => w.status === "completed")
-          .reduce((sum, w) => sum + Number(w.amount), 0);
-
-        setEarnings({
-          total,
-          pending: pendingWithdrawals + pendingEscrowEarnings,
-          available: Math.max(0, availableEarnings - withdrawn - pendingWithdrawals),
-        });
+        setEarnings({ total: paidOut + onTheWay, pending: onTheWay, available: paidOut });
       }
 
     } catch (error) {
@@ -507,7 +465,7 @@ const AdvisorDashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Available Balance
+                    Paid Out
                   </CardTitle>
                   <DollarSign className="w-4 h-4 text-gold" />
                 </CardHeader>
@@ -516,7 +474,7 @@ const AdvisorDashboard = () => {
                     ${earnings.available.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    ${earnings.pending.toFixed(2)} in escrow
+                    ${earnings.pending.toFixed(2)} on the way
                   </p>
                 </CardContent>
               </Card>
@@ -575,8 +533,8 @@ const AdvisorDashboard = () => {
                     <DollarSign className="w-8 h-8 text-gold" />
                     <ArrowRight className="w-5 h-5 text-muted-foreground" />
                   </div>
-                  <CardTitle className="text-lg">Earnings & Withdrawals</CardTitle>
-                  <CardDescription>View earnings and request payouts</CardDescription>
+                  <CardTitle className="text-lg">Earnings & Payouts</CardTitle>
+                  <CardDescription>See your earnings and payout setup</CardDescription>
                 </CardHeader>
               </Card>
             </motion.div>
