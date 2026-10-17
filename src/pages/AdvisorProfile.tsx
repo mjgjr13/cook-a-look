@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw, Sparkles, CheckCircle2, Briefcase } from "lucide-react";
 import { CorporateInfo, fetchCorporateAdvisors } from "@/lib/corporateAdvisors";
 import { motion } from "framer-motion";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import BookingCalendar from "@/components/BookingCalendar";
@@ -88,7 +89,7 @@ const AdvisorProfile = () => {
 
       try {
         const [{ data, error: fetchError }, corporateMap] = await Promise.all([
-          supabase.rpc('get_advisor_public_profile', { advisor_profile_id: id }),
+          publicSupabase.rpc('get_advisor_public_profile', { advisor_profile_id: id }),
           fetchCorporateAdvisors(),
         ]);
         setCorporate(corporateMap.get(id) ?? null);

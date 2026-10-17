@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 
 export interface CorporateInfo {
   corporate_services: string[];
@@ -16,7 +16,7 @@ export interface CorporateInfo {
  */
 export const fetchCorporateAdvisors = async (): Promise<Map<string, CorporateInfo>> => {
   try {
-    const { data, error } = await supabase.rpc("get_public_corporate_advisors");
+    const { data, error } = await publicSupabase.rpc("get_public_corporate_advisors");
     if (error || !data) return new Map();
     return new Map(
       data.map((row) => [

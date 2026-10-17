@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 
 /**
  * "Top advisor" ordering used for Recommended sort and the homepage's four
@@ -36,7 +36,7 @@ type PopularityRpc = (fn: "get_advisor_popularity_ranks") => PromiseLike<{
 /** advisor id -> popularity rank (1 = most popular). Empty map if unavailable. */
 export const fetchPopularityRanks = async (): Promise<Map<string, number>> => {
   try {
-    const { data, error } = await (supabase.rpc as unknown as PopularityRpc)("get_advisor_popularity_ranks");
+    const { data, error } = await (publicSupabase.rpc as unknown as PopularityRpc)("get_advisor_popularity_ranks");
     if (error || !data) return new Map();
     return new Map(data.map((r) => [r.advisor_id, r.popularity_rank]));
   } catch {
@@ -56,7 +56,7 @@ type AcceptingRpc = (fn: "get_advisors_accepting_bookings") => PromiseLike<{
  */
 export const fetchAdvisorsAcceptingBookings = async (): Promise<Set<string> | null> => {
   try {
-    const { data, error } = await (supabase.rpc as unknown as AcceptingRpc)("get_advisors_accepting_bookings");
+    const { data, error } = await (publicSupabase.rpc as unknown as AcceptingRpc)("get_advisors_accepting_bookings");
     if (error || !data) return null;
     return new Set(data.map((r) => r.advisor_id));
   } catch {

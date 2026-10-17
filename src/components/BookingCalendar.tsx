@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format, addMonths, addDays } from "date-fns";
 import type { User } from "@supabase/supabase-js";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Globe, Info, Video, MapPin, Briefcase, User as UserIcon } from "lucide-react";
@@ -232,7 +233,7 @@ const BookingCalendar = ({
       return;
     }
     let cancelled = false;
-    (supabase.rpc as unknown as OpenDatesRpc)("get_advisor_open_dates", {
+    (publicSupabase.rpc as unknown as OpenDatesRpc)("get_advisor_open_dates", {
       p_advisor_id: advisorId,
       p_client_tz: clientTimezone,
       p_duration_minutes: slotDuration,
@@ -256,7 +257,7 @@ const BookingCalendar = ({
       try {
         const dateStr = format(selectedDate, "yyyy-MM-dd");
         if (isCorporate && corpFormat === "on_site") {
-          const { data: day } = await supabase.rpc("get_corporate_full_day", {
+          const { data: day } = await publicSupabase.rpc("get_corporate_full_day", {
             p_advisor_id: advisorId,
             p_date: dateStr,
           });
@@ -279,7 +280,7 @@ const BookingCalendar = ({
         // all three and keep the times that fall on the chosen day locally.
         const results = await Promise.all(
           [-1, 0, 1].map((offset) =>
-            supabase.rpc("get_available_booking_slots", {
+            publicSupabase.rpc("get_available_booking_slots", {
               p_advisor_id: advisorId,
               p_date: format(addDays(selectedDate, offset), "yyyy-MM-dd"),
               p_duration_minutes: slotDuration,

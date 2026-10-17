@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Video, MapPin, CheckCircle, Sparkles, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import AdvisorFilters, { EMPTY_FILTERS, FilterState } from "@/components/advisors/AdvisorFilters";
@@ -50,7 +51,7 @@ const Advisors = () => {
     const fetchAdvisors = async () => {
       try {
         const [{ data, error }, corporate, ranks] = await Promise.all([
-          supabase.rpc('get_public_advisor_profiles'),
+          publicSupabase.rpc('get_public_advisor_profiles'),
           fetchCorporateAdvisors(),
           fetchPopularityRanks(),
         ]);

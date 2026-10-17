@@ -6,6 +6,7 @@ import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
 import { withSampleContent } from "@/lib/sampleAdvisors";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
@@ -233,7 +234,7 @@ const StyleConcierge = () => {
   }, []);
 
   useEffect(() => {
-    supabase.rpc("get_public_advisor_profiles").then(({ data }) => {
+    publicSupabase.rpc("get_public_advisor_profiles").then(({ data }) => {
       const map: Record<string, AdvisorCard> = {};
       for (const row of (data ?? []) as Array<Omit<AdvisorCard, "isSample"> & { is_demo?: boolean | null }>) {
         const a = withSampleContent(row);

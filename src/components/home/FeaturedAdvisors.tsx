@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Star, Video, MapPin, Loader2, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import { withSampleContent } from "@/lib/sampleAdvisors";
@@ -26,7 +27,7 @@ const useFeaturedAdvisors = () => {
     queryKey: ['featured-advisors'],
     queryFn: async () => {
       const [{ data: advisorsData, error }, ranks] = await Promise.all([
-        supabase.rpc('get_public_advisor_profiles'),
+        publicSupabase.rpc('get_public_advisor_profiles'),
         fetchPopularityRanks(),
       ]);
 

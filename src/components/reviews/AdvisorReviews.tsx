@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
 import { Star, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,7 +29,7 @@ const AdvisorReviews = ({ advisorId }: AdvisorReviewsProps) => {
     const fetchReviews = async () => {
       setIsLoading(true);
 
-      const { data, error } = await supabase.rpc("get_advisor_reviews", {
+      const { data, error } = await publicSupabase.rpc("get_advisor_reviews", {
         p_advisor_id: advisorId,
         p_limit: 20,
       });
