@@ -11,7 +11,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -39,20 +40,24 @@ const PortfolioUpload = ({
 }: PortfolioUploadProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Photos uploaded during the current multi-photo batch.
+  const addedRef = useRef<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  // Several photos picked at once are cropped one after another.
+  const [queue, setQueue] = useState<File[]>([]);
+  const [queueTotal, setQueueTotal] = useState(0);
 
   // DnD sensors
+  // Mouse: drag after moving 6px. Touch: press and hold 200ms, so a normal
+  // swipe still scrolls the page.
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -79,12 +84,40 @@ const PortfolioUpload = ({
     [currentImages, onImagesChange, toast]
   );
 
+  // Check one file; returns an error message or null.
+  const checkFile = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith("image/")) return `${file.name} is not an image file.`;
+    if (file.size > 25 * 1024 * 1024) return `${file.name} is larger than 25MB.`;
+    const dims = await getImageDimensions(file);
+    if (!dims) return `${file.name} isn't a valid image.`;
+    if (Math.min(dims.width, dims.height) < MIN_PORTFOLIO_PHOTO_PX) {
+      return `${file.name} is too small. Use a photo at least ${MIN_PORTFOLIO_PHOTO_PX} pixels on the shortest side.`;
+    }
+    return null;
+  };
+
+  const openCropFor = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPendingImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Move to the next photo waiting to be cropped, if any.
+  const nextInQueue = (rest: File[]) => {
+    setQueue(rest);
+    if (rest.length > 0) openCropFor(rest[0]);
+    else setQueueTotal(0);
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const picked = Array.from(e.target.files ?? []);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (picked.length === 0) return;
 
     const remainingSlots = maxImages - currentImages.length;
-
     if (remainingSlots <= 0) {
       toast({
         title: "Album full",
@@ -94,51 +127,26 @@ const PortfolioUpload = ({
       return;
     }
 
-    const file = files[0];
-
-    if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Invalid file type",
-        description: `${file.name} is not an image file.`,
-        variant: "destructive",
-      });
-      return;
+    const ok: File[] = [];
+    const problems: string[] = [];
+    for (const file of picked) {
+      const err = await checkFile(file);
+      if (err) problems.push(err);
+      else ok.push(file);
     }
-
-    if (file.size > 25 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: `${file.name} is larger than 25MB.`,
-        variant: "destructive",
-      });
-      return;
+    const accepted = ok.slice(0, remainingSlots);
+    if (ok.length > remainingSlots) {
+      problems.push(`Only ${remainingSlots} more photo${remainingSlots === 1 ? "" : "s"} fit, so the rest were skipped.`);
     }
-
-    const dims = await getImageDimensions(file);
-    if (!dims) {
-      toast({ title: "Couldn't read image", description: `${file.name} isn't a valid image.`, variant: "destructive" });
-      return;
+    if (problems.length) {
+      toast({ title: "Some photos weren't added", description: problems.slice(0, 3).join(" "), variant: "destructive" });
     }
-    if (Math.min(dims.width, dims.height) < MIN_PORTFOLIO_PHOTO_PX) {
-      toast({
-        title: "Photo resolution too low",
-        description: `Please use a sharper photo, at least ${MIN_PORTFOLIO_PHOTO_PX} pixels on the shortest side.`,
-        variant: "destructive",
-      });
-      return;
-    }
+    if (accepted.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPendingImageSrc(reader.result as string);
-      setCropModalOpen(true);
-    };
-    reader.readAsDataURL(file);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
     setEditingIndex(null);
+    setQueueTotal(accepted.length);
+    setQueue(accepted);
+    openCropFor(accepted[0]);
   };
 
   const handleEditImage = async (index: number) => {
@@ -214,11 +222,14 @@ const PortfolioUpload = ({
           description: "Portfolio image updated successfully.",
         });
       } else {
-        onImagesChange([...currentImages, publicUrl]);
-        toast({
-          title: "Upload complete",
-          description: "Portfolio image uploaded successfully.",
-        });
+        addedRef.current = [...addedRef.current, publicUrl];
+        onImagesChange([...currentImages, ...addedRef.current.filter((u) => !currentImages.includes(u))]);
+        if (queue.length <= 1) {
+          toast({
+            title: queueTotal > 1 ? "Photos uploaded" : "Upload complete",
+            description: queueTotal > 1 ? `${addedRef.current.length} photos added to your portfolio.` : "Portfolio image uploaded successfully.",
+          });
+        }
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -236,7 +247,13 @@ const PortfolioUpload = ({
       setIsProcessing(false);
       setUploading(false);
       setUploadingIndex(null);
+      const wasEditing = editingIndex !== null;
       setEditingIndex(null);
+      if (!wasEditing) {
+        const rest = queue.slice(1);
+        if (rest.length === 0) addedRef.current = [];
+        nextInQueue(rest);
+      }
     }
   };
 
@@ -258,14 +275,21 @@ const PortfolioUpload = ({
     onImagesChange(newImages);
   };
 
-  const handleCloseModal = useCallback(() => {
+  // Closing the cropper skips this photo and moves on to the next one picked.
+  const handleCloseModal = () => {
     if (pendingImageSrc?.startsWith("blob:")) {
       URL.revokeObjectURL(pendingImageSrc);
     }
     setCropModalOpen(false);
     setPendingImageSrc(null);
+    const wasEditing = editingIndex !== null;
     setEditingIndex(null);
-  }, [pendingImageSrc]);
+    if (!wasEditing) {
+      const rest = queue.slice(1);
+      if (rest.length === 0) addedRef.current = [];
+      nextInQueue(rest);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -273,8 +297,8 @@ const PortfolioUpload = ({
         <div>
           <Label>Portfolio Photos</Label>
           <p className="text-sm text-muted-foreground">
-            Upload up to {maxImages} photos showcasing your styling work. Drag
-            to reorder.
+            Upload up to {maxImages} photos showcasing your styling work. You can pick several at once.
+            Drag a photo to reorder (on a phone, press and hold first).
           </p>
         </div>
         <span className="text-sm text-muted-foreground">
@@ -357,6 +381,7 @@ const PortfolioUpload = ({
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        multiple
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -371,7 +396,11 @@ const PortfolioUpload = ({
           aspect={5 / 7}
           cropShape="rect"
           title={
-            editingIndex !== null ? "Crop Portfolio Photo" : "Crop New Photo"
+            editingIndex !== null
+              ? "Crop Portfolio Photo"
+              : queueTotal > 1
+                ? `Crop photo ${queueTotal - queue.length + 1} of ${queueTotal}`
+                : "Crop New Photo"
           }
         />
       )}

@@ -665,7 +665,22 @@ const AccountSettings = () => {
                     <PortfolioUpload
                       userId={userId}
                       currentImages={profile?.portfolio_images || []}
-                      onImagesChange={(images) => updateProfile("portfolio_images", images)}
+                      onImagesChange={(images) => {
+                        updateProfile("portfolio_images", images);
+                        // Save photos and their order straight away (uploads and
+                        // deletes already happen immediately in storage).
+                        if (profile?.id) {
+                          supabase
+                            .from("profiles")
+                            .update({ portfolio_images: images })
+                            .eq("id", profile.id)
+                            .then(({ error }) => {
+                              if (error) {
+                                toast({ title: "Couldn't save your portfolio", description: error.message, variant: "destructive" });
+                              }
+                            });
+                        }
+                      }}
                     />
                     </div>
                   )}
