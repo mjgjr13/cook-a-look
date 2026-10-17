@@ -9,7 +9,7 @@ const HeroSection = () => (
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-16 items-center">
         <div className="lg:col-span-6">
           <h1 className="font-serif text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-7xl text-foreground">
-            Discover your personal style
+            Discover your <em className="italic text-gold">personal style</em>
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
             Connect with world-class style advisors, virtually or in person, who will transform your
