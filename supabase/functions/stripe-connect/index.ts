@@ -117,25 +117,29 @@ serve(async (req) => {
       if (!accountId) {
         const country = String(body?.country ?? "").toUpperCase();
         if (!SUPPORTED_COUNTRIES.includes(country)) return json({ error: "Choose the country where you'll be paid" }, cors, 400);
-        const account = await stripe.accounts.create(
-          {
-            country,
-            email: user.email ?? undefined,
-            controller: {
-              stripe_dashboard: { type: "express" },
-              fees: { payer: "application" },
-              losses: { payments: "application" },
-            },
-            capabilities: { transfers: { requested: true } },
-            business_profile: {
-              product_description: "Personal styling sessions booked through Cook A Look",
-              url: "https://cookalook.com",
-            },
-            metadata: { advisor_id: profile.id },
+        // US accounts on the standard agreement must request card_payments
+        // alongside transfers; advisors still never take payments directly.
+        const params: Stripe.AccountCreateParams = {
+          country,
+          email: user.email ?? undefined,
+          controller: {
+            stripe_dashboard: { type: "express" },
+            fees: { payer: "application" },
+            losses: { payments: "application" },
           },
-          // Key includes the country so a retry with a different choice isn't refused.
-          { idempotencyKey: `connect-account-v2-${profile.id}-${country}` },
-        );
+          capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+          business_profile: {
+            product_description: "Personal styling sessions booked through Cook A Look",
+            url: "https://cookalook.com",
+            mcc: "7299",
+          },
+          metadata: { advisor_id: profile.id },
+        };
+        // Idempotency key = advisor + exact request, so a double click can't make
+        // two accounts but a changed request (e.g. another country) isn't refused.
+        const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(params)));
+        const hash = Array.from(new Uint8Array(digest)).slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+        const account = await stripe.accounts.create(params, { idempotencyKey: `connect-account-${profile.id}-${hash}` });
         accountId = account.id;
         const { error: insertError } = await admin.from("advisor_payout_accounts").insert({
           advisor_id: profile.id,
