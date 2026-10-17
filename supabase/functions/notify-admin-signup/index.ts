@@ -23,6 +23,7 @@ serve(async (req) => {
   const fullName = String(body?.full_name ?? "").trim().slice(0, 200) || "(no name given)";
   const provider = String(body?.provider ?? "email").slice(0, 40);
   const createdAt = String(body?.created_at ?? "");
+  const isAdvisor = body?.intent === "advisor";
   if (!email) return new Response(JSON.stringify({ error: "missing email" }), { status: 400 });
 
   const signedUp = createdAt && !isNaN(new Date(createdAt).getTime())
@@ -30,22 +31,25 @@ serve(async (req) => {
     : "just now";
 
   const html = renderEmail({
-    title: "New Cook A Look account",
-    preheader: `${fullName} just joined Cook A Look.`,
+    title: isAdvisor ? "Advisor applicant confirmed their email" : "New Cook A Look account",
+    preheader: isAdvisor ? `${fullName} confirmed their email. Their advisor application is ready to review.` : `${fullName} just joined Cook A Look.`,
     body: [
-      heading("New account confirmed"),
-      paragraph(`<strong>${escapeHtml(fullName)}</strong> just created and confirmed a Cook A Look account.`),
+      heading(isAdvisor ? "Advisor applicant confirmed" : "New account confirmed"),
+      paragraph(isAdvisor
+        ? `<strong>${escapeHtml(fullName)}</strong> applied to become an advisor and has now confirmed their email. Their application is waiting for you in Admin → Advisors.`
+        : `<strong>${escapeHtml(fullName)}</strong> just created and confirmed a Cook A Look client account.`),
       detailRows([
         ["Name", escapeHtml(fullName)],
         ["Email", escapeHtml(email)],
         ["Signed up with", provider === "google" ? "Google" : "Email and password"],
         ["Signed up", escapeHtml(signedUp)],
+        ["Account type", isAdvisor ? "Advisor applicant" : "Client"],
       ]),
-      paragraph("If they apply to become an advisor, you'll get a separate email to review the application.", { muted: true, small: true }),
-      button("Open admin", `${SITE_URL}/admin`),
+      ...(isAdvisor ? [] : [paragraph("If they apply to become an advisor, you'll get a separate email to review the application.", { muted: true, small: true })]),
+      button(isAdvisor ? "Review application" : "Open admin", `${SITE_URL}/admin${isAdvisor ? "/advisors" : ""}`),
     ].join(""),
   });
 
-  await sendEmail({ to: adminEmail, subject: `New account: ${fullName}`, html });
+  await sendEmail({ to: adminEmail, subject: isAdvisor ? `Advisor applicant confirmed: ${fullName}` : `New client account: ${fullName}`, html });
   return new Response(JSON.stringify({ sent: true }), { headers: { "Content-Type": "application/json" } });
 });

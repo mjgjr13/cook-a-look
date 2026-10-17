@@ -16,6 +16,7 @@ import CancelBookingDialog from "@/components/booking/CancelBookingDialog";
 import ReviewModal from "@/components/reviews/ReviewModal";
 import DisputeForm from "@/components/disputes/DisputeForm";
 import { SessionWrapUpBanner, SessionWrapUpDialog, isWrapUpDismissed, PAYOUT_HOLD_HOURS } from "@/components/booking/SessionWrapUp";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useReviewPrompt } from "@/hooks/useReviewPrompt";
 
@@ -64,6 +65,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { profile, roles, isLoading: profileLoading } = useProfile();
+  const { user } = useAuth();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -292,6 +294,16 @@ const Dashboard = () => {
 
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8">
+          {!roles.isAdvisor && user?.user_metadata?.signup_intent === "advisor" && (
+            <div className="mb-8 flex flex-col gap-3 border border-gold/40 bg-gold/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm">
+                Your advisor application isn't finished yet. Complete it to get your advisor dashboard.
+              </p>
+              <Button asChild variant="hero" size="sm">
+                <Link to="/become-advisor">Finish my application</Link>
+              </Button>
+            </div>
+          )}
           {roles.isAdvisor && (
             <div className="mb-8 flex flex-col gap-3 border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
