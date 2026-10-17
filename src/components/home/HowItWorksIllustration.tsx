@@ -63,9 +63,8 @@ const LeaveWithAPlan = () => (
     {/* reflection: head, tailored jacket with lapels and a pocket square */}
     <circle cx="98" cy="50" r="10" {...stroke} />
     <path d="M 74 124 C 74 84, 122 84, 122 124" {...stroke} />
-    <path d="M 89 87 L 98 106 L 107 87" {...stroke} strokeWidth={1.5} />
-    <path d="M 98 106 L 98 124" {...stroke} strokeWidth={1.5} />
-    <path d="M 107 100 L 115 100 L 111 106 Z" fill={ACCENT} />
+    <path d="M 98 76 L 89 98 L 98 116 M 98 76 L 107 98 L 98 116" {...stroke} strokeWidth={1.5} />
+    <path d="M 108 92 L 116 92 L 112 99 Z" fill={ACCENT} />
     {/* the plan */}
     <rect x="152" y="46" width="62" height="76" rx="6" {...stroke} />
     {[64, 84, 104].map((y) => (
