@@ -45,7 +45,7 @@ const NewAdvisorSetupCard = ({
       label: "Add portfolio photos",
       description: "Showcase your styling work (at least 3 recommended)",
       complete: portfolioCount >= 3,
-      href: "/settings",
+      href: "/settings#portfolio-photos",
       icon: ImageIcon,
     },
     {

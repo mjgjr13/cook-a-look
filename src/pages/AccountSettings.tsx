@@ -206,6 +206,17 @@ const AccountSettings = () => {
   } = useAdvisorProfile();
   const { roles } = useProfile();
 
+  // /settings#portfolio-photos (from the advisor setup checklist) lands on the
+  // portfolio photos section once the page has loaded.
+  useEffect(() => {
+    if (isLoading || typeof window === "undefined" || window.location.hash !== "#portfolio-photos") return;
+    setActiveTab("profile");
+    const t = window.setTimeout(() => {
+      document.getElementById("portfolio-photos")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(t);
+  }, [isLoading]);
+
   // Check if user is an advisor - advisors don't see rewards tab
   const isAdvisor = roles.isAdvisor;
   const isApprovedAdvisor = roles.isApprovedAdvisor;
@@ -648,13 +659,15 @@ const AccountSettings = () => {
 
                   <Separator />
 
-                  {/* Portfolio Photos */}
+                  {/* Portfolio Photos (linked as /settings#portfolio-photos) */}
                   {userId && (
+                    <div id="portfolio-photos" className="scroll-mt-24">
                     <PortfolioUpload
                       userId={userId}
                       currentImages={profile?.portfolio_images || []}
                       onImagesChange={(images) => updateProfile("portfolio_images", images)}
                     />
+                    </div>
                   )}
 
                   <Separator />

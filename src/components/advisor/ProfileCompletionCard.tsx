@@ -52,7 +52,7 @@ const ProfileCompletionCard = ({ completionStatus, isApproved }: ProfileCompleti
       description: "At least one photo of your work",
       completed: completionStatus.hasPortfolio,
       icon: Camera,
-      link: "/settings",
+      link: "/settings#portfolio-photos",
     },
   ];
 
