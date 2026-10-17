@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.notify-admin-signup]
 verify_jwt = false
+
+[functions.advisor-application]
+verify_jwt = false

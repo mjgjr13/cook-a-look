@@ -87,12 +87,8 @@ const Dashboard = () => {
     // Not logged in: ProtectedRoute will handle redirecting to /signin.
     if (!profile) return;
 
-    // Advisors should not access client dashboard - but don't navigate in useEffect
-    // to avoid infinite loops. We'll handle this with a conditional render below.
-    if (roles.isAdvisor) {
-      return; // Don't load bookings for advisors
-    }
-
+    // Advisors can use this page too ("client view") to book sessions with
+    // other advisors; their own advisor work stays on /advisor.
     loadBookings();
 
     // Subscribe to realtime booking updates
@@ -187,23 +183,6 @@ const Dashboard = () => {
       setActiveVideoBooking(booking);
     }
   };
-
-  // Show advisor redirect message - no navigation to avoid loops
-  if (!profileLoading && profile && roles.isAdvisor) {
-    return (
-      <Layout>
-        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-          <h2 className="font-serif text-xl">Advisor Dashboard</h2>
-          <p className="text-muted-foreground text-center max-w-md">
-            As a style advisor, please use the Advisor Dashboard to manage your bookings and availability.
-          </p>
-          <Button asChild>
-            <Link to="/advisor">Go to Advisor Dashboard</Link>
-          </Button>
-        </div>
-      </Layout>
-    );
-  }
 
   if (profileLoading || isLoading) {
     return (
@@ -313,6 +292,16 @@ const Dashboard = () => {
 
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8">
+          {roles.isAdvisor && (
+            <div className="mb-8 flex flex-col gap-3 border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                You're in <strong className="text-foreground">client view</strong>. Book a session with another advisor here.
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/advisor">Back to advisor dashboard</Link>
+              </Button>
+            </div>
+          )}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Your dashboard</p>

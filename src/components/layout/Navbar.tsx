@@ -101,15 +101,22 @@ const Navbar = () => {
                     </Link>
                   </DropdownMenuItem>
                   
-                  {/* Show advisor dashboard option for advisors currently in client view */}
-                  {roles.isAdvisor && location.pathname === "/dashboard" && (
+                  {/* Advisors can switch between their advisor dashboard and client view */}
+                  {roles.isAdvisor && (location.pathname === "/dashboard" ? (
                     <DropdownMenuItem asChild>
                       <Link to="/advisor" className="cursor-pointer flex items-center gap-2">
                         <Briefcase className="w-4 h-4" />
-                        Advisor Dashboard
+                        Switch to advisor view
                       </Link>
                     </DropdownMenuItem>
-                  )}
+                  ) : (
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard" className="cursor-pointer flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        Switch to client view
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
                   
                   
                   <DropdownMenuItem asChild>
@@ -162,6 +169,13 @@ const Navbar = () => {
                   <DropdownMenuItem asChild>
                     <Link to={defaultDashboard}>Dashboard</Link>
                   </DropdownMenuItem>
+                  {roles.isAdvisor && (
+                    <DropdownMenuItem asChild>
+                      {location.pathname === "/dashboard"
+                        ? <Link to="/advisor">Switch to advisor view</Link>
+                        : <Link to="/dashboard">Switch to client view</Link>}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>

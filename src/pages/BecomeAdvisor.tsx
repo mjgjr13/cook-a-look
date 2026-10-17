@@ -26,6 +26,7 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
+  CheckCircle2,
   Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +44,6 @@ import {
 import { z } from "zod";
 import LivenessCamera from "@/components/LivenessCamera";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 import GooglePlacesAutocomplete from "@/components/ui/google-places-autocomplete";
 import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
@@ -55,8 +55,6 @@ import CorporateServicesFields, { CorporateRatesFields, EMPTY_CORPORATE, corpora
 import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import LanguageSelect from "@/components/advisor/LanguageSelect";
 
-type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
-type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 const benefits = [
   {
@@ -142,6 +140,8 @@ const BecomeAdvisor = () => {
   const [biometricConsentGiven, setBiometricConsentGiven] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Set after an application is saved for an account that still needs email confirmation.
+  const [pendingConfirmEmail, setPendingConfirmEmail] = useState<string | null>(null);
   // Bot check for the account-creation step (only shown when not signed in).
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileHandle>(null);
@@ -297,22 +297,22 @@ const BecomeAdvisor = () => {
     const resolvedEmail = (authUser?.email || formData.email).trim().toLowerCase();
 
     try {
-      let userId: string;
-
-      if (authUser) {
-        // Already signed in (e.g. returning after confirming their email) -
-        // skip account creation entirely and use the existing session.
-        userId = authUser.id;
-      } else {
-        // Step 1: Create the Supabase Auth user
+      // Not signed in yet: create the account, marked as an advisor sign-up.
+      // Email confirmation is required, so there's no session yet; the
+      // advisor-application function saves everything anyway, and the
+      // confirmation link brings them straight to the advisor dashboard.
+      let pendingUserId: string | null = null;
+      if (!authUser) {
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
           options: {
             ...(captchaToken ? { captchaToken } : {}),
+            emailRedirectTo: `${window.location.origin}/advisor`,
             data: {
               full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
               timezone: getBrowserTimezone(),
+              signup_intent: "advisor",
             },
           },
         });
@@ -349,193 +349,68 @@ const BecomeAdvisor = () => {
           return;
         }
 
-        userId = signUpData.user.id;
-        console.log("User created:", userId);
-
-        // Step 2: Check whether a session was actually established. This
-        // project requires email confirmation, so signUp() normally returns
-        // no session - retrying signInWithPassword here would just fail the
-        // same way (email not confirmed yet). Writing profile/application
-        // data with no session would silently no-op under RLS instead of
-        // erroring, so stop here rather than losing the form data quietly.
-        const { data: sessionData } = await supabase.auth.getSession();
-
-        if (!sessionData.session) {
-          toast({
-            title: "Check your email",
-            description: "We've created your account - confirm your email, then come back to this page and sign in to finish your application.",
-          });
-          navigate("/signin?redirect=/become-advisor");
-          return;
-        }
-
-        console.log("Session established, uploading profile photo and updating profile...");
+        pendingUserId = signUpData.user.id;
       }
 
-      // Step 3: Upload profile photo if provided
-      let avatarUrl: string | null = null;
-      if (formData.profilePhotoFile) {
-        try {
-          const fileExt = formData.profilePhotoFile.name.split(".").pop()?.toLowerCase() || "jpg";
-          const fileName = `${userId}/avatar_${Date.now()}.${fileExt}`;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const signedIn = !!sessionData.session;
 
-          const { error: uploadError } = await supabase.storage
-            .from("avatars")
-            .upload(fileName, formData.profilePhotoFile, {
-              upsert: true,
-              contentType: formData.profilePhotoFile.type || "image/jpeg",
-              cacheControl: "3600",
-            });
-
-          if (uploadError) {
-            console.error("Avatar upload error:", uploadError);
-            toast({
-              title: "Photo Upload Failed",
-              description: `${uploadError.message}. You can add your photo from Settings after signing in.`,
-              variant: "destructive",
-            });
-          } else {
-            const { data: urlData } = supabase.storage
-              .from("avatars")
-              .getPublicUrl(fileName);
-            avatarUrl = urlData.publicUrl;
-            console.log("Avatar uploaded:", avatarUrl);
+      const callApplication = async (payload: Record<string, unknown>) => {
+        const { data, error } = await supabase.functions.invoke("advisor-application", {
+          body: { ...payload, email: resolvedEmail, pendingUserId: signedIn ? undefined : pendingUserId },
+        });
+        if (error) {
+          let message = error.message || "Something went wrong saving your application.";
+          const ctx = (error as unknown as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            try {
+              const parsed = await ctx.clone().json();
+              if (parsed?.error) message = parsed.error;
+            } catch {
+              // keep the generic message
+            }
           }
-        } catch (err) {
-          console.error("Error uploading avatar:", err);
-          toast({
-            title: "Photo Upload Failed",
-            description: err instanceof Error ? err.message : "Unknown error. You can add your photo from Settings.",
-            variant: "destructive",
-          });
+          throw new Error(message);
         }
-      }
-
-      // Step 3b: Upload verification documents (selfie + government ID) to the private "verifications" bucket.
-      // We create long-lived signed URLs so the admin review screen can render the images directly,
-      // and separately return the raw storage path so the retention/deletion job (see
-      // supabase/functions/delete-expired-verifications) can reliably remove the object later
-      // without having to parse it back out of a signed URL.
-      const uploadVerificationDoc = async (
-        file: File,
-        kind: "selfie" | "id"
-      ): Promise<{ url: string | null; path: string } | null> => {
-        try {
-          const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-          const path = `${userId}/${kind}_${Date.now()}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from("verifications")
-            .upload(path, file, { upsert: false, contentType: file.type });
-          if (upErr) {
-            console.error(`${kind} upload error:`, upErr);
-            return null;
-          }
-          // Private bucket. Applicants usually can't create a viewing link
-          // (only admins can read it), so the storage path is what matters:
-          // the admin review screen creates a fresh link from it.
-          const { data: signed } = await supabase.storage
-            .from("verifications")
-            .createSignedUrl(path, 60 * 60 * 24 * 365);
-          return { url: signed?.signedUrl ?? null, path };
-        } catch (err) {
-          console.error(`Error uploading ${kind}:`, err);
-          return null;
-        }
+        return data as Record<string, unknown>;
       };
 
-      let selfieUrl: string | null = null;
-      let selfieStoragePath: string | null = null;
-      let idDocumentUrl: string | null = null;
-      let idDocumentStoragePath: string | null = null;
-      if (formData.selfieFile) {
-        const result = await uploadVerificationDoc(formData.selfieFile, "selfie");
-        selfieUrl = result?.url ?? result?.path ?? null; // bare path is fine: admin screen signs it
-        selfieStoragePath = result?.path ?? null;
-      }
-      if (formData.idFile) {
-        const result = await uploadVerificationDoc(formData.idFile, "id");
-        idDocumentUrl = result?.url ?? result?.path ?? null;
-        idDocumentStoragePath = result?.path ?? null;
-      }
-
-      // Step 4: Wait for profile trigger to create base profile, then update it
-      // The handle_new_user trigger creates a basic profile - we need to update it
-      let retries = 0;
-      const maxRetries = 5;
-      let profileUpdated = false;
-
-      while (retries < maxRetries && !profileUpdated) {
-        // Small delay to allow trigger to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const { data: existingProfile, error: profileError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (existingProfile) {
-          // Profile exists, update it with advisor data
-          const instagramHandle = formData.instagram.startsWith("@") 
-            ? formData.instagram.slice(1) 
-            : formData.instagram;
-
-          const updateData: ProfileUpdate = {
-            full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-            is_advisor: true,
-            advisor_approved: false,
-            advisor_status: "pending",
-            bio: formData.bio.trim(),
-            instagram_url: instagramHandle,
-            virtual_available: formData.virtual,
-            in_person_available: formData.inPerson,
-            location: formData.location.trim(),
-            experience_years: formData.experience === "10+" ? 10 : parseInt(formData.experience.split("-")[0]) || null,
-            price_per_session: parseFloat(formData.price) || null,
-            languages: formData.languages,
-            style_tags: formData.styleCategories,
-            target_demographics: formData.clientFocus,
-            use_cases: formData.useCases,
-            // B2B fields only when opted in (defaults cover everyone else)
-            ...(formData.corporate.offersCorporate ? corporateToProfile(formData.corporate) : {}),
-          };
-
-          if (avatarUrl) {
-            updateData.avatar_url = avatarUrl;
-          }
-
-          const { error: updateError } = await supabase
-            .from("profiles")
-            .update(updateData)
-            .eq("user_id", userId);
-
-          if (updateError) {
-            console.error("Profile update error:", updateError);
-            throw new Error("Failed to set up advisor profile");
-          }
-
-          profileUpdated = true;
-          console.log("Profile updated with advisor data");
-        } else if (profileError) {
-          console.error("Profile fetch error:", profileError);
+      // Upload the photos straight to storage with one-time upload links.
+      const extOf = (f: File) => (f.name.split(".").pop() || "jpg").toLowerCase();
+      const files: { kind: "avatar" | "selfie" | "id"; file: File }[] = [
+        ...(formData.profilePhotoFile ? [{ kind: "avatar" as const, file: formData.profilePhotoFile }] : []),
+        ...(formData.selfieFile ? [{ kind: "selfie" as const, file: formData.selfieFile }] : []),
+        ...(formData.idFile ? [{ kind: "id" as const, file: formData.idFile }] : []),
+      ];
+      const prepared = await callApplication({
+        action: "prepare",
+        files: files.map(({ kind, file }) => ({ kind, ext: extOf(file) })),
+      });
+      const uploads = (prepared.uploads ?? {}) as Record<string, { bucket: string; path: string; token: string }>;
+      const paths: Record<string, string> = {};
+      for (const { kind, file } of files) {
+        const u = uploads[kind];
+        if (!u) continue;
+        const { error: upErr } = await supabase.storage
+          .from(u.bucket)
+          .uploadToSignedUrl(u.path, u.token, file, { contentType: file.type || "image/jpeg" });
+        if (upErr) {
+          if (kind === "avatar") continue; // profile photo can be added later in Settings
+          throw new Error(`We couldn't upload your ${kind === "id" ? "ID" : "selfie"} photo. Please try again.`);
         }
-
-        retries++;
+        paths[kind] = u.path;
       }
 
-      if (!profileUpdated) {
-        // Profile trigger may have failed, create profile directly
-        const instagramHandle = formData.instagram.startsWith("@") 
-          ? formData.instagram.slice(1) 
-          : formData.instagram;
+      const instagramHandle = formData.instagram.startsWith("@")
+        ? formData.instagram.slice(1)
+        : formData.instagram;
 
-        const insertData: ProfileInsert = {
-          user_id: userId,
-          email: resolvedEmail,
+      await callApplication({
+        action: "submit",
+        paths,
+        dateOfBirth: formData.dateOfBirth || null,
+        profile: {
           full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-          is_advisor: true,
-          advisor_approved: false,
-          advisor_status: "pending",
           bio: formData.bio.trim(),
           instagram_url: instagramHandle,
           virtual_available: formData.virtual,
@@ -547,37 +422,11 @@ const BecomeAdvisor = () => {
           style_tags: formData.styleCategories,
           target_demographics: formData.clientFocus,
           use_cases: formData.useCases,
-          // B2B fields only when opted in (defaults cover everyone else)
-            ...(formData.corporate.offersCorporate ? corporateToProfile(formData.corporate) : {}),
-        };
-
-        if (avatarUrl) {
-          insertData.avatar_url = avatarUrl;
-        }
-
-        const { error: insertError } = await supabase
-          .from("profiles")
-          .insert(insertData);
-
-        if (insertError) {
-          console.error("Profile insert error:", insertError);
-          throw new Error("Failed to create advisor profile");
-        }
-        console.log("Profile created directly");
-      }
-
-      // Step 5: Create advisor application record
-      const instagramHandle = formData.instagram.startsWith("@") 
-        ? formData.instagram.slice(1) 
-        : formData.instagram;
-
-      const { error: applicationError } = await supabase
-        .from("advisor_applications")
-        .insert({
-          user_id: userId,
+          ...(formData.corporate.offersCorporate ? corporateToProfile(formData.corporate) : {}),
+        },
+        application: {
           first_name: formData.firstName.trim(),
           last_name: formData.lastName.trim(),
-          email: resolvedEmail,
           phone: formData.phone || null,
           specialty: formData.clientFocus.slice(0, 3).join(", ") || "Style Consultant",
           experience: formData.experience?.trim() || null,
@@ -588,57 +437,17 @@ const BecomeAdvisor = () => {
           tiktok: formData.tiktok?.trim() || null,
           linkedin: formData.linkedin?.trim() || null,
           portfolio: formData.portfolio?.trim() || null,
-          status: "pending",
-          liveness_verified: true, // MVP: Skip verification
-          selfie_url: selfieUrl,
-          id_document_url: idDocumentUrl,
-        });
+        },
+      });
 
-      // Best-effort, non-blocking: record the raw storage paths for the
-      // retention/deletion job (supabase/functions/delete-expired-verifications).
-      // Kept as a separate update rather than part of the insert above so that
-      // the core application submission can never fail because of this - e.g.
-      // if the selfie_storage_path/id_document_storage_path columns from
-      // migration 20260704000000 haven't been applied to this environment yet.
-      // Best-effort: store date of birth (age checked client-side above; a DB
-      // trigger from migration 20261004000000 also rejects under-18s once applied).
-      if (!applicationError && formData.dateOfBirth) {
-        const { error: dobUpdateError } = await supabase
-          .from("advisor_applications")
-          .update({ date_of_birth: formData.dateOfBirth } as Record<string, string>)
-          .eq("user_id", userId);
-        if (dobUpdateError) {
-          console.error("Failed to record date of birth (non-blocking):", dobUpdateError);
-        }
+      if (!signedIn) {
+        // Saved. They just need to confirm their email.
+        setPendingConfirmEmail(resolvedEmail);
+        window.scrollTo({ top: 0 });
+        return;
       }
 
-      if (!applicationError && (selfieStoragePath || idDocumentStoragePath)) {
-        const { error: pathUpdateError } = await supabase
-          .from("advisor_applications")
-          // Cast until generated types include these columns (after the migration is applied).
-          .update({
-            selfie_storage_path: selfieStoragePath,
-            id_document_storage_path: idDocumentStoragePath,
-          } as Record<string, string | null>)
-          .eq("user_id", userId);
-        if (pathUpdateError) {
-          console.error("Failed to record verification storage paths (non-blocking):", pathUpdateError);
-        }
-      }
-
-      if (applicationError) {
-        console.error("Application insert error:", applicationError);
-        // Don't fail entirely - profile is set up, application can be re-submitted
-        toast({
-          title: "Partial Success",
-          description: "Your advisor account is created. Application details may need to be resubmitted.",
-          variant: "destructive",
-        });
-      }
-
-      console.log("Advisor signup complete, sending confirmation email...");
-
-      // Send confirmation email
+      // Already signed in: send the "application received" email and go to the dashboard.
       try {
         await supabase.functions.invoke("send-advisor-confirmation", {
           body: {
@@ -647,19 +456,14 @@ const BecomeAdvisor = () => {
             specialty: formData.clientFocus.slice(0, 3).join(", ") || "Style Consultant",
           },
         });
-        console.log("Confirmation email sent");
       } catch (emailErr) {
         console.error("Failed to send confirmation email:", emailErr);
-        // Don't block the signup process if email fails
       }
 
-      // Success! Navigate immediately to advisor dashboard
       toast({
         title: "Welcome, Advisor!",
-        description: "Your account has been created. Check your email for confirmation.",
+        description: "Your application is in. Finish your profile while we review it.",
       });
-
-      // Navigate to advisor dashboard immediately
       navigate("/advisor");
 
     } catch (err: unknown) {
@@ -879,6 +683,31 @@ const BecomeAdvisor = () => {
                 <a href="/">Return to Home</a>
               </Button>
             </motion.div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (pendingConfirmEmail) {
+    return (
+      <Layout>
+        <section className="py-16 sm:py-24 bg-background">
+          <div className="container mx-auto max-w-lg px-5 text-center">
+            <CheckCircle2 className="mx-auto h-12 w-12 text-gold" aria-hidden="true" />
+            <h1 className="mt-4 font-serif text-3xl sm:text-4xl">Application received</h1>
+            <p className="mt-4 text-muted-foreground">
+              One last step: confirm your email. We've sent a link to{" "}
+              <strong className="text-foreground">{pendingConfirmEmail}</strong>.
+            </p>
+            <p className="mt-3 text-muted-foreground">
+              Click it and you'll go straight to your advisor dashboard, where you can finish your profile while
+              we review your application.
+            </p>
+            <p className="mt-6 text-sm text-muted-foreground">
+              Can't find it? Check your spam folder, or email{" "}
+              <a href="mailto:support@cookalook.com" className="underline">support@cookalook.com</a>.
+            </p>
           </div>
         </section>
       </Layout>
