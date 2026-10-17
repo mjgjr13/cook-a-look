@@ -188,11 +188,11 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : !isLoading ? (
-              <Button variant="ghost" size="sm" className="px-2 text-sm" asChild>
+              <Button variant="ghost" size="sm" className="h-11 px-2 text-sm" asChild>
                 <Link to="/signin">Sign In</Link>
               </Button>
             ) : null}
-            <button className="p-2 -mr-2" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
+            <button className="p-2.5 -mr-2.5" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu" aria-expanded={isOpen}>
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>

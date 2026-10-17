@@ -69,10 +69,9 @@ const AdvisorReviews = ({ advisorId }: AdvisorReviewsProps) => {
 
   if (reviews.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <Star className="w-12 h-12 mx-auto mb-3 opacity-30" />
-        <p>No reviews yet</p>
-        <p className="text-sm">Be the first to leave a review!</p>
+      <div className="py-2 text-muted-foreground">
+        <p>No reviews yet.</p>
+        <p className="text-sm">Reviews appear after completed sessions.</p>
       </div>
     );
   }

@@ -4,7 +4,7 @@ import CookALookLogo from "@/components/CookALookLogo";
 
 const INSTAGRAM_URL = "https://www.instagram.com/cookalookofficial";
 
-const linkClass = "text-primary-foreground/75 hover:text-primary-foreground transition-colors";
+const linkClass = "inline-block py-1.5 text-primary-foreground/75 hover:text-primary-foreground transition-colors";
 
 const Footer = () => {
   return (
@@ -21,7 +21,7 @@ const Footer = () => {
         <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-8 text-center sm:grid-cols-3">
           <nav aria-label="Explore">
             <h2 className="font-sans text-xs font-semibold uppercase tracking-wider text-primary-foreground/50 mb-3">Explore</h2>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-0.5 text-sm">
               <li><Link to="/advisors" className={linkClass}>Style Advisors</Link></li>
               <li><Link to="/ai-concierge" className={linkClass}>AI Concierge</Link></li>
               <li><Link to="/become-advisor" className={linkClass}>Become an Advisor</Link></li>
@@ -31,7 +31,7 @@ const Footer = () => {
 
           <nav aria-label="Legal">
             <h2 className="font-sans text-xs font-semibold uppercase tracking-wider text-primary-foreground/50 mb-3">Legal</h2>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-0.5 text-sm">
               <li><Link to="/terms" className={linkClass}>Terms of Use</Link></li>
               <li><Link to="/privacy" className={linkClass}>Privacy Policy</Link></li>
             </ul>
@@ -39,7 +39,7 @@ const Footer = () => {
 
           <nav aria-label="Contact" className="col-span-2 sm:col-span-1">
             <h2 className="font-sans text-xs font-semibold uppercase tracking-wider text-primary-foreground/50 mb-3">Contact</h2>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-0.5 text-sm">
               <li><Link to="/support" className={linkClass}>Help &amp; support</Link></li>
               <li>
                 <a href="mailto:support@cookalook.com" className={`inline-flex items-center gap-2 ${linkClass}`}>

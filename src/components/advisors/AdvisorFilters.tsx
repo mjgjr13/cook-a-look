@@ -233,7 +233,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
           {chips.map((c) => (
             <Badge key={c.label} variant="secondary" className="gap-1 pr-1">
               {c.label}
-              <button onClick={c.clear} className="ml-1 rounded-full p-0.5 hover:bg-muted" aria-label={`Remove ${c.label}`}>
+              <button onClick={c.clear} className="-my-1 ml-0.5 rounded-full p-1.5 hover:bg-muted" aria-label={`Remove ${c.label}`}>
                 <X className="h-3 w-3" />
               </button>
             </Badge>
@@ -241,7 +241,7 @@ const AdvisorFilters = ({ filters, onFiltersChange, resultCount }: AdvisorFilter
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-muted-foreground"
+            className="h-9 text-muted-foreground"
             onClick={() => onFiltersChange({ ...EMPTY_FILTERS, searchTerm: filters.searchTerm, sortBy: filters.sortBy })}
           >
             Clear all

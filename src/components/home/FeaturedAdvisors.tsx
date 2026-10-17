@@ -1,50 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Star, Video, MapPin, Loader2, Sparkles } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { publicSupabase } from "@/integrations/supabase/publicClient";
-import { supabase } from "@/integrations/supabase/client";
+import { Star, Video, MapPin, Loader2 } from "lucide-react";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
-import { withSampleContent } from "@/lib/sampleAdvisors";
-import { compareTopAdvisors, fetchPopularityRanks } from "@/lib/advisorRanking";
+import { useHomepageAdvisors } from "@/hooks/useHomepageAdvisors";
 
-interface FeaturedAdvisor {
-  id: string;
-  full_name: string | null;
-  rating: number | null;
-  review_count: number | null;
-  price_per_session: number | null;
-  avatar_url: string | null;
-  virtual_available: boolean | null;
-  in_person_available: boolean | null;
-  location: string | null;
-  target_demographics: string[] | null;
-  is_demo?: boolean | null;
-}
-
-const useFeaturedAdvisors = () => {
-  return useQuery({
-    queryKey: ['featured-advisors'],
-    queryFn: async () => {
-      const [{ data: advisorsData, error }, ranks] = await Promise.all([
-        publicSupabase.rpc('get_public_advisor_profiles'),
-        fetchPopularityRanks(),
-      ]);
-
-      if (error) throw error;
-      if (!advisorsData || advisorsData.length === 0) return [];
-
-      // The four homepage spots always go to the four most popular advisors (see lib/advisorRanking).
-      return (advisorsData as FeaturedAdvisor[])
-        .map((a) => ({ ...withSampleContent(a), popularityRank: ranks.get(a.id) ?? null }))
-        .sort(compareTopAdvisors)
-        .slice(0, 4);
-    }
-  });
-};
 const FeaturedAdvisors = () => {
-  const { data: advisors, isLoading, isError, refetch, isFetching } = useFeaturedAdvisors();
+  const { featured: advisors, isLoading, isError, refetch, isFetching } = useHomepageAdvisors();
   const navigate = useNavigate();
+
+  // Everyone is already pictured in the hero; the section returns when there are more advisors.
+  if (!isLoading && !isError && advisors.length === 0) return null;
 
   const handleCardClick = (advisorId: string) => {
     navigate(`/advisors/${advisorId}`);
@@ -60,7 +25,7 @@ const FeaturedAdvisors = () => {
               Book a one-on-one session by video or in person, at a time that suits you.
             </p>
           </div>
-          <Link to="/advisors" className="text-sm font-semibold text-foreground underline underline-offset-4 hover:text-gold">
+          <Link to="/advisors" className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-foreground underline underline-offset-4 hover:text-gold">
             See all advisors
           </Link>
         </div>
@@ -74,7 +39,7 @@ const FeaturedAdvisors = () => {
             {advisors.map((advisor, index) => (
               <article
                 key={advisor.id}
-                className="group bg-background border border-border overflow-hidden transition-colors hover:border-foreground cursor-pointer"
+                className="group flex flex-col bg-background border border-border overflow-hidden transition-colors hover:border-foreground cursor-pointer"
                 onClick={() => handleCardClick(advisor.id)}
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
@@ -94,15 +59,14 @@ const FeaturedAdvisors = () => {
                   )}
                   {advisor.isSample && (
                     <div className="absolute top-3 left-3 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
-                      <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
                       Sample profile
                     </div>
                   )}
                 </div>
 
-                <div className="p-6">
+                <div className="flex flex-1 flex-col p-6">
                   {advisor.isSample ? (
-                    <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-2">Sample profile</p>
+                    <div className="mb-2 h-[1.125rem]" aria-hidden="true" />
                   ) : advisor.review_count && advisor.review_count > 0 ? (
                     <div className="flex items-center gap-2 mb-2">
                       <Star className="w-4 h-4 fill-gold text-gold" aria-hidden="true" />
@@ -144,20 +108,24 @@ const FeaturedAdvisors = () => {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <span className="font-sans">
-                      <span className="text-lg font-medium">
-                        ${advisor.price_per_session || 0}
+                  <div className="mt-auto flex items-center justify-between pt-4 border-t border-border">
+                    {advisor.price_per_session ? (
+                      <span className="font-sans">
+                        <span className="text-lg font-medium">
+                          ${advisor.price_per_session.toLocaleString()}
+                        </span>
+                        <span className="text-sm text-muted-foreground">/hour</span>
                       </span>
-                      <span className="text-sm text-muted-foreground">/hour</span>
-                    </span>
+                    ) : (
+                      <span />
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={(e) => e.stopPropagation()}
                       asChild
                     >
-                      <Link to={`/advisors/${advisor.id}`}>View Profile</Link>
+                      <Link to={`/advisors/${advisor.id}`}>View profile</Link>
                     </Button>
                   </div>
                 </div>

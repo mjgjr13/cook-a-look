@@ -17,7 +17,8 @@ import type { User } from "@supabase/supabase-js";
 import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Globe, Info, Video, MapPin, Briefcase, User as UserIcon } from "lucide-react";
+import { Loader2, Globe, Lock, Video, MapPin, Briefcase, User as UserIcon } from "lucide-react";
+import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import { CORPORATE_VIRTUAL_HOURS, type CorporateInfo } from "@/lib/corporateAdvisors";
 import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
 import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
@@ -26,6 +27,7 @@ import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/go
 interface BookingCalendarProps {
   advisorId: string;
   advisorName: string;
+  advisorAvatarUrl?: string | null;
   price: number;
   isOpen: boolean;
   onClose: () => void;
@@ -94,6 +96,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const BookingCalendar = ({
   advisorId,
   advisorName,
+  advisorAvatarUrl = null,
   price,
   isOpen,
   onClose,
@@ -144,6 +147,8 @@ const BookingCalendar = ({
   });
   // Dates (client's local calendar) with at least one open time; null = unknown, allow all.
   const [openDates, setOpenDates] = useState<Set<string> | null>(null);
+  // Days that looked open but returned no times once picked (e.g. today's times already passed).
+  const [emptyDates, setEmptyDates] = useState<Set<string>>(new Set());
   const slotDuration = isCorporate ? CORPORATE_VIRTUAL_HOURS * 60 : hours * 60;
   const timesRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
@@ -228,6 +233,7 @@ const BookingCalendar = ({
 
   // Which days have anything open, so empty days are greyed out instead of clicked in vain.
   useEffect(() => {
+    setEmptyDates(new Set());
     if (!isOpen || !advisorId || !UUID_REGEX.test(advisorId) || (isCorporate && corpFormat === "on_site")) {
       setOpenDates(null);
       return;
@@ -308,6 +314,7 @@ const BookingCalendar = ({
             endTime: slot.slot_end,
           }));
         setTimeSlots(formatted);
+        if (formatted.length === 0) setEmptyDates((prev) => new Set(prev).add(dateStr));
         const kept = keep ? formatted.find((x) => new Date(x.startTime).getTime() === new Date(keep).getTime()) : undefined;
         setSelectedSlot(kept ?? null);
         if (keep && !kept && !isCorporate) {
@@ -556,23 +563,38 @@ const BookingCalendar = ({
     { before: today },
     { after: maxDate },
     (d: Date) => !!openDates && !openDates.has(format(d, "yyyy-MM-dd")),
+    (d: Date) => emptyDates.has(format(d, "yyyy-MM-dd")) && format(d, "yyyy-MM-dd") !== (selectedDate && format(selectedDate, "yyyy-MM-dd")),
   ];
   const firstOpenDate = openDates && openDates.size > 0 ? [...openDates].sort()[0] : null;
+  const nextOpenDate = (() => {
+    if (!openDates || !selectedDate) return null;
+    const current = format(selectedDate, "yyyy-MM-dd");
+    const next = [...openDates].sort().find((d) => d > current && !emptyDates.has(d));
+    return next ? new Date(`${next}T12:00:00`) : null;
+  })();
   const clientTzAbbr = getTimezoneAbbreviation(clientTimezone);
   const showTypeChooser = virtualAvailable && inPersonAvailable;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-[500px] max-h-[88svh] overflow-y-auto px-4 sm:px-6">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-2xl leading-tight">
-            {isCorporate ? "Book Corporate Services" : "Book Consultation"}
-          </DialogTitle>
-          <DialogDescription>
-            {isCorporate
-              ? `Book a corporate session with ${advisorName} for your team`
-              : `Select a date and time for your consultation with ${advisorName}`}
-          </DialogDescription>
+        <DialogHeader className="flex-row items-center gap-3 space-y-0 pr-8 text-left">
+          {advisorAvatarUrl && (
+            <img
+              src={optimizedImageUrl(advisorAvatarUrl, 96, 96)}
+              onError={fallbackToOriginal(advisorAvatarUrl)}
+              alt=""
+              className="h-12 w-12 shrink-0 object-cover bg-muted"
+            />
+          )}
+          <div className="min-w-0 space-y-1">
+            <DialogTitle className="font-serif text-2xl leading-tight">
+              {isCorporate ? "Book corporate services" : "Book a session"}
+            </DialogTitle>
+            <DialogDescription>
+              {isCorporate ? `With ${advisorName}, for your team` : `With ${advisorName}`}
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         <div className="py-3 sm:py-4">
@@ -645,17 +667,12 @@ const BookingCalendar = ({
               </p>
             </div>
           )}
-          <div className="flex items-start sm:items-center justify-center gap-2 mb-2 p-2 bg-secondary/50 rounded-lg">
-            <Globe className="w-4 h-4 mt-0.5 sm:mt-0 text-muted-foreground shrink-0" />
-            <span className="text-xs sm:text-sm text-muted-foreground text-center">
-              All times shown in your local time ({clientTzAbbr})
-            </span>
-          </div>
-          <div className="flex items-center justify-center gap-2 mb-4 text-xs text-muted-foreground">
-            <Info className="w-3 h-3" />
-            <span>You can book up to 1 month in advance</span>
+          <div className="flex items-start gap-2 mb-4 px-3 py-2.5 bg-secondary/50 text-sm text-muted-foreground">
+            <Globe className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+            <span>Times are in your local time ({clientTzAbbr}). You can book up to a month ahead.</span>
           </div>
 
+          <div className="flex justify-center">
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -663,9 +680,10 @@ const BookingCalendar = ({
             disabled={disabledDays}
             defaultMonth={selectedDate ?? (firstOpenDate ? new Date(`${firstOpenDate}T12:00:00`) : undefined)}
             key={firstOpenDate ?? "calendar"}
-            className={cn("p-0 sm:p-3 pointer-events-auto mx-auto")}
+            className={cn("p-0 sm:p-3 pointer-events-auto")}
             initialFocus
           />
+          </div>
 
           {openDates && openDates.size === 0 && !selectedDate && (
             <p className="mt-4 text-center text-sm text-muted-foreground">
@@ -691,7 +709,9 @@ const BookingCalendar = ({
                   {timeSlots.map((slot) => (
                     <button
                       key={slot.id}
+                      type="button"
                       onClick={() => handleSelectSlot(slot)}
+                      aria-pressed={selectedSlot?.id === slot.id}
                       className={cn(
                         "min-h-11 px-2 sm:px-4 py-2 text-sm font-sans border transition-colors",
                         selectedSlot?.id === slot.id
@@ -712,7 +732,13 @@ const BookingCalendar = ({
                         ? `No openings on this date.`
                         : "No available slots for this date."}
                   </p>
-                  <p className="text-sm mt-1">Please select another date.</p>
+                  {nextOpenDate && !isCorporate ? (
+                    <Button variant="outline" className="mt-4" onClick={() => handleSelectDate(nextOpenDate)}>
+                      Next available: {format(nextOpenDate, "EEE, MMM d")}
+                    </Button>
+                  ) : (
+                    <p className="text-sm mt-1">Please select another date.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -721,8 +747,10 @@ const BookingCalendar = ({
           {selectedDate && selectedSlot && (
             <div ref={detailsRef} className="mt-6 p-4 bg-secondary border border-border space-y-4 scroll-mt-4">
               <div className="flex justify-between items-start gap-4">
-                <span className="font-sans text-sm">Selected time</span>
-                <span className="font-sans font-medium text-right">{selectedSlot.time} ({clientTzAbbr})</span>
+                <span className="font-sans text-sm">Your session</span>
+                <span className="font-sans font-medium text-right">
+                  {format(selectedDate, "EEE, MMM d")} · {selectedSlot.time} {clientTzAbbr}
+                </span>
               </div>
 
               {isCorporate && (
@@ -793,6 +821,7 @@ const BookingCalendar = ({
                       key={h}
                       type="button"
                       onClick={() => handleSelectHours(h as 1 | 2 | 3)}
+                      aria-pressed={hours === h}
                       className={cn(
                         "min-h-11 px-2 py-2 text-sm font-sans border transition-colors",
                         hours === h
@@ -817,6 +846,7 @@ const BookingCalendar = ({
                     <button
                       type="button"
                       onClick={() => setMeetingType("virtual")}
+                      aria-pressed={meetingType === "virtual"}
                       className={cn(
                         "min-h-11 px-2 py-2 text-sm font-sans border transition-colors flex items-center justify-center gap-1",
                         meetingType === "virtual"
@@ -829,6 +859,7 @@ const BookingCalendar = ({
                     <button
                       type="button"
                       onClick={() => setMeetingType("in_person")}
+                      aria-pressed={meetingType === "in_person"}
                       className={cn(
                         "min-h-11 px-2 py-2 text-sm font-sans border transition-colors flex items-center justify-center gap-1",
                         meetingType === "in_person"
@@ -962,7 +993,7 @@ const BookingCalendar = ({
                 {isCorporate && !user && (
                   <p className="text-xs text-muted-foreground mt-1">Sign in or create a free account to see the price.</p>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">Plus any applicable sales tax, shown at checkout before you pay.</p>
+                <p className="text-xs text-muted-foreground mt-1">Plus any sales tax, shown at checkout before you pay.</p>
               </div>
               {/* Must match public.calculate_refund (database) - update both together. */}
               <div className="text-xs leading-relaxed text-muted-foreground border-t border-border pt-3">
@@ -982,15 +1013,18 @@ const BookingCalendar = ({
                     ? "Continue to Payment"
                     : `Continue to Payment · $${totalLabel}`}
               </Button>
-              {!user && (
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  Next: create a free account or sign in. Your selected time is saved.
+              <div className="space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+                {!user && (
+                  <p className="text-foreground">Next: create a free account or sign in. Your selected time is saved.</p>
+                )}
+                <p className="flex items-start gap-1.5">
+                  <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    Secure checkout with Stripe; Cook A Look never sees your card details.
+                    Payment is held in escrow until 48 hours after your session.
+                  </span>
                 </p>
-              )}
-              <p className="text-xs text-muted-foreground text-center mt-2 leading-relaxed">
-                Secure checkout via Stripe. Cook A Look never sees your card details.
-                Payment is held in escrow until 48 hours after your session.
-              </p>
+              </div>
             </div>
           )}
         </div>

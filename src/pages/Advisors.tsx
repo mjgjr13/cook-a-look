@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, CheckCircle, Sparkles, Briefcase } from "lucide-react";
+import { Star, Video, MapPin, CheckCircle, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { publicSupabase } from "@/integrations/supabase/publicClient";
@@ -38,7 +38,7 @@ interface AdvisorData {
 }
 
 const badgeColors = {
-  verified: "bg-gold text-white",
+  verified: "bg-background/90 text-foreground border border-border",
 };
 
 const Advisors = () => {
@@ -204,16 +204,13 @@ const Advisors = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-8 lg:mb-12"
+            className="mb-8 lg:mb-12"
           >
-            <p className="text-gold font-sans text-xs sm:text-sm tracking-[0.18em] uppercase mb-3 lg:mb-4">
-              Expert Guidance
-            </p>
-            <h1 className="font-serif text-4xl md:text-5xl font-normal mb-3 lg:mb-4">
+            <h1 className="font-serif text-4xl md:text-5xl font-normal mb-3">
               Style Advisors
             </h1>
-            <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-              Browse our curated selection of professional style consultants
+            <p className="font-sans text-muted-foreground max-w-xl">
+              Book a one-on-one session by video or in person, at a time that suits you.
             </p>
           </motion.div>
 
@@ -234,7 +231,7 @@ const Advisors = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {pageAdvisors.map((advisor, index) => {
               const displayName = advisor.full_name || "Style Advisor";
-              const displayPrice = advisor.price_per_session || 100;
+              const displayPrice = advisor.price_per_session || 0;
               const displayRating = advisor.rating || 0;
               const displayReviews = advisor.review_count || 0;
               const styleTags = advisor.style_tags || [];
@@ -246,7 +243,7 @@ const Advisors = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.03 }}
-                   className="group min-w-0 bg-background border border-border overflow-hidden hover-lift cursor-pointer"
+                   className="group flex min-w-0 flex-col bg-background border border-border overflow-hidden transition-colors hover:border-foreground cursor-pointer"
                   onClick={() => handleCardClick(advisor.id)}
                 >
                   <div className="relative aspect-[3/4] overflow-hidden bg-muted">
@@ -266,20 +263,19 @@ const Advisors = () => {
                     )}
                     {advisor.isSample ? (
                       <div className="absolute top-2 left-2 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
-                        <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
                         Sample profile
                       </div>
                     ) : (advisor.verified || advisor.advisor_approved) && (
                       <div className={`absolute top-2 left-2 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 ${badgeColors.verified}`}>
-                        <CheckCircle className="w-3 h-3" />
+                        <CheckCircle className="w-3 h-3 text-gold" aria-hidden="true" />
                         Verified
                       </div>
                     )}
                   </div>
 
-                  <div className="p-2.5 sm:p-3 lg:p-4 min-w-0">
+                  <div className="flex flex-1 flex-col p-3 lg:p-4 min-w-0">
                     {advisor.isSample ? (
-                      <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-1">Sample</p>
+                      <div className="mb-1 h-[1.125rem]" aria-hidden="true" />
                     ) : displayReviews > 0 ? (
                       <div className="flex items-center gap-1 mb-1">
                         <Star className="w-3 h-3 fill-gold text-gold" aria-hidden="true" />
@@ -304,7 +300,8 @@ const Advisors = () => {
                       <div className="mb-1.5 min-w-0" title={advisor.corporate.corporate_services.join(", ") || undefined}>
                         <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 font-sans text-xs uppercase tracking-wider text-foreground">
                           <Briefcase className="w-3 h-3 shrink-0" aria-hidden="true" />
-                          Corporate services offered
+                          <span className="sm:hidden">Corporate</span>
+                          <span className="hidden sm:inline">Corporate services offered</span>
                         </span>
                         {advisor.corporate.corporate_industries && (
                           <p className="mt-0.5 font-sans text-xs text-muted-foreground line-clamp-1">
@@ -336,21 +333,25 @@ const Advisors = () => {
                     </div>
 
 
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
-                      <span className="font-sans min-w-0">
-                        <span className="text-sm font-medium">${displayPrice.toLocaleString()}</span>
-                        <span className="text-xs sm:text-xs text-muted-foreground">/hour</span>
-                      </span>
+                    <div className="mt-auto flex items-center justify-between gap-2 pt-2 border-t border-border">
+                      {displayPrice > 0 ? (
+                        <span className="font-sans min-w-0">
+                          <span className="text-sm font-medium">${displayPrice.toLocaleString()}</span>
+                          <span className="text-xs text-muted-foreground">/hour</span>
+                        </span>
+                      ) : (
+                        <span />
+                      )}
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-xs h-8 shrink-0 px-2.5"
+                        className="h-11 shrink-0 px-3 text-xs sm:text-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/advisors/${advisor.id}`);
                         }}
                       >
-                        {advisor.isSample ? "View" : "Book"}
+                        View<span className="hidden sm:inline">&nbsp;profile</span>
                       </Button>
                     </div>
                   </div>

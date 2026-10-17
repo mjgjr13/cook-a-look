@@ -3,7 +3,7 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw, Sparkles, CheckCircle2, Briefcase } from "lucide-react";
+import { Star, Video, MapPin, Calendar, Instagram, Globe, ArrowLeft, ShieldCheck, Lock, Camera, RefreshCw, CheckCircle2, Briefcase } from "lucide-react";
 import { CorporateInfo, fetchCorporateAdvisors } from "@/lib/corporateAdvisors";
 import { motion } from "framer-motion";
 import { publicSupabase } from "@/integrations/supabase/publicClient";
@@ -257,19 +257,19 @@ const AdvisorProfile = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Link 
             to="/advisors" 
-            className="inline-flex items-center gap-2 text-sm sm:text-base text-muted-foreground hover:text-foreground transition-colors mb-5 lg:mb-8"
+            className="inline-flex min-h-11 items-center gap-2 text-sm sm:text-base text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Advisors
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[auto_1fr] gap-6 lg:gap-x-12 lg:gap-y-0">
             {/* Left Column - Photo & Quick Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="lg:col-span-1"
+              className="lg:col-span-1 lg:col-start-1 lg:row-start-1"
             >
               <div className="relative mx-auto aspect-[5/6] max-h-[410px] w-full overflow-hidden mb-4 lg:mx-0 lg:aspect-[4/5] lg:max-h-none lg:mb-6 bg-muted">
                 {advisor.avatar_url ? (
@@ -277,7 +277,7 @@ const AdvisorProfile = () => {
                     src={optimizedImageUrl(advisor.avatar_url, 800, 1000, 75)}
                     onError={fallbackToOriginal(advisor.avatar_url)}
                     alt={`${displayName}, style advisor`}
-                    fetchPriority="high"
+                    {...{ fetchpriority: "high" }}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -286,7 +286,7 @@ const AdvisorProfile = () => {
                   </div>
                 )}
                 {advisor.verified && (
-                  <div className="absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider bg-gold text-white">
+                  <div className="absolute top-4 left-4 px-3 py-1 text-xs font-sans uppercase tracking-wider bg-background/90 text-foreground border border-border">
                     Verified Advisor
                   </div>
                 )}
@@ -333,31 +333,6 @@ const AdvisorProfile = () => {
                   </a>
                 )}
               </div>
-                {!isSample && (
-                  <div className="mt-5 p-4 bg-secondary/40 border border-border">
-                    <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3">Booking with Cook A Look is protected</p>
-                    <ul className="grid grid-cols-1 gap-y-2 text-sm font-sans text-muted-foreground">
-                      {advisor.verified && (
-                        <li className="flex items-start gap-2"><ShieldCheck className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Identity-verified advisor</span></li>
-                      )}
-                      <li className="flex items-start gap-2"><Lock className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Payment held in escrow until 48h after your session</span></li>
-                      {advisor.virtual_available && (
-                        <li className="flex items-start gap-2"><Camera className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Video sessions recorded for dispute protection</span></li>
-                      )}
-                      <li className="flex items-start gap-2"><RefreshCw className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Full refund if your advisor cancels or doesn't show</span></li>
-                    </ul>
-                    <Link to="/terms" className="block mt-3 text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
-                  </div>
-                )}
-                <div className="mt-5 p-4 bg-background border border-border">
-                  <h2 className="font-serif text-lg font-normal mb-3">How a session works</h2>
-                  <ol className="space-y-2 text-sm font-sans text-muted-foreground">
-                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Choose a date, time, and length (1 to 3 hours), and whether to meet by video or in person{advisor.virtual_available && !advisor.in_person_available ? ` (${firstName} offers video sessions)` : !advisor.virtual_available && advisor.in_person_available ? ` (${firstName} offers in-person sessions)` : ""}.</span></li>
-                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You see the full price first, including any in-person fee.</span></li>
-                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Get a confirmation email and message {firstName} from your dashboard. For in-person sessions you'll agree on a public meeting place.</span></li>
-                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>On the day, join the video call from your dashboard (no app needed), or meet {firstName} at the agreed location.</span></li>
-                  </ol>
-                </div>
             </motion.div>
 
             {/* Right Column - Details */}
@@ -365,11 +340,10 @@ const AdvisorProfile = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="lg:col-span-2"
+              className="lg:col-span-2 lg:col-start-2 lg:row-start-1 lg:row-span-2"
             >
               {isSample ? (
                 <div className="mb-3 inline-flex items-center gap-1.5 border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-sans uppercase tracking-wider text-foreground">
-                  <Sparkles className="w-3.5 h-3.5 text-gold" aria-hidden="true" />
                   Sample profile
                 </div>
               ) : displayReviews > 0 ? (
@@ -399,26 +373,26 @@ const AdvisorProfile = () => {
                 </span>
               )}
 
-              <div className="prose prose-sm sm:prose-lg max-w-none mb-6 lg:mb-8">
-                <p className="font-sans text-muted-foreground leading-relaxed">
+              <div className="max-w-[65ch] mb-6 lg:mb-8">
+                <p className="font-sans text-base text-muted-foreground leading-relaxed">
                   {advisor.personal_philosophy || advisor.bio || "Passionate about helping clients discover their unique style."}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
                 <div className="bg-background p-5 lg:p-6 border border-border">
-                  <h3 className="font-serif text-lg font-normal mb-3">Experience</h3>
+                  <h2 className="font-serif text-lg font-normal mb-3">Experience</h2>
                   <p className="font-sans text-muted-foreground">{displayExperience}</p>
                 </div>
                 <div className="bg-background p-5 lg:p-6 border border-border">
-                  <h3 className="font-serif text-lg font-normal mb-3">Languages</h3>
+                  <h2 className="font-serif text-lg font-normal mb-3">Languages</h2>
                   <p className="font-sans text-muted-foreground">{displayLanguages.join(", ")}</p>
                 </div>
               </div>
 
               {displaySpecialties.length > 0 && (
                 <div className="mb-8">
-                  <h3 className="font-serif text-lg font-normal mb-4">Specialties</h3>
+                  <h2 className="font-serif text-lg font-normal mb-4">Specialties</h2>
                   <div className="flex flex-wrap gap-2">
                     {displaySpecialties.map((specialty) => (
                       <span
@@ -502,6 +476,35 @@ const AdvisorProfile = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* Booking reassurance: under the bio on phones, under the photo on desktop */}
+            <div className="lg:col-span-1 lg:col-start-1 lg:row-start-2 lg:self-start lg:mt-6">
+                {!isSample && (
+                  <div className="mb-5 lg:mb-6 p-4 bg-secondary/40 border border-border">
+                    <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3">Booking with Cook A Look is protected</p>
+                    <ul className="grid grid-cols-1 gap-y-2 text-sm font-sans text-muted-foreground">
+                      {advisor.verified && (
+                        <li className="flex items-start gap-2"><ShieldCheck className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Identity-verified advisor</span></li>
+                      )}
+                      <li className="flex items-start gap-2"><Lock className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Payment held in escrow until 48h after your session</span></li>
+                      {advisor.virtual_available && (
+                        <li className="flex items-start gap-2"><Camera className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Video sessions recorded for dispute protection</span></li>
+                      )}
+                      <li className="flex items-start gap-2"><RefreshCw className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Full refund if your advisor cancels or doesn't show</span></li>
+                    </ul>
+                    <Link to="/terms" className="mt-1 inline-flex min-h-11 items-center text-xs text-gold hover:underline">Read our full terms &amp; protection policy →</Link>
+                  </div>
+                )}
+                <div className="p-4 bg-background border border-border">
+                  <h2 className="font-serif text-lg font-normal mb-3">How a session works</h2>
+                  <ol className="space-y-2 text-sm font-sans text-muted-foreground">
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Choose a date, time, and length (1 to 3 hours), and whether to meet by video or in person{advisor.virtual_available && !advisor.in_person_available ? ` (${firstName} offers video sessions)` : !advisor.virtual_available && advisor.in_person_available ? ` (${firstName} offers in-person sessions)` : ""}.</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You see the full price first, including any in-person fee.</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Get a confirmation email and message {firstName} from your dashboard. For in-person sessions you'll agree on a public meeting place.</span></li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>On the day, join the video call from your dashboard (no app needed), or meet {firstName} at the agreed location.</span></li>
+                  </ol>
+                </div>
+            </div>
           </div>
         </div>
 
@@ -525,32 +528,24 @@ const AdvisorProfile = () => {
       {(hasPortfolio || isSample) && (
       <section className="section-y-sm bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8 lg:mb-12"
+          <div
+            className="mb-8 lg:mb-12"
           >
             <h2 className="font-serif text-3xl md:text-4xl font-normal mb-3 lg:mb-4">
               Style Inspiration
             </h2>
-            <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
+            <p className="font-sans text-muted-foreground max-w-2xl">
               {hasPortfolio
                 ? `A glimpse into the looks and styling work by ${firstName}`
                 : "Looks to spark ideas for your session"}
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
             {displayImages.slice(0, 4).map((image, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="relative aspect-[3/4] overflow-hidden group cursor-pointer bg-muted"
+                className="relative aspect-[3/4] overflow-hidden group bg-muted"
               >
                 <img
                   src={optimizedImageUrl(image, 900, 1200, 75)}
@@ -561,7 +556,7 @@ const AdvisorProfile = () => {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors duration-300" />
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -571,24 +566,20 @@ const AdvisorProfile = () => {
       {/* Reviews Section */}
       <section className="section-y-sm bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8 lg:mb-12"
+          <div
+            className="mb-8 lg:mb-12"
           >
             <h2 className="font-serif text-3xl md:text-4xl font-normal mb-3 lg:mb-4">
               Client Reviews
             </h2>
-            <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
+            <p className="font-sans text-muted-foreground max-w-2xl">
               What clients say about working with {firstName}
             </p>
-          </motion.div>
+          </div>
 
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl">
             {isSample ? (
-              <p className="text-center font-sans text-muted-foreground">
+              <p className="font-sans text-muted-foreground">
                 Sample profiles don't have reviews. Reviews on real advisor profiles come only from clients who completed a booked session.
               </p>
             ) : (
@@ -609,6 +600,7 @@ const AdvisorProfile = () => {
       <BookingCalendar
         advisorId={id || ""}
         advisorName={displayName}
+        advisorAvatarUrl={advisor.avatar_url}
         price={displayPrice}
         isOpen={calendarOpen}
         onClose={() => setCalendarOpen(false)}
