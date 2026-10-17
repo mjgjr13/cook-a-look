@@ -70,6 +70,7 @@ const AdvisorDashboard = () => {
     completionStatus, 
     pendingBookingsCount, 
     toggleVisibility,
+    isLoading: advisorProfileLoading,
     refetch: refetchAdvisorProfile 
   } = useAdvisorProfile();
   
@@ -113,9 +114,11 @@ const AdvisorDashboard = () => {
     }
   }, [profileLoading, profile]);
 
-  // Prompt advisors to finish setting up their account (shown once per user)
+  // Prompt advisors to finish setting up their account (shown once per user).
+  // Wait for the setup checklist to finish loading, or it briefly looks
+  // incomplete and the prompt opens with every step already ticked.
   useEffect(() => {
-    if (profileLoading || !profile || !advisorProfile) return;
+    if (profileLoading || advisorProfileLoading || !profile || !advisorProfile) return;
     if (showOnboardingModal) return; // wait until onboarding ack flow is finished
     if (!profile.onboarding_acknowledged_at) return;
     if (completionStatus.isComplete) return;
@@ -127,7 +130,12 @@ const AdvisorDashboard = () => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(storageKey, "1");
     }
-  }, [profileLoading, profile, advisorProfile, completionStatus.isComplete, showOnboardingModal]);
+  }, [profileLoading, advisorProfileLoading, profile, advisorProfile, completionStatus.isComplete, showOnboardingModal]);
+
+  // Never leave the prompt open once everything on it is done.
+  useEffect(() => {
+    if (completionStatus.isComplete) setShowFinishSetupModal(false);
+  }, [completionStatus.isComplete]);
 
   const loadDashboard = async () => {
     if (!profile) return;
