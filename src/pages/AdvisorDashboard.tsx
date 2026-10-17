@@ -31,6 +31,7 @@ import FinishSetupPromptModal from "@/components/advisor/FinishSetupPromptModal"
 import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
 import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
+import PayoutSetupCard from "@/components/advisor/PayoutSetupCard";
 import PendingLocationApprovals from "@/components/advisor/PendingLocationApprovals";
 import PendingBookingRequests from "@/components/advisor/PendingBookingRequests";
 import VisibilityToggle from "@/components/advisor/VisibilityToggle";
@@ -425,6 +426,9 @@ const AdvisorDashboard = () => {
               />
             </div>
           )}
+
+          {/* Stripe Connect: required before taking paid bookings */}
+          {isApproved && profile && <PayoutSetupCard />}
 
           {/* Platform Fee Progress Card */}
           {isApproved && profile && (

@@ -39,7 +39,7 @@ interface Payment {
   escrow_status: string | null;
   stripe_transfer_id: string | null;
   transferred_at?: string | null;
-  booking?: { status?: string | null; slot?: { start_time?: string | null; end_time?: string | null } | null } | null;
+  booking?: { status?: string | null; client_confirmed_at?: string | null; slot?: { start_time?: string | null; end_time?: string | null } | null } | null;
 }
 
 interface WithdrawalRequest {
@@ -112,7 +112,7 @@ const AdvisorEarnings = () => {
       const [{ data: paymentsData, error: paymentsError }, { data: withdrawalsData }] = await Promise.all([
         supabase
           .from("payments")
-          .select("*, booking:bookings(status, slot:availability_slots(start_time, end_time))")
+          .select("*, booking:bookings(status, client_confirmed_at, slot:availability_slots(start_time, end_time))")
           .eq("advisor_id", profile.id)
           .eq("status", "completed")
           .order("created_at", { ascending: false }),
@@ -168,7 +168,8 @@ const AdvisorEarnings = () => {
     if (p.escrow_status === "refunded" || p.booking?.status === "cancelled") return "refunded";
     if (p.escrow_status === "disputed") return "disputed";
     const end = p.booking?.slot?.end_time || p.booking?.slot?.start_time;
-    const cleared = end ? Date.now() >= new Date(end).getTime() + ESCROW_HOURS * 3600_000 : false;
+    const cleared = !!p.booking?.client_confirmed_at ||
+      (end ? Date.now() >= new Date(end).getTime() + ESCROW_HOURS * 3600_000 : false);
     if (!cleared) return "escrow";
     return payoutsActive ? "scheduled" : "needs_setup";
   };
@@ -361,7 +362,7 @@ const AdvisorEarnings = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                  Payment is held in escrow until 48 hours after your session, in case the client reports a problem.
+                  Payment is held in escrow until the client marks the session complete, or 48 hours after it ends if they don't respond, unless they report a problem.
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />

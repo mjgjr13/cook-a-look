@@ -39,8 +39,23 @@ const callConnect = async (body: Record<string, unknown>) => {
  * open the Stripe Express dashboard. Earnings are sent automatically once the
  * account is active.
  */
+interface StripeEarnings {
+  available: { amount: number; currency: string }[];
+  pending: { amount: number; currency: string }[];
+  payouts: { id: string; amount: number; currency: string; status: string; arrival_date: string }[];
+}
+
+const money = (rows: { amount: number; currency: string }[] | undefined) => {
+  const list = (rows ?? []).filter((r) => r.amount !== 0);
+  if (list.length === 0) return "$0.00";
+  return list
+    .map((r) => new Intl.NumberFormat("en-US", { style: "currency", currency: r.currency.toUpperCase() }).format(r.amount))
+    .join(" + ");
+};
+
 const PayoutSetupCard = ({ onStatus }: { onStatus?: (s: PayoutStatus) => void }) => {
   const [status, setStatus] = useState<PayoutStatus | null>(null);
+  const [earnings, setEarnings] = useState<StripeEarnings | null>(null);
   const [country, setCountry] = useState<string>("US");
   const [busy, setBusy] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,6 +66,9 @@ const PayoutSetupCard = ({ onStatus }: { onStatus?: (s: PayoutStatus) => void })
       const s = (await callConnect({ action: "status" })) as PayoutStatus;
       setStatus(s);
       onStatus?.(s);
+      if (s.connected && s.details_submitted) {
+        callConnect({ action: "earnings" }).then((e) => setEarnings(e as StripeEarnings)).catch(() => setEarnings(null));
+      }
     } catch {
       setStatus({ connected: false });
     }
@@ -95,7 +113,7 @@ const PayoutSetupCard = ({ onStatus }: { onStatus?: (s: PayoutStatus) => void })
         <CardDescription>
           {active
             ? "Your earnings are sent to your bank automatically, 48 hours after each completed session."
-            : "Connect your bank account through Stripe to get paid automatically after each session."}
+            : "Connect with Stripe to start taking paid bookings. Your earnings are then sent to your bank automatically after each session."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -108,9 +126,25 @@ const PayoutSetupCard = ({ onStatus }: { onStatus?: (s: PayoutStatus) => void })
             <p className="flex items-center gap-2 text-sm text-green-700">
               <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Payouts are on
             </p>
+            {earnings && (
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                <dt className="text-muted-foreground">In your Stripe account</dt>
+                <dd className="font-medium">{money(earnings.available)}</dd>
+                <dt className="text-muted-foreground">On the way to Stripe</dt>
+                <dd className="font-medium">{money(earnings.pending)}</dd>
+                {earnings.payouts[0] && (
+                  <>
+                    <dt className="text-muted-foreground">Last bank payout</dt>
+                    <dd className="font-medium">
+                      {money([earnings.payouts[0]])} · {new Date(earnings.payouts[0].arrival_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </dd>
+                  </>
+                )}
+              </dl>
+            )}
             <Button variant="outline" onClick={() => go("dashboard")} disabled={busy}>
               {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ExternalLink className="w-4 h-4 mr-2" />}
-              View payouts and bank details
+              Manage payouts
             </Button>
           </div>
         ) : started ? (
@@ -144,7 +178,7 @@ const PayoutSetupCard = ({ onStatus }: { onStatus?: (s: PayoutStatus) => void })
             </div>
             <Button onClick={() => go("onboard")} disabled={busy} className="bg-gold hover:bg-gold/90 text-black">
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Set up payouts with Stripe
+              Connect with Stripe
             </Button>
           </div>
         )}

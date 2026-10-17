@@ -108,6 +108,20 @@ serve(async (req) => {
       console.warn(`Sample advisor ${advisor.id} refused; Stripe key kind: ${stripeKeyKind()}`);
       throw new Error(`This is a sample profile and can't be booked yet (Stripe key: ${stripeKeyKind()})`);
     }
+    // Advisors are paid through Stripe Connect, so they can only take paid
+    // bookings once their payout account is active. The designated test
+    // advisor is exempt while Stripe uses TEST keys.
+    if (!isTestBookableAdvisor(advisor.id)) {
+      const { data: payoutAccount } = await supabaseAdmin
+        .from("advisor_payout_accounts")
+        .select("transfers_active, payouts_enabled")
+        .eq("advisor_id", advisor.id)
+        .maybeSingle();
+      if (!payoutAccount?.transfers_active || !payoutAccount?.payouts_enabled) {
+        throw new Error("This advisor isn't taking bookings yet. Please check back soon.");
+      }
+    }
+
     // Corporate: validate the request and the advisor's corporate rate.
     let corporateRate = 0;
     let corporateDetails: Record<string, unknown> | null = null;
@@ -279,6 +293,17 @@ serve(async (req) => {
     const amount = isCorporate ? corporateRate : hourlyRate * hours + surchargeDollars;
     const advisorName = advisor.full_name || "Style Advisor";
 
+    // Optional client booking fee (reward_settings.client_booking_fee_percent,
+    // 0 = off). Kept by the platform; the advisor's share is worked out on the
+    // session price only (see _shared/confirmPayment.ts).
+    const { data: feeSetting } = await supabaseAdmin
+      .from("reward_settings")
+      .select("setting_value")
+      .eq("setting_key", "client_booking_fee_percent")
+      .maybeSingle();
+    const bookingFeePercent = Math.max(0, Math.min(30, Number(feeSetting?.setting_value ?? 0) || 0));
+    const bookingFeeCents = Math.round(amount * 100 * bookingFeePercent / 100);
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
 
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -317,7 +342,19 @@ serve(async (req) => {
           unit_amount: Math.round(amount * 100),
         },
         quantity: 1,
-      }],
+      },
+      ...(bookingFeeCents > 0 ? [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Booking fee",
+            description: "Cook A Look service fee",
+            tax_code: "txcd_20030000",
+          },
+          unit_amount: bookingFeeCents,
+        },
+        quantity: 1,
+      }] : [])],
       mode: "payment",
       success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}&advisor_id=${advisorId}&slot_id=${finalSlotId}`,
       cancel_url: `${origin}/advisors/${advisorId}`,
@@ -330,6 +367,7 @@ serve(async (req) => {
         meeting_type: meetingType,
         surcharge_cents: String(surchargeCents),
         is_corporate: isCorporate ? "true" : "false",
+        booking_fee_cents: String(bookingFeeCents),
       },
     });
 

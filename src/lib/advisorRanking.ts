@@ -43,3 +43,23 @@ export const fetchPopularityRanks = async (): Promise<Map<string, number>> => {
     return new Map();
   }
 };
+
+type AcceptingRpc = (fn: "get_advisors_accepting_bookings") => PromiseLike<{
+  data: { advisor_id: string }[] | null;
+  error: unknown;
+}>;
+
+/**
+ * Advisors whose Stripe payout setup is finished, so they can take paid
+ * bookings. null if unknown (then nothing is blocked here; create-checkout
+ * still enforces it).
+ */
+export const fetchAdvisorsAcceptingBookings = async (): Promise<Set<string> | null> => {
+  try {
+    const { data, error } = await (supabase.rpc as unknown as AcceptingRpc)("get_advisors_accepting_bookings");
+    if (error || !data) return null;
+    return new Set(data.map((r) => r.advisor_id));
+  } catch {
+    return null;
+  }
+};

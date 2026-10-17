@@ -64,7 +64,10 @@ export async function confirmPaidCheckoutSession(
 
   const totalAmount = session.amount_total ? session.amount_total / 100 : 0;
   const taxAmount = session.total_details?.amount_tax ? session.total_details.amount_tax / 100 : 0;
-  const baseAmount = totalAmount - taxAmount;
+  // Session price = what the client paid, minus tax and any client booking fee.
+  // The platform fee and the advisor's share are both worked out on that price.
+  const bookingFee = Math.max(0, Number(session.metadata?.booking_fee_cents ?? 0) || 0) / 100;
+  const baseAmount = Number((totalAmount - taxAmount - bookingFee).toFixed(2));
   const feePercent = await platformFeePercent(supabaseAdmin, advisorId);
   const platformFee = Number((baseAmount * feePercent / 100).toFixed(2));
   const advisorPayout = Number((baseAmount - platformFee).toFixed(2));
@@ -76,6 +79,7 @@ export async function confirmPaidCheckoutSession(
     advisor_id: advisorId,
     amount: baseAmount,
     tax_amount: taxAmount,
+    booking_fee: bookingFee,
     total_amount: totalAmount,
     platform_fee: platformFee,
     advisor_payout: advisorPayout,

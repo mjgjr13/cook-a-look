@@ -357,9 +357,25 @@ const BookingCalendar = ({
     setHours(h);
   };
 
+  // Optional client booking fee (reward_settings.client_booking_fee_percent; 0 = off).
+  // Readable once signed in; create-checkout applies the same value.
+  const [bookingFeePercent, setBookingFeePercent] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("reward_settings")
+      .select("setting_value")
+      .eq("setting_key", "client_booking_fee_percent")
+      .maybeSingle()
+      .then(({ data }) => setBookingFeePercent(Math.max(0, Math.min(30, Number(data?.setting_value ?? 0) || 0))));
+  }, [user]);
+
   const surchargeTotal = !isCorporate && meetingType === "in_person" ? (inPersonSurcharge || 0) : 0;
   const corporateRate = corpRates ? (corpFormat === "virtual" ? corpRates.virtual : corpRates.onSite) : null;
-  const total = isCorporate ? (corporateRate ?? 0) : price * hours + surchargeTotal;
+  const sessionPrice = isCorporate ? (corporateRate ?? 0) : price * hours + surchargeTotal;
+  const bookingFee = Math.round(sessionPrice * bookingFeePercent) / 100;
+  const total = sessionPrice + bookingFee;
+  const totalLabel = Number.isInteger(total) ? total.toLocaleString() : total.toFixed(2);
   const effectiveMeetingType: "virtual" | "in_person" = isCorporate
     ? (corpFormat === "on_site" ? "in_person" : "virtual")
     : meetingType;
@@ -924,6 +940,12 @@ const BookingCalendar = ({
               )}
 
               <div className="border-t border-border pt-3">
+                {bookingFee > 0 && (!isCorporate || corporateRate != null) && (
+                  <div className="flex justify-between items-center text-sm text-muted-foreground mb-1">
+                    <span className="font-sans">Booking fee</span>
+                    <span className="font-sans">${bookingFee.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="font-sans text-sm">Total</span>
                   <span className="font-sans font-medium">
@@ -931,9 +953,9 @@ const BookingCalendar = ({
                       ? !user
                         ? "Shown before you pay"
                         : corporateRate != null
-                          ? `$${total.toLocaleString()}`
+                          ? `$${totalLabel}`
                           : "…"
-                      : `$${total}`}
+                      : `$${totalLabel}`}
                   </span>
                 </div>
                 {isCorporate && !user && (
@@ -957,7 +979,7 @@ const BookingCalendar = ({
                   ? "Continue to Book"
                   : isCorporate && corporateRate == null
                     ? "Continue to Payment"
-                    : `Continue to Payment · $${total.toLocaleString()}`}
+                    : `Continue to Payment · $${totalLabel}`}
               </Button>
               {!user && (
                 <p className="text-xs text-muted-foreground text-center mt-1">

@@ -31,13 +31,16 @@ interface DisputeFormProps {
   onSuccess: () => void;
 }
 
+// Valid grounds only. Disagreeing with the advice or not liking the style
+// suggestions isn't a reason for a refund (Terms §10).
 const disputeReasons = [
   { value: "no_show", label: "Advisor did not show up" },
-  { value: "unprofessional", label: "Unprofessional conduct" },
-  { value: "poor_quality", label: "Poor quality service" },
-  { value: "different_service", label: "Service different from description" },
-  { value: "technical_issues", label: "Technical issues prevented session" },
-  { value: "other", label: "Other issue" },
+  { value: "late_or_short", label: "Advisor was very late or ended the session early" },
+  { value: "unprofessional", label: "Unprofessional, rude or offensive behaviour" },
+  { value: "unprepared", label: "Advisor was clearly unprepared" },
+  { value: "different_service", label: "Service was different from what was described" },
+  { value: "technical_issues", label: "Technical problems on the advisor's side stopped the session" },
+  { value: "other", label: "Other serious issue" },
 ];
 
 const DisputeForm = ({
@@ -53,12 +56,22 @@ const DisputeForm = ({
   const [reason, setReason] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   const handleSubmit = async () => {
     if (!reason) {
       toast({
         title: "Please select a reason",
         description: "Choose the main reason for your dispute.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!acknowledged) {
+      toast({
+        title: "Please confirm",
+        description: "Tick the box to confirm this is about the advisor's conduct, not the advice itself.",
         variant: "destructive",
       });
       return;
@@ -144,6 +157,18 @@ const DisputeForm = ({
             </div>
           </div>
 
+          <div className="p-4 border border-border text-sm space-y-2">
+            <p className="font-medium text-foreground">What counts as a problem</p>
+            <p className="text-muted-foreground">
+              Report a problem if the advisor didn't show up, was very late, was unprofessional, rude or
+              offensive, was clearly unprepared, or the session wasn't what was described.
+            </p>
+            <p className="text-muted-foreground">
+              Not agreeing with the advice, or simply not liking the style suggestions, isn't grounds for a refund.
+              Styling is personal, and you're paying for the advisor's time and expertise.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="reason">Reason for dispute *</Label>
             <Select value={reason} onValueChange={setReason}>
@@ -173,6 +198,18 @@ const DisputeForm = ({
               {description.length}/500 characters (minimum 20)
             </p>
           </div>
+
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={acknowledged}
+              onChange={(e) => setAcknowledged(e.target.checked)}
+            />
+            <span>
+              I'm reporting how the session was run or how the advisor behaved, not that I disagree with their advice.
+            </span>
+          </label>
 
           <div className="flex gap-3">
             <Button

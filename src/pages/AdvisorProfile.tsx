@@ -9,6 +9,8 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import BookingCalendar from "@/components/BookingCalendar";
+import { fetchAdvisorsAcceptingBookings } from "@/lib/advisorRanking";
+import { TEST_BOOKABLE_SAMPLE_ADVISOR_IDS } from "@/lib/sampleAdvisors";
 import AdvisorReviews from "@/components/reviews/AdvisorReviews";
 import Seo from "@/components/Seo";
 import SampleAdvisorWaitlistDialog from "@/components/booking/SampleAdvisorWaitlistDialog";
@@ -64,6 +66,17 @@ const AdvisorProfile = () => {
   const [bookingKind, setBookingKind] = useState<"personal" | "corporate">("personal");
 
   const [corporate, setCorporate] = useState<CorporateInfo | null>(null);
+  // Advisors take paid bookings only once Stripe payout setup is finished.
+  const [acceptingBookings, setAcceptingBookings] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    if (TEST_BOOKABLE_SAMPLE_ADVISOR_IDS.includes(id)) {
+      setAcceptingBookings(true);
+      return;
+    }
+    fetchAdvisorsAcceptingBookings().then((set) => setAcceptingBookings(set ? set.has(id) : true));
+  }, [id]);
+  const notTakingBookings = acceptingBookings === false;
 
   useEffect(() => {
     const fetchAdvisor = async () => {
@@ -105,7 +118,7 @@ const AdvisorProfile = () => {
 
   // Auto-open booking calendar if redirected back from sign-in with booking state
   useEffect(() => {
-    if (!loading && advisor && initialBookingDate && !advisor.isSample) {
+    if (!loading && advisor && initialBookingDate && !advisor.isSample && !notTakingBookings) {
       setBookingKind(wantsCorporate ? "corporate" : "personal");
       setCalendarOpen(true);
       // Clean up URL params
@@ -114,7 +127,7 @@ const AdvisorProfile = () => {
   }, [loading, advisor, initialBookingDate]);
 
   useEffect(() => {
-    if (!loading && advisor && !advisor.isSample && wantsPersonal && !initialBookingDate) {
+    if (!loading && advisor && !advisor.isSample && !notTakingBookings && wantsPersonal && !initialBookingDate) {
       setBookingKind("personal");
       setCalendarOpen(true);
       setSearchParams({}, { replace: true });
@@ -124,7 +137,7 @@ const AdvisorProfile = () => {
 
   // Open straight into corporate booking from the direct link / button.
   useEffect(() => {
-    if (!loading && advisor && !advisor.isSample && wantsCorporate && !initialBookingDate && corporate) {
+    if (!loading && advisor && !advisor.isSample && !notTakingBookings && wantsCorporate && !initialBookingDate && corporate) {
       setBookingKind("corporate");
       setCalendarOpen(true);
       setSearchParams({}, { replace: true });
@@ -436,12 +449,12 @@ const AdvisorProfile = () => {
                     <p className="font-sans text-xs text-muted-foreground mt-1">+${advisor.in_person_surcharge} for in-person sessions</p>
                   ) : null}
                 </div>
-                <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={handleBookConsultation}>
+                <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={handleBookConsultation} disabled={!isSample && notTakingBookings}>
                   <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
-                  {isSample ? "Join the Waitlist" : "Book a Session"}
+                  {isSample ? "Join the Waitlist" : notTakingBookings ? "Not taking bookings yet" : "Book a Session"}
                 </Button>
               </div>
-              {corporate && !isSample && (
+              {corporate && !isSample && !notTakingBookings && (
                 <div className="mt-4 p-5 lg:p-6 bg-background border border-border sm:flex sm:items-end sm:justify-between sm:gap-6">
                   <div className="min-w-0">
                   <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
@@ -497,9 +510,9 @@ const AdvisorProfile = () => {
               <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Hourly Rate</p>
               <p className="font-sans text-lg font-medium leading-tight">${displayPrice}<span className="text-sm font-normal text-muted-foreground">/hour</span></p>
             </div>
-            <Button variant="hero" size="lg" className="shrink-0" onClick={handleBookConsultation}>
+            <Button variant="hero" size="lg" className="shrink-0" onClick={handleBookConsultation} disabled={!isSample && notTakingBookings}>
               <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
-              {isSample ? "Join Waitlist" : "Book a Session"}
+              {isSample ? "Join Waitlist" : notTakingBookings ? "Not taking bookings yet" : "Book a Session"}
             </Button>
           </div>
         </div>

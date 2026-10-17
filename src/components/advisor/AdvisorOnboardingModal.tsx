@@ -55,8 +55,8 @@ const AdvisorOnboardingModal = ({
       icon: Clock,
       title: "Dispute & Escrow Process",
       content: [
-        "Client payments are held in escrow until 48 hours after the session",
-        "Clients may raise disputes within 48 hours of the session start time",
+        "Client payments are held in escrow until the client marks the session complete, or 48 hours after it ends",
+        "Clients may report a problem until 48 hours after the session ends, for issues like a no-show or unprofessional conduct (not for disagreeing with your advice)",
         "If a dispute is raised, funds remain held until admin review",
         "Disputes are resolved by our team after reviewing session details and recordings",
         "Fair resolution is our priority - both advisor and client interests are considered",
@@ -70,7 +70,7 @@ const AdvisorOnboardingModal = ({
         "Standard platform fee is 15% per booking",
         "After your 9th completed booking in a calendar month, every additional booking that month is charged a reduced 10% fee",
         "Your net payout is automatically calculated and shown in your dashboard",
-        "Funds are released 48 hours after successful sessions (no disputes) and sent to your bank automatically once you've set up payouts",
+        "You need to connect with Stripe before you can take paid bookings. Your share is then sent automatically once the client marks the session complete, or 48 hours after it ends if no problem is reported",
       ],
     },
   ];

@@ -15,6 +15,7 @@ import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import CancelBookingDialog from "@/components/booking/CancelBookingDialog";
 import ReviewModal from "@/components/reviews/ReviewModal";
 import DisputeForm from "@/components/disputes/DisputeForm";
+import { SessionWrapUpBanner, SessionWrapUpDialog, isWrapUpDismissed, PAYOUT_HOLD_HOURS } from "@/components/booking/SessionWrapUp";
 import { useProfile } from "@/hooks/useProfile";
 import { useReviewPrompt } from "@/hooks/useReviewPrompt";
 
@@ -25,6 +26,7 @@ interface Booking {
   advisor_id: string;
   client_id: string;
   meeting_type?: string | null;
+  client_confirmed_at?: string | null;
   slot: {
     start_time: string;
     end_time: string;
@@ -41,15 +43,22 @@ interface Booking {
   disputes?: { id: string; status: string }[];
 }
 
-// Clients can raise a dispute within 48 hours of the session start (Terms §10).
-const DISPUTE_WINDOW_MS = 48 * 60 * 60 * 1000;
+// Clients can report a problem from the session start until 48 hours after it
+// ends, unless they've marked it complete (Terms §10; matches can_open_dispute).
+const DISPUTE_WINDOW_MS = PAYOUT_HOLD_HOURS * 60 * 60 * 1000;
 const openDispute = (b: Booking) => b.disputes?.find((d) => d.status === "open" || d.status === "under_review");
 const disputablePayment = (b: Booking) => {
   const start = new Date(b.slot.start_time).getTime();
+  const end = new Date(b.slot.end_time).getTime();
   const now = Date.now();
-  if (now < start || now > start + DISPUTE_WINDOW_MS || openDispute(b)) return undefined;
+  if (now < start || now > end + DISPUTE_WINDOW_MS || openDispute(b) || b.client_confirmed_at) return undefined;
   return b.payments?.find((p) => p.status === "completed");
 };
+// Ended, paid, not yet confirmed or disputed: ask "mark complete or report a problem?"
+const needsWrapUp = (b: Booking) =>
+  (b.status === "confirmed" || b.status === "completed") &&
+  new Date(b.slot.end_time).getTime() - 15 * 60 * 1000 <= Date.now() &&
+  !!disputablePayment(b);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -64,6 +73,8 @@ const Dashboard = () => {
   const [modalTab, setModalTab] = useState<"details" | "chat">("details");
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [disputeTarget, setDisputeTarget] = useState<Booking | null>(null);
+  const [wrapUpDialog, setWrapUpDialog] = useState<Booking | null>(null);
+  const [, setWrapUpTick] = useState(0);
 
   // Check for pending reviews
   const { pendingReview, dismissReview } = useReviewPrompt(profile?.user_id || undefined);
@@ -253,7 +264,28 @@ const Dashboard = () => {
           clientId={activeVideoBooking.client_id}
           advisorName={activeVideoBooking.advisor?.full_name}
           isClient={true}
-          onClose={() => setActiveVideoBooking(null)}
+          onClose={() => {
+            const ended = activeVideoBooking;
+            setActiveVideoBooking(null);
+            if (ended && needsWrapUp(ended)) setWrapUpDialog(ended);
+          }}
+        />
+      )}
+
+      {wrapUpDialog && (
+        <SessionWrapUpDialog
+          open
+          bookingId={wrapUpDialog.id}
+          advisorName={wrapUpDialog.advisor?.full_name ?? "your advisor"}
+          sessionEnd={wrapUpDialog.slot.end_time}
+          onReportProblem={() => {
+            setDisputeTarget(wrapUpDialog);
+            setWrapUpDialog(null);
+          }}
+          onDone={() => {
+            setWrapUpDialog(null);
+            loadBookings();
+          }}
         />
       )}
 
@@ -331,6 +363,25 @@ const Dashboard = () => {
               <ClientRewardsCard userId={profile.user_id} />
             </div>
           )}
+
+          {/* Just-finished session: mark complete or report a problem */}
+          {(() => {
+            const b = bookings.find((x) => x.slot && needsWrapUp(x) && !isWrapUpDismissed(x.id));
+            if (!b) return null;
+            return (
+              <SessionWrapUpBanner
+                key={b.id}
+                bookingId={b.id}
+                advisorName={b.advisor?.full_name ?? "your advisor"}
+                sessionEnd={b.slot.end_time}
+                onReportProblem={() => setDisputeTarget(b)}
+                onDone={() => {
+                  setWrapUpTick((n) => n + 1);
+                  loadBookings();
+                }}
+              />
+            );
+          })()}
 
           {/* Upcoming Sessions */}
           <div className="mb-12">
@@ -434,7 +485,7 @@ const Dashboard = () => {
                 {pastBookings.slice(0, 5).map((booking) => (
                   <div
                     key={booking.id}
-                    className="bg-background border border-border p-6 flex justify-between items-center opacity-70"
+                    className="bg-background border border-border p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
                   >
                     <div>
                       <p className="font-serif">
@@ -448,10 +499,15 @@ const Dashboard = () => {
                         })}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       <span className="text-sm text-muted-foreground capitalize">
-                        {openDispute(booking) ? "Dispute under review" : booking.status}
+                        {openDispute(booking) ? "Dispute under review" : booking.client_confirmed_at ? "Completed" : booking.status}
                       </span>
+                      {needsWrapUp(booking) && (
+                        <Button variant="outline" size="sm" onClick={() => setWrapUpDialog(booking)}>
+                          Mark complete
+                        </Button>
+                      )}
                       {disputablePayment(booking) && (
                         <Button variant="ghost" size="sm" onClick={() => setDisputeTarget(booking)}>
                           Report a problem

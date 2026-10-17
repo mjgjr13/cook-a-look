@@ -3,11 +3,7 @@ import Seo from "@/components/Seo";
 import { motion } from "framer-motion";
 
 const TermsOfUse = () => {
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const lastUpdated = "October 17, 2026";
 
   return (
     <Layout>
@@ -128,16 +124,19 @@ const TermsOfUse = () => {
                     Platform; continued use after a change constitutes acceptance.
                   </p>
                   <p>
-                    <strong>Escrow.</strong> Client payments are held in escrow for forty-eight
-                    (48) hours following the scheduled session start time. Funds are released to
-                    the Advisor's available balance after the escrow period if no dispute is
-                    timely raised. Cook A Look may withhold or reverse funds where required by
+                    <strong>Escrow.</strong> Client payments are held in escrow until the Client
+                    confirms the session is complete or, if the Client does not respond,
+                    forty-eight (48) hours after the scheduled session end time. Funds are then
+                    released to the Advisor unless a dispute has been timely raised. Cook A Look may withhold or reverse funds where required by
                     law, fraud, chargeback, dispute, or violation of these Terms.
                   </p>
                   <p>
-                    <strong>Withdrawals.</strong> Advisors may request payout once available
-                    balance meets the minimum withdrawal threshold. Cook A Look is not a bank and
-                    does not pay interest on held funds.
+                    <strong>Payouts.</strong> Advisors are paid through Stripe Connect and must
+                    complete Stripe's account setup before accepting paid bookings. When funds are
+                    released, the Advisor's share is transferred to the Advisor's Stripe account
+                    and paid out to their bank on Stripe's schedule. Advisors agree to Stripe's
+                    Connected Account Agreement. Cook A Look is not a bank and does not pay
+                    interest on held funds.
                   </p>
                   <p>
                     <strong>Refunds &amp; Cancellations.</strong> Refunds, cancellations, and
@@ -306,9 +305,19 @@ const TermsOfUse = () => {
                 <h2 className="font-serif text-2xl font-medium mb-4">10. Escrow Disputes</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
-                    <strong>Window.</strong> Clients must raise any dispute within forty-eight
-                    (48) hours of the scheduled session start time. Disputes raised outside this
-                    window are waived.
+                    <strong>Window.</strong> Clients may raise a dispute from the scheduled session
+                    start time until forty-eight (48) hours after the scheduled session end time,
+                    unless they have already confirmed the session is complete. Disputes raised
+                    outside this window, or after confirming completion, are waived.
+                  </p>
+                  <p>
+                    <strong>Grounds.</strong> A dispute must concern how the session was provided,
+                    for example: the Advisor did not attend, was substantially late or ended the
+                    session early, behaved unprofessionally, rudely or offensively, was clearly
+                    unprepared, or provided a service materially different from what was
+                    described, or a technical failure on the Advisor's side prevented the session.
+                    Disagreement with the Advisor's opinions, recommendations or style advice, or
+                    a change of mind, is not grounds for a refund.
                   </p>
                   <p>
                     <strong>Process.</strong> Funds remain in escrow during review. Cook A Look

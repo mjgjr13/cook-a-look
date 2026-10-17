@@ -31,6 +31,9 @@ USING (
 REVOKE INSERT, UPDATE, DELETE ON public.advisor_payout_accounts FROM anon, authenticated;
 GRANT SELECT ON public.advisor_payout_accounts TO authenticated;
 
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS client_confirmed_at timestamptz;
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS booking_fee numeric NOT NULL DEFAULT 0;
+COMMENT ON COLUMN public.payments.booking_fee IS 'Client booking fee charged on top of the session price (kept by the platform; not part of the advisor share)';
 ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS transfer_status text;
 ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS transfer_error text;
 ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS transferred_at timestamptz;
@@ -68,7 +71,8 @@ AS $function$
     AND COALESCE(pay.advisor_payout, 0) > 0
     AND b.status = 'completed'
     AND COALESCE(b.refund_status, 'none') IN ('none')
-    AND s.end_time <= now() - INTERVAL '48 hours'
+    -- Released when the client marks the session complete, or 48h after it ends.
+    AND (b.client_confirmed_at IS NOT NULL OR s.end_time <= now() - INTERVAL '48 hours')
     AND NOT EXISTS (
       SELECT 1 FROM disputes d
       WHERE d.payment_id = pay.id
@@ -102,3 +106,94 @@ BEGIN
     );
   END IF;
 END $$;
+
+
+-- Client booking fee (percent of the session price, added at checkout and
+-- kept by the platform). 0 = off. Change the value here to turn it on.
+INSERT INTO public.reward_settings (setting_key, setting_value, description)
+VALUES ('client_booking_fee_percent', 0, 'Client booking fee as a percent of the session price (0 = off)')
+ON CONFLICT (setting_key) DO NOTHING;
+
+-- After a session the client either marks it complete (payment released to the
+-- advisor at the next hourly run) or reports a problem. With no response the
+-- payment is released 48 hours after the session ends.
+CREATE OR REPLACE FUNCTION public.client_confirm_session(p_booking_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_ok boolean;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM bookings b
+    JOIN profiles c ON c.id = b.client_id
+    JOIN availability_slots s ON s.id = b.slot_id
+    WHERE b.id = p_booking_id
+      AND c.user_id = auth.uid()
+      AND b.status IN ('confirmed', 'completed')
+      AND now() >= s.end_time - INTERVAL '15 minutes'
+  ) INTO v_ok;
+  IF NOT v_ok THEN RAISE EXCEPTION 'not_confirmable'; END IF;
+
+  IF EXISTS (SELECT 1 FROM disputes d WHERE d.booking_id = p_booking_id AND d.status IN ('open', 'under_review')) THEN
+    RAISE EXCEPTION 'dispute_open';
+  END IF;
+
+  UPDATE bookings SET client_confirmed_at = COALESCE(client_confirmed_at, now()), updated_at = now()
+  WHERE id = p_booking_id;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.client_confirm_session(uuid) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.client_confirm_session(uuid) TO authenticated;
+
+-- Dispute window now matches the payout hold: from the session start until 48
+-- hours after it ENDS (was 48h after the start), and closed once the client
+-- has marked the session complete.
+CREATE OR REPLACE FUNCTION public.can_open_dispute(p_booking_id uuid, p_payment_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.bookings b
+    JOIN public.profiles c ON c.id = b.client_id
+    JOIN public.payments p ON p.id = p_payment_id AND p.booking_id = b.id
+    JOIN public.availability_slots s ON s.id = b.slot_id
+    WHERE b.id = p_booking_id
+      AND c.user_id = auth.uid()
+      AND p.status = 'completed'
+      AND b.client_confirmed_at IS NULL
+      AND now() BETWEEN s.start_time AND s.end_time + interval '48 hours'
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM public.disputes d
+    WHERE d.booking_id = p_booking_id
+      AND d.status IN ('open', 'under_review')
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.can_open_dispute(uuid, uuid) FROM public;
+GRANT EXECUTE ON FUNCTION public.can_open_dispute(uuid, uuid) TO authenticated;
+
+-- Public list of advisors who can take paid bookings (payout setup finished).
+-- Returns ids only.
+CREATE OR REPLACE FUNCTION public.get_advisors_accepting_bookings()
+RETURNS TABLE(advisor_id uuid)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+  SELECT a.advisor_id FROM advisor_payout_accounts a
+  WHERE a.transfers_active AND a.payouts_enabled;
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_advisors_accepting_bookings() FROM public;
+GRANT EXECUTE ON FUNCTION public.get_advisors_accepting_bookings() TO anon, authenticated;

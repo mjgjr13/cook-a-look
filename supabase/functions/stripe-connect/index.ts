@@ -6,7 +6,8 @@ import { getCorsHeaders, getSafeOrigin, handleCorsPreflightRequest } from "../_s
 // Advisor payouts via Stripe Connect (Express accounts).
 //   { action: "onboard", country: "US" | "CA" } -> { url }  Stripe-hosted onboarding
 //   { action: "status" }                        -> current payout account state
-//   { action: "dashboard" }                     -> { url }  Stripe Express dashboard login
+//   { action: "earnings" }                      -> Stripe balance, payouts and transfers
+//   { action: "dashboard" }                     -> { url }  Stripe Express dashboard login ("Manage payouts")
 // The platform (Cook A Look) charges clients; release-advisor-payouts later
 // transfers each advisor's share to their account.
 
@@ -69,6 +70,40 @@ serve(async (req) => {
     if (action === "status") {
       if (!existing) return json({ connected: false }, cors);
       return json(await syncAccount(admin, stripe, profile.id, existing.stripe_account_id), cors);
+    }
+
+    // Live numbers from Stripe: the advisor's Stripe balance, recent payouts to
+    // their bank, and recent transfers from Cook A Look (one per session).
+    if (action === "earnings") {
+      if (!existing) return json({ connected: false }, cors);
+      const acctId = existing.stripe_account_id;
+      const [balance, payouts, transfers] = await Promise.all([
+        stripe.balance.retrieve({}, { stripeAccount: acctId }),
+        stripe.payouts.list({ limit: 10 }, { stripeAccount: acctId }),
+        stripe.transfers.list({ destination: acctId, limit: 20 }),
+      ]);
+      const sum = (rows: { amount: number; currency: string }[]) =>
+        rows.map((r) => ({ amount: r.amount / 100, currency: r.currency }));
+      return json({
+        connected: true,
+        available: sum(balance.available),
+        pending: sum(balance.pending),
+        payouts: payouts.data.map((p) => ({
+          id: p.id,
+          amount: p.amount / 100,
+          currency: p.currency,
+          status: p.status,
+          arrival_date: new Date(p.arrival_date * 1000).toISOString(),
+        })),
+        transfers: transfers.data.map((t) => ({
+          id: t.id,
+          amount: t.amount / 100,
+          currency: t.currency,
+          created: new Date(t.created * 1000).toISOString(),
+          booking_id: t.metadata?.booking_id ?? null,
+          reversed: t.reversed,
+        })),
+      }, cors);
     }
 
     if (action === "dashboard") {
