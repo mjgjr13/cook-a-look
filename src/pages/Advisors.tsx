@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import AdvisorFilters, { EMPTY_FILTERS, FilterState } from "@/components/advisors/AdvisorFilters";
-import { compareTopAdvisors } from "@/lib/advisorRanking";
+import { compareTopAdvisors, fetchPopularityRanks } from "@/lib/advisorRanking";
 import { CorporateInfo, fetchCorporateAdvisors } from "@/lib/corporateAdvisors";
 
 const ADVISORS_PER_PAGE = 20;
@@ -41,7 +41,7 @@ const badgeColors = {
 };
 
 const Advisors = () => {
-  const [advisors, setAdvisors] = useState<(AdvisorData & { isSample: boolean })[]>([]);
+  const [advisors, setAdvisors] = useState<(AdvisorData & { isSample: boolean; popularityRank?: number | null })[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const navigate = useNavigate();
@@ -49,9 +49,10 @@ const Advisors = () => {
   useEffect(() => {
     const fetchAdvisors = async () => {
       try {
-        const [{ data, error }, corporate] = await Promise.all([
+        const [{ data, error }, corporate, ranks] = await Promise.all([
           supabase.rpc('get_public_advisor_profiles'),
           fetchCorporateAdvisors(),
+          fetchPopularityRanks(),
         ]);
         
         if (error) {
@@ -59,7 +60,10 @@ const Advisors = () => {
           setAdvisors([]);
         } else {
           setAdvisors(
-            ((data || []) as AdvisorData[]).map((a) => withSampleContent({ ...a, corporate: corporate.get(a.id) ?? null })),
+            ((data || []) as AdvisorData[]).map((a) => ({
+              ...withSampleContent({ ...a, corporate: corporate.get(a.id) ?? null }),
+              popularityRank: ranks.get(a.id) ?? null,
+            })),
           );
         }
       } catch (err) {

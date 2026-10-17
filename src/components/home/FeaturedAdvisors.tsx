@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import { withSampleContent } from "@/lib/sampleAdvisors";
-import { compareTopAdvisors } from "@/lib/advisorRanking";
+import { compareTopAdvisors, fetchPopularityRanks } from "@/lib/advisorRanking";
 
 interface FeaturedAdvisor {
   id: string;
@@ -25,15 +25,17 @@ const useFeaturedAdvisors = () => {
   return useQuery({
     queryKey: ['featured-advisors'],
     queryFn: async () => {
-      const { data: advisorsData, error } = await supabase
-        .rpc('get_public_advisor_profiles');
-      
+      const [{ data: advisorsData, error }, ranks] = await Promise.all([
+        supabase.rpc('get_public_advisor_profiles'),
+        fetchPopularityRanks(),
+      ]);
+
       if (error) throw error;
       if (!advisorsData || advisorsData.length === 0) return [];
 
-      // The four homepage spots go to the top advisors (see lib/advisorRanking).
+      // The four homepage spots always go to the four most popular advisors (see lib/advisorRanking).
       return (advisorsData as FeaturedAdvisor[])
-        .map(withSampleContent)
+        .map((a) => ({ ...withSampleContent(a), popularityRank: ranks.get(a.id) ?? null }))
         .sort(compareTopAdvisors)
         .slice(0, 4);
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, addDays } from "date-fns";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +50,15 @@ interface CorporateDetails {
 
 const EMPTY_CORPORATE_DETAILS: CorporateDetails = { groupSize: "", company: "", location: "", about: "" };
 const corporateDraftKey = (advisorId: string) => `cal-corporate-draft-${advisorId}`;
+// Session length and meeting type chosen before a sign-in redirect.
+const bookingPrefsKey = (advisorId: string) => `cal-booking-prefs-${advisorId}`;
+const readBookingPrefs = (advisorId: string): { hours?: number; meetingType?: string } => {
+  try {
+    return JSON.parse(sessionStorage.getItem(bookingPrefsKey(advisorId)) || "{}");
+  } catch {
+    return {};
+  }
+};
 
 interface TimeSlot {
   id: string;
@@ -65,6 +74,19 @@ interface MeetingLocation {
   address: string;
   city: string | null;
 }
+
+type OpenDatesRpc = (
+  fn: "get_advisor_open_dates",
+  args: { p_advisor_id: string; p_client_tz: string; p_duration_minutes: number },
+) => PromiseLike<{ data: { open_date: string }[] | null; error: unknown }>;
+
+const scrollBehavior = (): ScrollBehavior => {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  } catch {
+    return "smooth";
+  }
+};
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -115,7 +137,19 @@ const BookingCalendar = ({
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [clientTimezone] = useState<string>(getBrowserTimezone());
-  const [hours, setHours] = useState<1 | 2 | 3>(1);
+  const [hours, setHours] = useState<1 | 2 | 3>(() => {
+    const h = readBookingPrefs(advisorId).hours;
+    return initialSlot && (h === 2 || h === 3) ? h : 1;
+  });
+  // Dates (client's local calendar) with at least one open time; null = unknown, allow all.
+  const [openDates, setOpenDates] = useState<Set<string> | null>(null);
+  const slotDuration = isCorporate ? CORPORATE_VIRTUAL_HOURS * 60 : hours * 60;
+  const timesRef = useRef<HTMLDivElement>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const scrollToTimes = useRef(false);
+  const scrollToDetails = useRef(false);
+  // Start time to keep selected across refetches (restored after sign-in, or a session-length change).
+  const keepSlotStart = useRef<string | null>(selectedSlot?.startTime ?? null);
 
   // Meeting type defaults: virtual if available, else in_person
   const [meetingType, setMeetingType] = useState<"virtual" | "in_person">(
@@ -136,7 +170,11 @@ const BookingCalendar = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    setMeetingType(virtualAvailable ? "virtual" : inPersonAvailable ? "in_person" : "virtual");
+    const saved = initialSlot ? readBookingPrefs(advisorId).meetingType : undefined;
+    if (saved === "in_person" && inPersonAvailable) setMeetingType("in_person");
+    else if (saved === "virtual" && virtualAvailable) setMeetingType("virtual");
+    else setMeetingType(virtualAvailable ? "virtual" : inPersonAvailable ? "in_person" : "virtual");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [virtualAvailable, inPersonAvailable]);
 
   useEffect(() => {
@@ -186,6 +224,26 @@ const BookingCalendar = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [advisorId, inPersonAvailable, user]);
 
+  // Which days have anything open, so empty days are greyed out instead of clicked in vain.
+  useEffect(() => {
+    if (!isOpen || !advisorId || !UUID_REGEX.test(advisorId) || (isCorporate && corpFormat === "on_site")) {
+      setOpenDates(null);
+      return;
+    }
+    let cancelled = false;
+    (supabase.rpc as unknown as OpenDatesRpc)("get_advisor_open_dates", {
+      p_advisor_id: advisorId,
+      p_client_tz: clientTimezone,
+      p_duration_minutes: slotDuration,
+    }).then(({ data, error }) => {
+      if (cancelled) return;
+      setOpenDates(error || !data ? null : new Set(data.map((r) => r.open_date)));
+    }, () => !cancelled && setOpenDates(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, advisorId, clientTimezone, slotDuration, isCorporate, corpFormat]);
+
   useEffect(() => {
     const fetchSlots = async () => {
       if (!selectedDate || !advisorId || !UUID_REGEX.test(advisorId)) {
@@ -193,7 +251,7 @@ const BookingCalendar = ({
         return;
       }
       setIsLoadingSlots(true);
-      setSelectedSlot(null);
+      const keep = keepSlotStart.current;
       try {
         const dateStr = format(selectedDate, "yyyy-MM-dd");
         if (isCorporate && corpFormat === "on_site") {
@@ -202,43 +260,99 @@ const BookingCalendar = ({
             p_date: dateStr,
           });
           const row = Array.isArray(day) ? day[0] : null;
-          setTimeSlots(
-            row
-              ? [{
-                  id: `fullday-${row.day_start}`,
-                  time: "Full day available",
-                  isVirtual: false,
-                  startTime: row.day_start,
-                  endTime: row.day_end,
-                }]
-              : []
-          );
+          const slots: TimeSlot[] = row
+            ? [{
+                id: `fullday-${row.day_start}`,
+                time: "Full day available",
+                isVirtual: false,
+                startTime: row.day_start,
+                endTime: row.day_end,
+              }]
+            : [];
+          setTimeSlots(slots);
+          setSelectedSlot(slots.find((x) => x.startTime === keep) ?? null);
           return;
         }
-        const { data: dynamicSlots, error } = await supabase.rpc("get_available_booking_slots", {
-          p_advisor_id: advisorId,
-          p_date: dateStr,
-          p_duration_minutes: isCorporate ? CORPORATE_VIRTUAL_HOURS * 60 : 60,
-          p_buffer_minutes: 15,
-        });
-        if (!error && dynamicSlots && dynamicSlots.length > 0) {
-          const formatted: TimeSlot[] = dynamicSlots.map((slot: { slot_start: string; slot_end: string; is_virtual: boolean }, idx: number) => ({
-            id: `dynamic-${idx}-${slot.slot_start}`,
+        // Availability is stored per day in the advisor's time zone. The client's
+        // day can overlap the advisor's previous, same and next day, so ask for
+        // all three and keep the times that fall on the chosen day locally.
+        const results = await Promise.all(
+          [-1, 0, 1].map((offset) =>
+            supabase.rpc("get_available_booking_slots", {
+              p_advisor_id: advisorId,
+              p_date: format(addDays(selectedDate, offset), "yyyy-MM-dd"),
+              p_duration_minutes: slotDuration,
+              p_buffer_minutes: 15,
+            })
+          )
+        );
+        const seen = new Set<string>();
+        const formatted: TimeSlot[] = results
+          .flatMap((r) => (r.error || !r.data ? [] : r.data))
+          .filter((slot: { slot_start: string }) => {
+            const t = new Date(slot.slot_start);
+            if (format(t, "yyyy-MM-dd") !== dateStr || seen.has(t.toISOString())) return false;
+            seen.add(t.toISOString());
+            return true;
+          })
+          .sort((a: { slot_start: string }, b: { slot_start: string }) =>
+            new Date(a.slot_start).getTime() - new Date(b.slot_start).getTime()
+          )
+          .map((slot: { slot_start: string; slot_end: string; is_virtual: boolean }) => ({
+            id: `dynamic-${slot.slot_start}`,
             time: formatTimeInTimezone(new Date(slot.slot_start), clientTimezone),
             isVirtual: slot.is_virtual ?? true,
             startTime: slot.slot_start,
             endTime: slot.slot_end,
           }));
-          setTimeSlots(formatted);
-        } else {
-          setTimeSlots([]);
+        setTimeSlots(formatted);
+        const kept = keep ? formatted.find((x) => new Date(x.startTime).getTime() === new Date(keep).getTime()) : undefined;
+        setSelectedSlot(kept ?? null);
+        if (keep && !kept && !isCorporate) {
+          toast({
+            title: "Pick another start time",
+            description: `That time doesn't have room for a ${hours}-hour session.`,
+          });
         }
       } finally {
+        keepSlotStart.current = null;
         setIsLoadingSlots(false);
       }
     };
     fetchSlots();
-  }, [selectedDate, advisorId, clientTimezone, isCorporate, corpFormat]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, advisorId, clientTimezone, isCorporate, corpFormat, slotDuration]);
+
+  // Bring the next step into view so nobody has to scroll to find it.
+  useEffect(() => {
+    if (!scrollToTimes.current || isLoadingSlots || !selectedDate) return;
+    scrollToTimes.current = false;
+    requestAnimationFrame(() => timesRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" }));
+  }, [isLoadingSlots, selectedDate, timeSlots]);
+
+  useEffect(() => {
+    if (!scrollToDetails.current || !selectedSlot) return;
+    scrollToDetails.current = false;
+    requestAnimationFrame(() => detailsRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" }));
+  }, [selectedSlot]);
+
+  const handleSelectDate = (date: Date | undefined) => {
+    scrollToTimes.current = !!date;
+    keepSlotStart.current = null;
+    setSelectedSlot(null);
+    setSelectedDate(date);
+  };
+
+  const handleSelectSlot = (slot: TimeSlot) => {
+    scrollToDetails.current = !selectedSlot;
+    setSelectedSlot(slot);
+  };
+
+  const handleSelectHours = (h: 1 | 2 | 3) => {
+    if (h === hours) return;
+    keepSlotStart.current = selectedSlot?.startTime ?? null;
+    setHours(h);
+  };
 
   const surchargeTotal = !isCorporate && meetingType === "in_person" ? (inPersonSurcharge || 0) : 0;
   const corporateRate = corpRates ? (corpFormat === "virtual" ? corpRates.virtual : corpRates.onSite) : null;
@@ -278,6 +392,12 @@ const BookingCalendar = ({
       if (isCorporate) {
         params.set("book", "corporate");
         saveCorporateDraft();
+      } else {
+        try {
+          sessionStorage.setItem(bookingPrefsKey(advisorId), JSON.stringify({ hours, meetingType }));
+        } catch {
+          // storage unavailable
+        }
       }
       const qs = params.toString();
       const redirectTarget = `/advisors/${encodeURIComponent(advisorId)}${qs ? `?${qs}` : ""}`;
@@ -379,6 +499,7 @@ const BookingCalendar = ({
             variant: "destructive",
           });
           setSelectedSlot(null);
+          keepSlotStart.current = null;
           if (selectedDate) {
             // Trigger a refetch by nudging the date dependency
             const d = new Date(selectedDate);
@@ -393,6 +514,7 @@ const BookingCalendar = ({
       if (data?.url) {
         try {
           sessionStorage.removeItem(corporateDraftKey(advisorId));
+          sessionStorage.removeItem(bookingPrefsKey(advisorId));
         } catch {
           // storage unavailable
         }
@@ -408,7 +530,14 @@ const BookingCalendar = ({
 
 
   const maxDate = addMonths(new Date(), 1);
-  const disabledDays = [{ before: new Date() }, { after: maxDate }];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const disabledDays = [
+    { before: today },
+    { after: maxDate },
+    (d: Date) => !!openDates && !openDates.has(format(d, "yyyy-MM-dd")),
+  ];
+  const firstOpenDate = openDates && openDates.size > 0 ? [...openDates].sort()[0] : null;
   const clientTzAbbr = getTimezoneAbbreviation(clientTimezone);
   const showTypeChooser = virtualAvailable && inPersonAvailable;
 
@@ -510,14 +639,25 @@ const BookingCalendar = ({
           <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={setSelectedDate}
+            onSelect={handleSelectDate}
             disabled={disabledDays}
+            defaultMonth={selectedDate ?? (firstOpenDate ? new Date(`${firstOpenDate}T12:00:00`) : undefined)}
+            key={firstOpenDate ?? "calendar"}
             className={cn("p-0 sm:p-3 pointer-events-auto mx-auto")}
             initialFocus
           />
 
+          {openDates && openDates.size === 0 && !selectedDate && (
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              {advisorName} has no open times in the next month. Please check back soon.
+            </p>
+          )}
+          {openDates && openDates.size > 0 && !selectedDate && (
+            <p className="mt-4 text-center text-xs text-muted-foreground">Greyed-out days have no open times.</p>
+          )}
+
           {selectedDate && (
-            <div className="mt-6">
+            <div className="mt-6 scroll-mt-4" ref={timesRef}>
               <h4 className="font-sans font-medium mb-3">
                 {isCorporate && corpFormat === "on_site" ? "Availability for" : "Available times for"} {format(selectedDate, "MMMM d, yyyy")}
               </h4>
@@ -531,7 +671,7 @@ const BookingCalendar = ({
                   {timeSlots.map((slot) => (
                     <button
                       key={slot.id}
-                      onClick={() => setSelectedSlot(slot)}
+                      onClick={() => handleSelectSlot(slot)}
                       className={cn(
                         "min-h-11 px-2 sm:px-4 py-2 text-sm font-sans border transition-colors",
                         selectedSlot?.id === slot.id
@@ -559,7 +699,7 @@ const BookingCalendar = ({
           )}
 
           {selectedDate && selectedSlot && (
-            <div className="mt-6 p-4 bg-secondary border border-border space-y-4">
+            <div ref={detailsRef} className="mt-6 p-4 bg-secondary border border-border space-y-4 scroll-mt-4">
               <div className="flex justify-between items-start gap-4">
                 <span className="font-sans text-sm">Selected time</span>
                 <span className="font-sans font-medium text-right">{selectedSlot.time} ({clientTzAbbr})</span>
@@ -632,7 +772,7 @@ const BookingCalendar = ({
                     <button
                       key={h}
                       type="button"
-                      onClick={() => setHours(h as 1 | 2 | 3)}
+                      onClick={() => handleSelectHours(h as 1 | 2 | 3)}
                       className={cn(
                         "min-h-11 px-2 py-2 text-sm font-sans border transition-colors",
                         hours === h
