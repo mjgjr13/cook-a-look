@@ -37,7 +37,7 @@ const FinishSetupPromptModal = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">
-            👋 Welcome to Cook A Look
+            Welcome to Cook A Look
           </DialogTitle>
           <DialogDescription className="pt-2">
             {isPending

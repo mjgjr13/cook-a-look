@@ -79,7 +79,7 @@ const NewAdvisorSetupCard = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
-                {isPending ? "👋 Welcome — let's get you ready" : "🎉 You're Approved!"}
+                {isPending ? "Welcome — let's get you ready" : "🎉 You're Approved!"}
               </CardTitle>
               <CardDescription className="mt-1">
                 {isPending
