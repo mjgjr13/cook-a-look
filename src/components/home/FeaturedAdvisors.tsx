@@ -42,7 +42,7 @@ const useFeaturedAdvisors = () => {
   });
 };
 const FeaturedAdvisors = () => {
-  const { data: advisors, isLoading } = useFeaturedAdvisors();
+  const { data: advisors, isLoading, isError, refetch, isFetching } = useFeaturedAdvisors();
   const navigate = useNavigate();
 
   const handleCardClick = (advisorId: string) => {
@@ -164,9 +164,16 @@ const FeaturedAdvisors = () => {
             ))}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground py-16">
-            No featured advisors available at this time.
-          </p>
+          <div className="text-center py-16">
+            <p className="text-muted-foreground">
+              {isError ? "We couldn't load our advisors just now." : "No featured advisors available at this time."}
+            </p>
+            {isError && (
+              <Button variant="outline" className="mt-4" onClick={() => refetch()} disabled={isFetching}>
+                {isFetching ? "Trying again…" : "Try again"}
+              </Button>
+            )}
+          </div>
         )}
 
       </div>
