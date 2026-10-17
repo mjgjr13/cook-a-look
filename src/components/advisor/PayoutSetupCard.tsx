@@ -156,7 +156,7 @@ const PayoutSetupCard = ({ onStatus }: { onStatus?: (s: PayoutStatus) => void })
                 : "Your payout setup isn't finished yet. It takes about 5 minutes."}
             </p>
             {(!status.details_submitted || (status.requirements_due ?? 0) > 0) && (
-              <Button onClick={() => go("onboard")} disabled={busy} className="bg-gold hover:bg-gold/90 text-black">
+              <Button variant="hero" onClick={() => go("onboard")} disabled={busy}>
                 {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Finish payout setup
               </Button>
@@ -176,7 +176,7 @@ const PayoutSetupCard = ({ onStatus }: { onStatus?: (s: PayoutStatus) => void })
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={() => go("onboard")} disabled={busy} className="bg-gold hover:bg-gold/90 text-black">
+            <Button variant="hero" onClick={() => go("onboard")} disabled={busy}>
               {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Connect with Stripe
             </Button>

@@ -12,9 +12,9 @@ import { getCorsHeaders, getSafeOrigin, handleCorsPreflightRequest } from "../_s
 // transfers each advisor's share to their account.
 
 const SUPPORTED_COUNTRIES = ["US", "CA"];
-// Cook A Look's Stripe account is in Canada. Canadian advisors get a full
-// account; advisors elsewhere receive transfers under the recipient agreement.
-const PLATFORM_COUNTRY = "CA";
+// Cook A Look's Stripe account is in Canada. Stripe doesn't allow the
+// "recipient" agreement for Canadian platforms paying US accounts, so every
+// advisor gets an Express account under the standard (full) agreement.
 
 type Admin = ReturnType<typeof createClient>;
 
@@ -117,7 +117,6 @@ serve(async (req) => {
       if (!accountId) {
         const country = String(body?.country ?? "").toUpperCase();
         if (!SUPPORTED_COUNTRIES.includes(country)) return json({ error: "Choose the country where you'll be paid" }, cors, 400);
-        const sameCountry = country === PLATFORM_COUNTRY;
         const account = await stripe.accounts.create(
           {
             country,
@@ -128,14 +127,14 @@ serve(async (req) => {
               losses: { payments: "application" },
             },
             capabilities: { transfers: { requested: true } },
-            ...(sameCountry ? {} : { tos_acceptance: { service_agreement: "recipient" } }),
             business_profile: {
               product_description: "Personal styling sessions booked through Cook A Look",
               url: "https://cookalook.com",
             },
             metadata: { advisor_id: profile.id },
           },
-          { idempotencyKey: `connect-account-${profile.id}` },
+          // Key includes the country so a retry with a different choice isn't refused.
+          { idempotencyKey: `connect-account-v2-${profile.id}-${country}` },
         );
         accountId = account.id;
         const { error: insertError } = await admin.from("advisor_payout_accounts").insert({
@@ -160,6 +159,9 @@ serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("stripe-connect error:", msg);
-    return json({ error: msg }, cors, 500);
+    const friendly = /not supported for platforms|cross-border|restricted outside of your platform/i.test(msg)
+      ? "Payouts to that country aren't available yet. Please contact support@cookalook.com."
+      : msg;
+    return json({ error: friendly }, cors, 500);
   }
 });
