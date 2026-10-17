@@ -17,7 +17,7 @@ const steps = [
 ];
 
 const HowItWorks = () => (
-  <section className="bg-background py-20 lg:py-28">
+  <section className="bg-background section-y">
     <div className="container mx-auto px-5 sm:px-6 lg:px-8">
       <h2 className="font-serif text-4xl md:text-5xl max-w-xl">How it works</h2>
       <ol className="mt-12 grid gap-10 md:grid-cols-3 md:gap-12">

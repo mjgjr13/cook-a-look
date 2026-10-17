@@ -92,7 +92,7 @@ const Step = ({ i }: { i: number }) => {
   const body = (
     <>
       <Art />
-      <p className="mt-1.5 text-center text-[11px] sm:text-xs font-medium text-muted-foreground">
+      <p className="mt-1.5 text-center text-xs sm:text-xs font-medium text-muted-foreground">
         <span className="text-foreground">{i + 1}.</span> {caption}
         {to && <span className="text-foreground"> →</span>}
       </p>

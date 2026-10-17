@@ -228,7 +228,7 @@ const AdvisorEarnings = () => {
       <section className="py-16 bg-card min-h-screen">
         <div className="container mx-auto px-6 lg:px-8 max-w-6xl">
           <div className="flex items-center gap-4 mb-8">
-            <h1 className="font-serif text-3xl md:text-4xl font-medium">
+            <h1 className="font-serif text-3xl md:text-4xl font-normal">
               Your Earnings & Payouts
             </h1>
           </div>

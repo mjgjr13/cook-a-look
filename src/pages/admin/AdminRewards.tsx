@@ -296,7 +296,7 @@ const AdminRewards = () => {
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="font-serif text-3xl md:text-4xl font-medium">Rewards Management</h1>
+              <h1 className="font-serif text-3xl md:text-4xl font-normal">Rewards Management</h1>
               <p className="text-muted-foreground">
                 Configure point values, tier thresholds, and manage user rewards
               </p>

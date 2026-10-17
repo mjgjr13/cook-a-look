@@ -88,7 +88,7 @@ const CookALookLogo = ({
     return (
       <div className={cn("flex items-center", className)}>
         <span className={cn(
-          "font-serif font-semibold tracking-[0.2em] uppercase",
+          "font-logo font-semibold tracking-[0.2em] uppercase",
           textColorClass,
           sizeConfig[size].text
         )}>
@@ -106,7 +106,7 @@ const CookALookLogo = ({
         height={sizeConfig[size].iconH} 
       />
       <span className={cn(
-        "font-serif font-semibold tracking-[0.16em] sm:tracking-[0.2em] uppercase whitespace-nowrap",
+        "font-logo font-semibold tracking-[0.16em] sm:tracking-[0.2em] uppercase whitespace-nowrap",
         textColorClass,
         sizeConfig[size].text
       )}>

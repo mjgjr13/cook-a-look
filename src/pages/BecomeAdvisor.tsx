@@ -678,7 +678,7 @@ const BecomeAdvisor = () => {
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gold/20 mb-8">
                 <CheckCircle className="w-10 h-10 text-gold" />
               </div>
-              <h1 className="font-serif text-4xl md:text-5xl font-medium mb-6">
+              <h1 className="font-serif text-4xl md:text-5xl font-normal mb-6">
                 Application Submitted
               </h1>
               <p className="font-sans text-lg text-muted-foreground mb-4">
@@ -737,7 +737,7 @@ const BecomeAdvisor = () => {
         path="/become-advisor"
       />
       {/* Hero Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
+      <section className="section-y-sm bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -745,7 +745,7 @@ const BecomeAdvisor = () => {
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-6">
+            <h1 className="font-serif text-4xl md:text-5xl font-normal mb-6">
               Become a Style Advisor
             </h1>
             <p className="font-sans text-primary-foreground/80 text-lg">
@@ -757,7 +757,7 @@ const BecomeAdvisor = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-16 bg-card" aria-labelledby="advisor-benefits-heading">
+      <section className="section-y-sm bg-card" aria-labelledby="advisor-benefits-heading">
         <div className="container mx-auto px-6 lg:px-8">
           <h2 id="advisor-benefits-heading" className="sr-only">Benefits of becoming a Cook A Look advisor</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -772,7 +772,7 @@ const BecomeAdvisor = () => {
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-background border border-border mb-4">
                   <benefit.icon className="w-6 h-6 text-gold" />
                 </div>
-                <h3 className="font-serif text-lg font-medium mb-2">
+                <h3 className="font-serif text-lg font-normal mb-2">
                   {benefit.title}
                 </h3>
                 <p className="font-sans text-sm text-muted-foreground">
@@ -785,7 +785,7 @@ const BecomeAdvisor = () => {
       </section>
 
       {/* Application Form */}
-      <section className="py-16 bg-background">
+      <section className="section-y-sm bg-background">
         <div className="container mx-auto px-6 lg:px-8 max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -793,7 +793,7 @@ const BecomeAdvisor = () => {
             transition={{ duration: 0.6 }}
           >
             <div ref={formTopRef} className="text-center mb-12">
-              <h2 className="font-serif text-3xl font-medium mb-4">
+              <h2 className="font-serif text-3xl font-normal mb-4">
                 Apply to Join
               </h2>
               <p className="font-sans text-muted-foreground">
@@ -1407,7 +1407,7 @@ const BecomeAdvisor = () => {
                   >
                     {/* Pricing Section */}
                     <div className="bg-gold/5 border border-gold/20 rounded-lg p-6">
-                      <h3 className="font-serif text-lg font-medium mb-4">Set Your Pricing</h3>
+                      <h3 className="font-serif text-lg font-normal mb-4">Set Your Pricing</h3>
                       <PricingInput
                         value={formData.price}
                         onChange={(value) => {
@@ -1434,7 +1434,7 @@ const BecomeAdvisor = () => {
                     </div>
 
                     <div className="bg-card border border-border p-6 space-y-4">
-                      <h3 className="font-serif text-lg font-medium">Application Summary</h3>
+                      <h3 className="font-serif text-lg font-normal">Application Summary</h3>
                       
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>

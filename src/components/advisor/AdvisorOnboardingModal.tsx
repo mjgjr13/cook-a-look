@@ -155,7 +155,7 @@ const AdvisorOnboardingModal = ({
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gold/10 mb-4">
               <CurrentIcon className="w-8 h-8 text-gold" />
             </div>
-            <h3 className="font-serif text-xl font-medium mb-4">
+            <h3 className="font-serif text-xl font-normal mb-4">
               {sections[currentSection].title}
             </h3>
           </div>

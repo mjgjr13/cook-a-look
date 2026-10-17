@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 // so it reads as part of the page and stays visually separate from the footer.
 const CTASection = () => (
   <section className="bg-card border-t border-border">
-    <div className="container mx-auto px-5 sm:px-6 lg:px-8 py-16 lg:py-24">
+    <div className="container mx-auto px-5 sm:px-6 lg:px-8 section-y">
       <div className="mx-auto max-w-2xl text-center">
         <p className="text-sm font-semibold text-gold">For Stylists</p>
         <h2 className="mt-3 font-serif text-4xl md:text-5xl">Grow your styling business.</h2>

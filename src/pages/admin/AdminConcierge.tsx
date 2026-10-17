@@ -85,7 +85,7 @@ const AdminConcierge = () => {
       <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="font-serif text-3xl md:text-4xl font-medium">AI Concierge</h1>
+            <h1 className="font-serif text-3xl md:text-4xl font-normal">AI Concierge</h1>
             <p className="text-sm text-muted-foreground">
               What visitors ask and how helpful the answers are. Questions and feedback are anonymised and kept for 90 days.
             </p>

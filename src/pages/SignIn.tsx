@@ -184,7 +184,7 @@ const SignIn = () => {
             className="max-w-md mx-auto"
           >
             <div className="text-center mb-10">
-              <h1 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+              <h1 className="font-serif text-3xl md:text-4xl font-normal mb-4">
                 Welcome Back
               </h1>
               <p className="font-sans text-muted-foreground">

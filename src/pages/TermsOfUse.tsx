@@ -19,10 +19,10 @@ const TermsOfUse = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4 text-center">
+            <p className="text-gold font-sans text-sm tracking-[0.18em] uppercase mb-4 text-center">
               Legal
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-8 text-center">
+            <h1 className="font-serif text-4xl md:text-5xl font-normal mb-8 text-center">
               Terms of Use
             </h1>
             <p className="text-muted-foreground text-center mb-4">
@@ -37,7 +37,7 @@ const TermsOfUse = () => {
             <div className="prose prose-lg max-w-none space-y-8">
               {/* 1. Agreement */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">1. Agreement to Terms</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">1. Agreement to Terms</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   These Terms of Use (the "<strong>Terms</strong>") are a legally binding
                   contract between you ("<strong>you</strong>", "<strong>your</strong>", "<strong>User</strong>",
@@ -57,7 +57,7 @@ const TermsOfUse = () => {
 
               {/* 2. Platform Role */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">2. Nature of the Platform</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">2. Nature of the Platform</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   Cook A Look operates a technology marketplace that enables Clients to discover,
                   communicate with, and book independent style advisors ("<strong>Advisors</strong>")
@@ -86,7 +86,7 @@ const TermsOfUse = () => {
 
               {/* 3. Eligibility & Accounts */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">3. Eligibility &amp; Accounts</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">3. Eligibility &amp; Accounts</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
                   You must register for an account to access most features. You agree to: (a)
                   provide true, accurate, current, and complete information; (b) maintain and
@@ -107,7 +107,7 @@ const TermsOfUse = () => {
 
               {/* 4. Booking, Pricing, Payments, Escrow */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">4. Bookings, Pricing, Payments &amp; Escrow</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">4. Bookings, Pricing, Payments &amp; Escrow</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
                     <strong>Payment Processing.</strong> All payments are processed by third-party
@@ -155,7 +155,7 @@ const TermsOfUse = () => {
 
               {/* 5. Liability Disclaimer */}
               <section className="bg-secondary/50 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4 text-destructive">
+                <h2 className="font-serif text-2xl font-normal mb-4 text-destructive">
                   5. Assumption of Risk &amp; Release (In-Person and Virtual)
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -208,7 +208,7 @@ const TermsOfUse = () => {
 
               {/* 6. Safety */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">6. Safety Recommendations</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">6. Safety Recommendations</h2>
                 <p className="text-muted-foreground leading-relaxed mb-4">
                   For in-person consultations, we strongly recommend you:
                 </p>
@@ -223,7 +223,7 @@ const TermsOfUse = () => {
 
               {/* 7. Advisor Expectations */}
               <section className="bg-primary/5 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4">
+                <h2 className="font-serif text-2xl font-normal mb-4">
                   7. Advisor Professional Expectations
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -246,7 +246,7 @@ const TermsOfUse = () => {
 
               {/* 8. Customer Expectations */}
               <section className="bg-primary/5 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4">8. Client Expectations</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">8. Client Expectations</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>Clients agree to:</p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
@@ -264,7 +264,7 @@ const TermsOfUse = () => {
 
               {/* 9. Recording */}
               <section className="bg-gold/10 border border-gold/30 p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4">
+                <h2 className="font-serif text-2xl font-normal mb-4">
                   9. Virtual Session Recording &amp; Consent
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -302,7 +302,7 @@ const TermsOfUse = () => {
 
               {/* 10. Disputes (escrow) */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">10. Escrow Disputes</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">10. Escrow Disputes</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
                     <strong>Window.</strong> Clients may raise a dispute from the scheduled session
@@ -335,7 +335,7 @@ const TermsOfUse = () => {
 
               {/* 11. Acceptable Use */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">11. Acceptable Use; Prohibited Conduct</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">11. Acceptable Use; Prohibited Conduct</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
                   You agree not to, and not to permit any third party to: (a) use the Platform for
                   any unlawful, fraudulent, harmful, infringing, defamatory, obscene, or
@@ -356,7 +356,7 @@ const TermsOfUse = () => {
 
               {/* 12. User Content */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">12. User Content &amp; License</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">12. User Content &amp; License</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
                   You retain ownership of content you submit ("<strong>User Content</strong>"),
                   including profile copy, photos, portfolio items, reviews, and messages. You
@@ -409,7 +409,7 @@ const TermsOfUse = () => {
 
               {/* 13. Intellectual Property */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">13. Intellectual Property</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">13. Intellectual Property</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   The Platform, including all software, design, text, graphics, logos, and
                   trademarks (including "Cook A Look"), is owned by or licensed to Cook A Look
@@ -422,7 +422,7 @@ const TermsOfUse = () => {
 
               {/* 14. DMCA */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">14. Copyright Complaints (DMCA)</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">14. Copyright Complaints (DMCA)</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   If you believe content on the Platform infringes your copyright, send a notice
                   to{" "}
@@ -440,7 +440,7 @@ const TermsOfUse = () => {
 
               {/* 15. Third Parties */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">15. Third-Party Services</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">15. Third-Party Services</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   The Platform integrates third-party services (e.g., Stripe for payments,
                   Daily.co and Google Meet for video, mapping providers, analytics, and email).
@@ -452,7 +452,7 @@ const TermsOfUse = () => {
 
               {/* 16. Disclaimers */}
               <section className="bg-secondary/50 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4">16. Disclaimer of Warranties</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">16. Disclaimer of Warranties</h2>
                 <p className="text-muted-foreground leading-relaxed uppercase text-sm tracking-wide">
                   The platform and all content, services, advisor listings, and materials are
                   provided "as is" and "as available" without warranty of any kind, whether
@@ -468,7 +468,7 @@ const TermsOfUse = () => {
 
               {/* 17. Limitation of Liability */}
               <section className="bg-secondary/50 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4">17. Limitation of Liability</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">17. Limitation of Liability</h2>
                 <p className="text-muted-foreground leading-relaxed uppercase text-sm tracking-wide mb-4">
                   To the maximum extent permitted by law, in no event shall cook a look or its
                   officers, directors, employees, contractors, agents, affiliates, licensors, or
@@ -492,7 +492,7 @@ const TermsOfUse = () => {
 
               {/* 18. Indemnification */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">18. Indemnification</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">18. Indemnification</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   You agree to defend, indemnify, and hold harmless Cook A Look and its officers,
                   directors, employees, contractors, agents, affiliates, and licensors from and
@@ -509,7 +509,7 @@ const TermsOfUse = () => {
 
               {/* 19. Termination */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">19. Suspension &amp; Termination</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">19. Suspension &amp; Termination</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   We may suspend, restrict, or terminate your access to the Platform at any time,
                   with or without notice or cause, including for suspected violation of these
@@ -523,7 +523,7 @@ const TermsOfUse = () => {
 
               {/* 20. Dispute Resolution / Arbitration */}
               <section className="bg-secondary/50 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4">
+                <h2 className="font-serif text-2xl font-normal mb-4">
                   20. Governing Law; Binding Arbitration; Class Action Waiver
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -589,7 +589,7 @@ const TermsOfUse = () => {
 
               {/* 21. Changes */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">21. Changes to the Terms or Platform</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">21. Changes to the Terms or Platform</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   We may modify these Terms at any time. Material changes will be communicated by
                   posting an updated version with a new "Last updated" date and, where
@@ -602,7 +602,7 @@ const TermsOfUse = () => {
 
               {/* 22. International */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">22. International Use &amp; Export</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">22. International Use &amp; Export</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   The Platform is controlled and operated from the United States. We make no
                   representation that the Platform is appropriate or available for use in other
@@ -614,7 +614,7 @@ const TermsOfUse = () => {
 
               {/* 23. Misc */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">23. General Provisions</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">23. General Provisions</h2>
                 <div className="space-y-3 text-muted-foreground leading-relaxed">
                   <p>
                     <strong>Entire Agreement.</strong> These Terms, the Privacy Policy, and any
@@ -663,7 +663,7 @@ const TermsOfUse = () => {
 
               {/* 24. Contact */}
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">24. Contact</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">24. Contact</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   Questions about these Terms? Contact us at{" "}
                   <a href="mailto:legal@cookalook.com" className="text-gold hover:underline">

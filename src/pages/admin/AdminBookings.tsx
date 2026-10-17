@@ -151,7 +151,7 @@ const AdminBookings = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl font-medium">Booking Management</h1>
+          <h1 className="font-serif text-3xl md:text-4xl font-normal">Booking Management</h1>
           <p className="text-muted-foreground">
             View and monitor all platform bookings
           </p>

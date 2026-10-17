@@ -99,7 +99,7 @@ const ForgotPassword = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gold/20 mb-6">
                 <Mail className="w-8 h-8 text-gold" />
               </div>
-              <h1 className="font-serif text-3xl font-medium mb-4">
+              <h1 className="font-serif text-3xl font-normal mb-4">
                 Check Your Email
               </h1>
               <p className="text-muted-foreground mb-6">
@@ -150,7 +150,7 @@ const ForgotPassword = () => {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-8">
-              <h1 className="font-serif text-3xl font-medium mb-2">
+              <h1 className="font-serif text-3xl font-normal mb-2">
                 Reset Password
               </h1>
               <p className="text-muted-foreground">

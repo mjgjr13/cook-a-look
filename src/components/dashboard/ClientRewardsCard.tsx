@@ -142,7 +142,7 @@ const ClientRewardsCard = ({ userId }: ClientRewardsCardProps) => {
               <span className={`text-sm font-medium uppercase tracking-wider ${tier.color}`}>
                 {tier.label} Member
               </span>
-              <p className="text-2xl font-serif font-medium">
+              <p className="text-2xl font-serif font-normal">
                 {currentPoints.toLocaleString()} points
               </p>
             </div>

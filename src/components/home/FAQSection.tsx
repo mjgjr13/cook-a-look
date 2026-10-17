@@ -30,7 +30,7 @@ const faqs = [
 ];
 
 const FAQSection = () => (
-  <section className="bg-card py-20 lg:py-28 border-t border-border">
+  <section className="bg-card section-y border-t border-border">
     <div className="container mx-auto px-5 sm:px-6 lg:px-8 grid gap-10 lg:grid-cols-12">
       <div className="lg:col-span-4">
         <h2 className="font-serif text-4xl md:text-5xl">Questions, answered</h2>

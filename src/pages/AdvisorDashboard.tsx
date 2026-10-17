@@ -292,7 +292,7 @@ const AdvisorDashboard = () => {
                   </Badge>
                 )}
               </div>
-              <h1 className="font-serif text-3xl md:text-4xl font-medium">
+              <h1 className="font-serif text-3xl md:text-4xl font-normal">
                 Welcome, {profile.full_name?.split(" ")[0] || "Advisor"}
               </h1>
             </div>
@@ -573,7 +573,7 @@ const AdvisorDashboard = () => {
           </div>
 
           <div className="mb-8">
-            <h2 className="font-serif text-2xl font-medium mb-6">Upcoming Sessions</h2>
+            <h2 className="font-serif text-2xl font-normal mb-6">Upcoming Sessions</h2>
             {upcomingBookings.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -610,7 +610,7 @@ const AdvisorDashboard = () => {
                         )}
                       </div>
                       <div>
-                        <p className="font-serif font-medium">
+                        <p className="font-serif font-normal">
                           {isVirtualBooking(booking) ? "Virtual" : "In-Person"} Session with {booking.client?.full_name || "Client"}
                         </p>
                         <p className="text-sm text-muted-foreground">

@@ -317,7 +317,7 @@ const Dashboard = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Your dashboard</p>
-              <h1 className="font-serif text-3xl md:text-4xl font-medium">
+              <h1 className="font-serif text-3xl md:text-4xl font-normal">
                 Welcome, {profile?.full_name?.split(" ")[0] || "there"}
               </h1>
             </div>
@@ -343,7 +343,7 @@ const Dashboard = () => {
               className="bg-background border border-border p-6"
             >
               <Calendar className="w-8 h-8 text-gold mb-3" />
-              <p className="text-3xl font-serif font-medium">{upcomingBookings.length}</p>
+              <p className="text-3xl font-serif font-normal">{upcomingBookings.length}</p>
               <p className="text-muted-foreground">Upcoming Sessions</p>
             </motion.div>
             <motion.div
@@ -353,7 +353,7 @@ const Dashboard = () => {
               className="bg-background border border-border p-6"
             >
               <Clock className="w-8 h-8 text-gold mb-3" />
-              <p className="text-3xl font-serif font-medium">{pastBookings.length}</p>
+              <p className="text-3xl font-serif font-normal">{pastBookings.length}</p>
               <p className="text-muted-foreground">Completed Sessions</p>
             </motion.div>
           </div>
@@ -386,7 +386,7 @@ const Dashboard = () => {
 
           {/* Upcoming Sessions */}
           <div className="mb-12">
-            <h2 className="font-serif text-2xl font-medium mb-6">Upcoming Sessions</h2>
+            <h2 className="font-serif text-2xl font-normal mb-6">Upcoming Sessions</h2>
             {upcomingBookings.length === 0 ? (
               <div className="bg-background border border-border p-8 text-center">
                 <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -413,7 +413,7 @@ const Dashboard = () => {
                         )}
                       </div>
                       <div>
-                        <p className="font-serif font-medium">
+                        <p className="font-serif font-normal">
                           {isVirtualBooking(booking) ? "Virtual" : "In-Person"} Session with {booking.advisor?.full_name}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -481,7 +481,7 @@ const Dashboard = () => {
           {/* Past Sessions */}
           {pastBookings.length > 0 && (
             <div>
-              <h2 className="font-serif text-2xl font-medium mb-6">Past Sessions</h2>
+              <h2 className="font-serif text-2xl font-normal mb-6">Past Sessions</h2>
               <div className="space-y-4">
                 {pastBookings.slice(0, 5).map((booking) => (
                   <div

@@ -51,7 +51,7 @@ const QuickSetupPresets = ({ onSelectPreset, onCustom }: QuickSetupPresetsProps)
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
-        <h3 className="text-lg font-serif font-medium mb-2">Quick Setup</h3>
+        <h3 className="text-lg font-serif font-normal mb-2">Quick Setup</h3>
         <p className="text-sm text-muted-foreground">
           Choose a preset to get started in seconds, or create a custom schedule
         </p>

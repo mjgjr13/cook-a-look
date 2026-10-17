@@ -84,10 +84,10 @@ const PrivacyPolicy = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4 text-center">
+            <p className="text-gold font-sans text-sm tracking-[0.18em] uppercase mb-4 text-center">
               Legal
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-8 text-center">
+            <h1 className="font-serif text-4xl md:text-5xl font-normal mb-8 text-center">
               Privacy Policy
             </h1>
             <p className="text-muted-foreground text-center mb-12">
@@ -97,7 +97,7 @@ const PrivacyPolicy = () => {
             <div className="prose prose-lg max-w-none space-y-8">
               {/* Nutrition label */}
               <section id="privacy-summary" className="bg-secondary/50 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-2">Privacy at a Glance</h2>
+                <h2 className="font-serif text-2xl font-normal mb-2">Privacy at a Glance</h2>
                 <p className="text-sm text-muted-foreground mb-4">
                   A short summary of what we collect and why, styled after app-store "privacy
                   nutrition labels." This summary doesn't replace the full policy below — if the
@@ -132,7 +132,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">1. Introduction</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">1. Introduction</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   Cook A Look ("we", "our", or "us") is committed to protecting your privacy. This
                   Privacy Policy explains how we collect, use, disclose, and safeguard your
@@ -147,7 +147,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">2. Information We Collect</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">2. Information We Collect</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p><strong className="text-foreground">Personal Information:</strong></p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
@@ -173,7 +173,7 @@ const PrivacyPolicy = () => {
                 id="biometric-data"
                 className="bg-gold/10 border border-gold/30 p-6 rounded-none scroll-mt-24"
               >
-                <h2 className="font-serif text-2xl font-medium mb-4">3. Biometric Data</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">3. Biometric Data</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
                     This section is our publicly available biometric data policy. It applies to
@@ -225,7 +225,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">4. How We Use Your Information</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">4. How We Use Your Information</h2>
                 <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
                   <li>To provide and maintain our services</li>
                   <li>To process bookings and payments</li>
@@ -238,7 +238,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section className="bg-gold/10 border border-gold/30 p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-medium mb-4">5. Session Recordings</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">5. Session Recordings</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
                     <strong className="text-foreground">Virtual Session Recording:</strong> All
@@ -255,7 +255,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">6. Information Sharing</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">6. Information Sharing</h2>
                 <p className="text-muted-foreground leading-relaxed mb-4">
                   We do not sell or share (as those terms are defined under California law) your
                   personal information for cross-context behavioral advertising. We may share your
@@ -270,7 +270,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">7. Data Security</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">7. Data Security</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   We implement industry-standard security measures to protect your information,
                   including encryption in transit and at rest, access controls limiting who can
@@ -281,7 +281,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">
+                <h2 className="font-serif text-2xl font-normal mb-4">
                   8. Your Privacy Rights (California &amp; Other States)
                 </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -312,7 +312,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">
+                <h2 className="font-serif text-2xl font-normal mb-4">
                   8A. Your Privacy Rights (Canada)
                 </h2>
                 <p className="text-muted-foreground leading-relaxed">
@@ -332,7 +332,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">9. AI Concierge</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">9. AI Concierge</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   The "AI Concierge" chat feature is an automated system powered by Anthropic's
                   Claude AI model, not a human advisor. Messages you send it, along with
@@ -361,7 +361,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">10. Cookies and Tracking</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">10. Cookies and Tracking</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   We don't use advertising or analytics trackers. We use your browser's storage
                   only for things the Platform needs: keeping you signed in, remembering your
@@ -371,7 +371,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">11. Children's Privacy</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">11. Children's Privacy</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   The Platform is restricted to individuals who are at least 18 years old, as
                   stated in our{" "}
@@ -390,7 +390,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">12. International Users</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">12. International Users</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   Cook A Look is operated from Ontario, Canada. Our service providers (listed in
                   Section 6) store and process information outside Canada, mainly in the United
@@ -401,7 +401,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">13. Changes to This Policy</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">13. Changes to This Policy</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   We may update this Privacy Policy from time to time. We will notify you of any
                   material changes by posting the new policy on this page and updating the "Last
@@ -412,7 +412,7 @@ const PrivacyPolicy = () => {
               </section>
 
               <section>
-                <h2 className="font-serif text-2xl font-medium mb-4">14. Contact Us</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">14. Contact Us</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   If you have any questions about this Privacy Policy or want to exercise a
                   privacy right, contact us at{" "}

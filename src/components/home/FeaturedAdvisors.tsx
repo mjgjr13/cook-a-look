@@ -51,7 +51,7 @@ const FeaturedAdvisors = () => {
   };
 
   return (
-    <section className="py-20 lg:py-28 bg-card overflow-hidden">
+    <section className="section-y bg-card overflow-hidden">
       <div className="container mx-auto px-5 sm:px-6 lg:px-8">
         <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -93,7 +93,7 @@ const FeaturedAdvisors = () => {
                     </div>
                   )}
                   {advisor.isSample && (
-                    <div className="absolute top-3 left-3 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
+                    <div className="absolute top-3 left-3 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
                       <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
                       Sample profile
                     </div>
@@ -117,7 +117,7 @@ const FeaturedAdvisors = () => {
                     <p className="font-sans text-xs uppercase tracking-wider text-gold mb-2">New advisor</p>
                   )}
 
-                  <h3 className="font-serif text-xl font-medium mb-1">
+                  <h3 className="font-serif text-xl font-normal mb-1">
                     {advisor.full_name}
                   </h3>
                   <p className="font-sans text-sm text-gold mb-4">

@@ -16,8 +16,8 @@ const NotFound = () => {
       <Seo title="Page Not Found | Cook A Look" description="This page doesn't exist." path={location.pathname} noindex />
       <section className="flex min-h-[70vh] items-center justify-center bg-card px-4">
         <div className="text-center max-w-md">
-          <p className="text-gold font-sans text-sm tracking-[0.3em] uppercase mb-4">404</p>
-          <h1 className="font-serif text-4xl font-medium mb-4">We couldn't find that page</h1>
+          <p className="text-gold font-sans text-sm tracking-[0.18em] uppercase mb-4">404</p>
+          <h1 className="font-serif text-4xl font-normal mb-4">We couldn't find that page</h1>
           <p className="font-sans text-muted-foreground mb-8">
             The link may be old or mistyped. Here are some good places to pick up from.
           </p>

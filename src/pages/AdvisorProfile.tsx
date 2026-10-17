@@ -350,7 +350,7 @@ const AdvisorProfile = () => {
                   </div>
                 )}
                 <div className="mt-5 p-4 bg-background border border-border">
-                  <h2 className="font-serif text-lg font-medium mb-3">How a session works</h2>
+                  <h2 className="font-serif text-lg font-normal mb-3">How a session works</h2>
                   <ol className="space-y-2 text-sm font-sans text-muted-foreground">
                     <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Choose a date, time, and length (1 to 3 hours), and whether to meet by video or in person{advisor.virtual_available && !advisor.in_person_available ? ` (${firstName} offers video sessions)` : !advisor.virtual_available && advisor.in_person_available ? ` (${firstName} offers in-person sessions)` : ""}.</span></li>
                     <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-gold shrink-0" aria-hidden="true" /><span>Pay securely with Stripe. You see the full price first, including any in-person fee.</span></li>
@@ -384,7 +384,7 @@ const AdvisorProfile = () => {
                 <p className="mb-2 text-sm font-sans uppercase tracking-wider text-gold">New advisor</p>
               )}
 
-              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium leading-tight mb-2">
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal leading-tight mb-2">
                 {displayName}
               </h1>
               <p className="font-sans text-base sm:text-lg text-gold mb-5 lg:mb-6">
@@ -393,7 +393,7 @@ const AdvisorProfile = () => {
                   : "Style Consultant"}
               </p>
               {corporate && (
-                <span className="mb-5 lg:mb-6 -mt-2 inline-flex items-center gap-1.5 border border-border bg-background px-2 py-1 font-sans text-[11px] uppercase tracking-wider text-foreground">
+                <span className="mb-5 lg:mb-6 -mt-2 inline-flex items-center gap-1.5 border border-border bg-background px-2 py-1 font-sans text-xs uppercase tracking-wider text-foreground">
                   <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
                   Corporate services offered
                 </span>
@@ -407,18 +407,18 @@ const AdvisorProfile = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
                 <div className="bg-background p-5 lg:p-6 border border-border">
-                  <h3 className="font-serif text-lg font-medium mb-3">Experience</h3>
+                  <h3 className="font-serif text-lg font-normal mb-3">Experience</h3>
                   <p className="font-sans text-muted-foreground">{displayExperience}</p>
                 </div>
                 <div className="bg-background p-5 lg:p-6 border border-border">
-                  <h3 className="font-serif text-lg font-medium mb-3">Languages</h3>
+                  <h3 className="font-serif text-lg font-normal mb-3">Languages</h3>
                   <p className="font-sans text-muted-foreground">{displayLanguages.join(", ")}</p>
                 </div>
               </div>
 
               {displaySpecialties.length > 0 && (
                 <div className="mb-8">
-                  <h3 className="font-serif text-lg font-medium mb-4">Specialties</h3>
+                  <h3 className="font-serif text-lg font-normal mb-4">Specialties</h3>
                   <div className="flex flex-wrap gap-2">
                     {displaySpecialties.map((specialty) => (
                       <span
@@ -523,7 +523,7 @@ const AdvisorProfile = () => {
 
       {/* Inspiration Gallery */}
       {(hasPortfolio || isSample) && (
-      <section className="py-10 lg:py-16 bg-background">
+      <section className="section-y-sm bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -532,7 +532,7 @@ const AdvisorProfile = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-8 lg:mb-12"
           >
-            <h2 className="font-serif text-3xl md:text-4xl font-medium mb-3 lg:mb-4">
+            <h2 className="font-serif text-3xl md:text-4xl font-normal mb-3 lg:mb-4">
               Style Inspiration
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
@@ -569,7 +569,7 @@ const AdvisorProfile = () => {
       )}
 
       {/* Reviews Section */}
-      <section className="py-10 lg:py-16 bg-card">
+      <section className="section-y-sm bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -578,7 +578,7 @@ const AdvisorProfile = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-8 lg:mb-12"
           >
-            <h2 className="font-serif text-3xl md:text-4xl font-medium mb-3 lg:mb-4">
+            <h2 className="font-serif text-3xl md:text-4xl font-normal mb-3 lg:mb-4">
               Client Reviews
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">

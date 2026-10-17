@@ -112,7 +112,7 @@ const BookingSuccess = () => {
           >
             <div className="mb-8">
               <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-6" />
-              <h1 className="font-serif text-4xl md:text-5xl font-medium mb-4">
+              <h1 className="font-serif text-4xl md:text-5xl font-normal mb-4">
                 Booking Confirmed
               </h1>
               <p className="text-muted-foreground text-lg">

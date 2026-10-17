@@ -99,7 +99,7 @@ const SecurityTab = ({ userId, navigate, toast }: SecurityTabProps) => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-background border border-border p-6 space-y-6"
     >
-      <h2 className="font-serif text-xl font-medium">Security Settings</h2>
+      <h2 className="font-serif text-xl font-normal">Security Settings</h2>
 
       <div className="space-y-4">
         <div>
@@ -363,7 +363,7 @@ const AccountSettings = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-serif text-3xl md:text-4xl font-medium">
+              <h1 className="font-serif text-3xl md:text-4xl font-normal">
                 Account settings
               </h1>
             </div>
@@ -392,7 +392,7 @@ const AccountSettings = () => {
               className="space-y-8"
             >
 <div className="bg-background border border-border p-6 space-y-6">
-                <h2 className="font-serif text-xl font-medium">Profile Photo</h2>
+                <h2 className="font-serif text-xl font-normal">Profile Photo</h2>
                 
                 {userId && profile && (
                   <ProfilePhotoUpload
@@ -412,7 +412,7 @@ const AccountSettings = () => {
               </div>
 
               <div className="bg-background border border-border p-6 space-y-6">
-                <h2 className="font-serif text-xl font-medium">Personal Information</h2>
+                <h2 className="font-serif text-xl font-normal">Personal Information</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -472,7 +472,7 @@ const AccountSettings = () => {
                   )}
 
                   <div className="bg-background border border-border p-6 space-y-6">
-                    <h2 className="font-serif text-xl font-medium">Advisor Settings</h2>
+                    <h2 className="font-serif text-xl font-normal">Advisor Settings</h2>
 
                   {/* Payout Info Box - Hide percentage from advisors */}
                   <div className="bg-muted/50 border border-border rounded-lg p-4">
@@ -725,7 +725,7 @@ const AccountSettings = () => {
               <div className="flex items-start gap-3">
                 <Calendar className="w-6 h-6 text-gold mt-1" />
                 <div>
-                  <h2 className="font-serif text-xl font-medium">Availability</h2>
+                  <h2 className="font-serif text-xl font-normal">Availability</h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     Set your weekly working hours, breaks, and date-specific overrides.
                     Clients can only book within the windows you define.
@@ -761,7 +761,7 @@ const AccountSettings = () => {
               animate={{ opacity: 1, y: 0 }}
               className="bg-background border border-border p-6 space-y-6"
             >
-              <h2 className="font-serif text-xl font-medium">Notification Preferences</h2>
+              <h2 className="font-serif text-xl font-normal">Notification Preferences</h2>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">

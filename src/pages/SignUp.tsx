@@ -178,7 +178,7 @@ const SignUp = () => {
               transition={{ duration: 0.6 }}
               className="max-w-md mx-auto text-center"
             >
-              <h1 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+              <h1 className="font-serif text-3xl md:text-4xl font-normal mb-4">
                 Check Your Email
               </h1>
               <p className="font-sans text-muted-foreground">
@@ -212,7 +212,7 @@ const SignUp = () => {
             className="max-w-md mx-auto"
           >
             <div className="text-center mb-10">
-              <h1 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+              <h1 className="font-serif text-3xl md:text-4xl font-normal mb-4">
                 Create Account
               </h1>
               <p className="font-sans text-muted-foreground">

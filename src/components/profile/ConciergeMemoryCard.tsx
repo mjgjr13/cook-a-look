@@ -40,7 +40,7 @@ const ConciergeMemoryCard = ({ userId }: { userId: string | null }) => {
 
   return (
     <div id="concierge-memory" className="mb-8 border border-border bg-background p-5 sm:p-6">
-      <h2 className="font-serif text-xl font-medium flex items-center gap-2">
+      <h2 className="font-serif text-xl font-normal flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-gold" aria-hidden="true" />
         AI Concierge memory
       </h2>

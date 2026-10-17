@@ -58,7 +58,7 @@ const Brand = () => {
 
       <section className="container mx-auto px-6 lg:px-8 py-20 lg:py-28">
         <div className="max-w-2xl">
-          <p className="font-sans text-xs tracking-[0.3em] uppercase text-muted-foreground mb-4">
+          <p className="font-sans text-xs tracking-[0.18em] uppercase text-muted-foreground mb-4">
             Press Kit
           </p>
           <h2 className="font-serif text-4xl lg:text-5xl text-primary mb-6">

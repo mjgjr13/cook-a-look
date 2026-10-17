@@ -30,7 +30,7 @@ const BiometricConsentScreen = ({ onConsent }: BiometricConsentScreenProps) => {
         <div className="flex items-start gap-3">
           <Shield className="w-6 h-6 text-gold shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-serif text-lg font-medium mb-1">
+            <h3 className="font-serif text-lg font-normal mb-1">
               Before you continue: consent to identity verification photos
             </h3>
             <p className="text-sm text-muted-foreground">

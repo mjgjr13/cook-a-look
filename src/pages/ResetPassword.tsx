@@ -172,7 +172,7 @@ const ResetPassword = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/20 mb-6">
                 <Lock className="w-8 h-8 text-destructive" />
               </div>
-              <h1 className="font-serif text-3xl font-medium mb-4">
+              <h1 className="font-serif text-3xl font-normal mb-4">
                 Invalid or Expired Link
               </h1>
               <p className="text-muted-foreground mb-6">
@@ -202,7 +202,7 @@ const ResetPassword = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gold/20 mb-6">
                 <CheckCircle className="w-8 h-8 text-gold" />
               </div>
-              <h1 className="font-serif text-3xl font-medium mb-4">
+              <h1 className="font-serif text-3xl font-normal mb-4">
                 Password Reset Complete
               </h1>
               <p className="text-muted-foreground mb-6">
@@ -230,7 +230,7 @@ const ResetPassword = () => {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-8">
-              <h1 className="font-serif text-3xl font-medium mb-2">
+              <h1 className="font-serif text-3xl font-normal mb-2">
                 Create New Password
               </h1>
               <p className="text-muted-foreground">

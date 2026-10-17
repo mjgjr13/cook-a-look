@@ -691,7 +691,7 @@ const AdminAdvisors = () => {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div>
-                <h1 className="font-serif text-3xl md:text-4xl font-medium">Advisor Management</h1>
+                <h1 className="font-serif text-3xl md:text-4xl font-normal">Advisor Management</h1>
                 <p className="text-muted-foreground font-sans text-sm">
                   Review applications and manage advisor profiles
                 </p>

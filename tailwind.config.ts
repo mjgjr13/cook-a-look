@@ -15,8 +15,15 @@ export default {
     },
     extend: {
       fontFamily: {
-        serif: ['Cormorant Garamond', 'Georgia', 'serif'],
-        sans: ['Manrope', 'system-ui', 'sans-serif'],
+        serif: ['Spectral', 'Georgia', 'serif'],
+        sans: ['Instrument Sans Variable', 'system-ui', 'sans-serif'],
+        logo: ['Cormorant Garamond', 'Georgia', 'serif'],
+      },
+      fontSize: {
+        // Body sizes tuned for Instrument Sans (narrower than the old Manrope)
+        xs: ['0.75rem', { lineHeight: '1.125rem' }],
+        sm: ['0.9375rem', { lineHeight: '1.45rem' }],
+        base: ['1rem', { lineHeight: '1.6rem' }],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -346,7 +346,7 @@ const AdvisorAvailability = () => {
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="font-serif text-3xl md:text-4xl font-medium">
+                <h1 className="font-serif text-3xl md:text-4xl font-normal">
                   Set your weekly hours
                 </h1>
               </div>

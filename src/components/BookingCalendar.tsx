@@ -960,12 +960,12 @@ const BookingCalendar = ({
                   </span>
                 </div>
                 {isCorporate && !user && (
-                  <p className="text-[11px] text-muted-foreground mt-1">Sign in or create a free account to see the price.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Sign in or create a free account to see the price.</p>
                 )}
-                <p className="text-[11px] text-muted-foreground mt-1">Plus any applicable sales tax, shown at checkout before you pay.</p>
+                <p className="text-xs text-muted-foreground mt-1">Plus any applicable sales tax, shown at checkout before you pay.</p>
               </div>
               {/* Must match public.calculate_refund (database) - update both together. */}
-              <div className="text-[11px] leading-relaxed text-muted-foreground border-t border-border pt-3">
+              <div className="text-xs leading-relaxed text-muted-foreground border-t border-border pt-3">
                 <p className="font-semibold text-foreground mb-1">Cancellation policy</p>
                 <p>
                   Cancel any time before your session for a full refund. Cancelling within{" "}
@@ -987,7 +987,7 @@ const BookingCalendar = ({
                   Next: create a free account or sign in. Your selected time is saved.
                 </p>
               )}
-              <p className="text-[11px] text-muted-foreground text-center mt-2 leading-relaxed">
+              <p className="text-xs text-muted-foreground text-center mt-2 leading-relaxed">
                 Secure checkout via Stripe. Cook A Look never sees your card details.
                 Payment is held in escrow until 48 hours after your session.
               </p>

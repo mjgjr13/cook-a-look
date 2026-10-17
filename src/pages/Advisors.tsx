@@ -206,10 +206,10 @@ const Advisors = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-8 lg:mb-12"
           >
-            <p className="text-gold font-sans text-xs sm:text-sm tracking-[0.24em] sm:tracking-[0.3em] uppercase mb-3 lg:mb-4">
+            <p className="text-gold font-sans text-xs sm:text-sm tracking-[0.18em] uppercase mb-3 lg:mb-4">
               Expert Guidance
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl font-medium mb-3 lg:mb-4">
+            <h1 className="font-serif text-4xl md:text-5xl font-normal mb-3 lg:mb-4">
               Style Advisors
             </h1>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
@@ -265,12 +265,12 @@ const Advisors = () => {
                       </div>
                     )}
                     {advisor.isSample ? (
-                      <div className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
+                      <div className="absolute top-2 left-2 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
                         <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
                         Sample profile
                       </div>
                     ) : (advisor.verified || advisor.advisor_approved) && (
-                      <div className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] font-sans uppercase tracking-wider flex items-center gap-1 ${badgeColors.verified}`}>
+                      <div className={`absolute top-2 left-2 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 ${badgeColors.verified}`}>
                         <CheckCircle className="w-3 h-3" />
                         Verified
                       </div>
@@ -279,7 +279,7 @@ const Advisors = () => {
 
                   <div className="p-2.5 sm:p-3 lg:p-4 min-w-0">
                     {advisor.isSample ? (
-                      <p className="font-sans text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Sample</p>
+                      <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground mb-1">Sample</p>
                     ) : displayReviews > 0 ? (
                       <div className="flex items-center gap-1 mb-1">
                         <Star className="w-3 h-3 fill-gold text-gold" aria-hidden="true" />
@@ -291,10 +291,10 @@ const Advisors = () => {
                         </span>
                       </div>
                     ) : (
-                      <p className="font-sans text-[11px] uppercase tracking-wider text-gold mb-1">New advisor</p>
+                      <p className="font-sans text-xs uppercase tracking-wider text-gold mb-1">New advisor</p>
                     )}
 
-                    <h2 className="font-serif text-sm lg:text-base font-medium mb-0.5 line-clamp-1 leading-snug">
+                    <h2 className="font-serif text-sm lg:text-base font-normal mb-0.5 line-clamp-1 leading-snug">
                       {displayName}
                     </h2>
                     <p className="font-sans text-xs text-gold mb-1 line-clamp-1">
@@ -302,12 +302,12 @@ const Advisors = () => {
                     </p>
                     {advisor.corporate && (
                       <div className="mb-1.5 min-w-0" title={advisor.corporate.corporate_services.join(", ") || undefined}>
-                        <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wider text-foreground">
+                        <span className="inline-flex items-center gap-1 border border-border px-1.5 py-0.5 font-sans text-xs uppercase tracking-wider text-foreground">
                           <Briefcase className="w-3 h-3 shrink-0" aria-hidden="true" />
                           Corporate services offered
                         </span>
                         {advisor.corporate.corporate_industries && (
-                          <p className="mt-0.5 font-sans text-[11px] text-muted-foreground line-clamp-1">
+                          <p className="mt-0.5 font-sans text-xs text-muted-foreground line-clamp-1">
                             {advisor.corporate.corporate_industries}
                           </p>
                         )}
@@ -339,7 +339,7 @@ const Advisors = () => {
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
                       <span className="font-sans min-w-0">
                         <span className="text-sm font-medium">${displayPrice.toLocaleString()}</span>
-                        <span className="text-[11px] sm:text-xs text-muted-foreground">/hour</span>
+                        <span className="text-xs sm:text-xs text-muted-foreground">/hour</span>
                       </span>
                       <Button 
                         variant="outline" 
