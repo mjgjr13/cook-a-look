@@ -267,7 +267,7 @@ const AdvisorEarnings = () => {
                   Recent Payments
                 </CardTitle>
                 <CardDescription>
-                  Your earnings from each session, after the platform fee
+                  Your earnings from each session
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -282,7 +282,6 @@ const AdvisorEarnings = () => {
                         <TableRow>
                           <TableHead>Date</TableHead>
                           <TableHead>Session Total</TableHead>
-                          <TableHead>Platform Fee</TableHead>
                           <TableHead>Your Earnings</TableHead>
                           <TableHead>Payout</TableHead>
                         </TableRow>
@@ -294,9 +293,6 @@ const AdvisorEarnings = () => {
                               {format(new Date(payment.booking?.slot?.start_time || payment.created_at), "MMM d, yyyy")}
                             </TableCell>
                             <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                              -${Number(payment.platform_fee || payment.amount * 0.15).toFixed(2)}
-                            </TableCell>
                             <TableCell className="font-semibold text-green-600">
                               ${payoutOf(payment).toFixed(2)}
                             </TableCell>
@@ -358,7 +354,7 @@ const AdvisorEarnings = () => {
               <ul className="text-sm text-muted-foreground space-y-2">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                  You keep 85% of each session price. After 9 completed bookings in a calendar month, the platform fee drops to 10% for the rest of that month.
+                  You keep 85% of each session price, rising to 90% after 9 completed bookings in a calendar month.
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
