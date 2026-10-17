@@ -25,6 +25,9 @@ interface Props {
   className?: string;
   error?: boolean;
   disabled?: boolean;
+  /** Suggest cities only (e.g. "Toronto, ON, Canada") instead of full addresses. */
+  citiesOnly?: boolean;
+  id?: string;
 }
 
 // Minimal globals from Google Places (New)
@@ -51,6 +54,7 @@ type PlacesLib = {
     fetchAutocompleteSuggestions: (req: {
       input: string;
       sessionToken: unknown;
+      includedPrimaryTypes?: string[];
     }) => Promise<{ suggestions: AutocompleteSuggestion[] }>;
   };
   AutocompleteSessionToken: new () => unknown;
@@ -107,12 +111,15 @@ const GooglePlacesAutocomplete = ({
   className,
   error,
   disabled,
+  citiesOnly,
+  id,
 }: Props) => {
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [highlighted, setHighlighted] = useState(-1);
   const sessionRef = useRef<unknown>(null);
   const placesRef = useRef<PlacesLib | null>(null);
   const debounceRef = useRef<number | null>(null);
@@ -159,8 +166,10 @@ const GooglePlacesAutocomplete = ({
         const { suggestions: out } = await lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
           input,
           sessionToken: sessionRef.current,
+          ...(citiesOnly ? { includedPrimaryTypes: ["(cities)"] } : {}),
         });
         setSuggestions(out.slice(0, 6));
+        setHighlighted(-1);
         setOpen(out.length > 0);
       } catch (e) {
         console.error("Places autocomplete error:", e);
@@ -175,6 +184,12 @@ const GooglePlacesAutocomplete = ({
     const pred = s.placePrediction;
     if (!pred) return;
     setOpen(false);
+    if (citiesOnly) {
+      // The suggestion text is already "City, Region, Country"; no details lookup needed.
+      onChange(pred.text.text);
+      onSelect({ placeId: pred.placeId, name: pred.structuredFormat?.mainText?.text || pred.text.text, formattedAddress: pred.text.text });
+      return;
+    }
     try {
       const place = pred.toPlace();
       await place.fetchFields({ fields: ["id", "displayName", "formattedAddress", "location"] });
@@ -210,6 +225,22 @@ const GooglePlacesAutocomplete = ({
             fetchSuggestions(e.target.value);
           }}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onKeyDown={(e) => {
+            if (!open || suggestions.length === 0) return;
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setHighlighted((i) => Math.min(i + 1, suggestions.length - 1));
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setHighlighted((i) => Math.max(i - 1, 0));
+            } else if (e.key === "Enter" && highlighted >= 0) {
+              e.preventDefault();
+              handleSelect(suggestions[highlighted]);
+            } else if (e.key === "Escape") {
+              setOpen(false);
+            }
+          }}
+          id={id}
           placeholder={placeholder}
           className={cn("pl-10", error && "border-destructive", className)}
           disabled={disabled}
@@ -225,13 +256,13 @@ const GooglePlacesAutocomplete = ({
       )}
       {loadError && (
         <p className="text-xs text-destructive mt-1">
-          Suggestions unavailable — type the address manually.
+          Suggestions unavailable — type it in manually.
         </p>
       )}
 
       {open && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-72 overflow-auto">
-          {suggestions.map((s) => {
+          {suggestions.map((s, index) => {
             const pred = s.placePrediction;
             if (!pred) return null;
             const main = pred.structuredFormat?.mainText?.text || pred.text.text;
@@ -241,7 +272,10 @@ const GooglePlacesAutocomplete = ({
                 key={pred.placeId}
                 type="button"
                 onClick={() => handleSelect(s)}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-start gap-2"
+                className={cn(
+                  "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-start gap-2",
+                  highlighted === index && "bg-accent",
+                )}
               >
                 <MapPin className="w-3.5 h-3.5 mt-0.5 text-muted-foreground flex-shrink-0" />
                 <span className="flex-1">

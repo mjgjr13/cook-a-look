@@ -43,7 +43,7 @@ import { z } from "zod";
 import LivenessCamera from "@/components/LivenessCamera";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import LocationAutocomplete from "@/components/ui/location-autocomplete";
+import GooglePlacesAutocomplete from "@/components/ui/google-places-autocomplete";
 import ExperienceSelect from "@/components/advisor/ExperienceSelect";
 import PricingInput from "@/components/advisor/PricingInput";
 import IDUploadWithCamera from "@/components/advisor/IDUploadWithCamera";
@@ -1126,12 +1126,15 @@ const BecomeAdvisor = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="location">Location *</Label>
-                      <LocationAutocomplete
+                      <GooglePlacesAutocomplete
+                        id="location"
+                        citiesOnly
                         value={formData.location}
                         onChange={(value) => {
-                          setFormData({ ...formData, location: value });
+                          setFormData((prev) => ({ ...prev, location: value }));
                           setErrors((prev) => ({ ...prev, location: undefined }));
                         }}
+                        onSelect={() => {}}
                         placeholder="Enter your city"
                         error={!!errors.location}
                       />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import GooglePlacesAutocomplete from "@/components/ui/google-places-autocomplete";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -422,10 +423,12 @@ const AccountSettings = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="location">Location</Label>
-                    <Input
+                    <GooglePlacesAutocomplete
                       id="location"
+                      citiesOnly
                       value={profile?.location || ""}
-                      onChange={(e) => updateProfile("location", e.target.value)}
+                      onChange={(text) => updateProfile("location", text)}
+                      onSelect={() => {}}
                       placeholder="City, Country"
                     />
                   </div>

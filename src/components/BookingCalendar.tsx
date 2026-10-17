@@ -602,11 +602,11 @@ const BookingCalendar = ({
                         placeholder="Office address"
                       />
                     ) : (
-                      <Input
-                        placeholder="City or office"
-                        maxLength={300}
+                      <GooglePlacesAutocomplete
                         value={corpDetails.location}
-                        onChange={(e) => setCorpDetails({ ...corpDetails, location: e.target.value })}
+                        onChange={(text) => setCorpDetails({ ...corpDetails, location: text.slice(0, 300) })}
+                        onSelect={(place: SelectedPlace) => setCorpDetails({ ...corpDetails, location: place.formattedAddress })}
+                        placeholder="City or office"
                       />
                     )}
                   </div>
