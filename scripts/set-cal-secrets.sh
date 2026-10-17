@@ -37,6 +37,7 @@ if ! npx supabase secrets list --project-ref $REF >/dev/null 2>&1; then
 fi
 ask STRIPE_SECRET_KEY     "Stripe secret key (TEST mode, starts with sk_test_)"            '^(sk|rk)_test_'
 ask STRIPE_WEBHOOK_SECRET "Stripe webhook signing secret (starts with whsec_)"             '^whsec_'
+ask STRIPE_CONNECT_WEBHOOK_SECRET "Stripe Connect webhook signing secret (CAL connect-webhook, starts with whsec_)" '^whsec_'
 ask DAILY_API_KEY         "Daily.co API key (Daily dashboard → Developers)"               '^[^[:space:]]{20,}$'
 ask RESEND_API_KEY        "Resend API key (starts with re_)"                              '^re_'
 ask ANTHROPIC_API_KEY     "Anthropic API key for the AI Concierge (starts with sk-ant-)"  '^sk-ant-'
