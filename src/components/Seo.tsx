@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://www.cookalook.com";
-const DEFAULT_OG = `${SITE_URL}/images/og-preview.png`;
+const DEFAULT_OG = `${SITE_URL}/images/og-preview-v2.png`;
 
 interface SeoProps {
   title: string;
