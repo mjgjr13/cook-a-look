@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, Calendar, Image as ImageIcon, Eye, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, Calendar, Image as ImageIcon, Eye, ArrowRight, Banknote } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import type { ProfileCompletionStatus } from "@/hooks/useAdvisorProfile";
@@ -14,6 +14,8 @@ interface NewAdvisorSetupCardProps {
   portfolioCount: number;
   onToggleVisibility: () => void;
   isPending?: boolean;
+  /** Stripe payout setup finished (required to take paid bookings). */
+  payoutsReady?: boolean;
 }
 
 const NewAdvisorSetupCard = ({
@@ -24,6 +26,7 @@ const NewAdvisorSetupCard = ({
   portfolioCount,
   onToggleVisibility,
   isPending = false,
+  payoutsReady = false,
 }: NewAdvisorSetupCardProps) => {
   // Hide card if already visible OR if they've published before (use Settings toggle instead)
   if (isListed || hasBeenVisibleBefore) return null;
@@ -46,6 +49,14 @@ const NewAdvisorSetupCard = ({
       icon: ImageIcon,
     },
     {
+      id: "payouts",
+      label: "Connect with Stripe",
+      description: "Required to get paid. You can't take bookings until this is done",
+      complete: payoutsReady,
+      href: "/advisor/earnings",
+      icon: Banknote,
+    },
+    {
       id: "visibility",
       label: "Make your profile visible",
       description: "Go live on the Style Advisors directory",
@@ -55,7 +66,7 @@ const NewAdvisorSetupCard = ({
     },
   ];
 
-  const canGoLive = completionStatus.isComplete;
+  const canGoLive = completionStatus.isComplete && payoutsReady;
 
   return (
     <motion.div

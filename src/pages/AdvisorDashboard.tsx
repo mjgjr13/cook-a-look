@@ -81,6 +81,7 @@ const AdvisorDashboard = () => {
   const [modalTab, setModalTab] = useState<"details" | "chat">("details");
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showFinishSetupModal, setShowFinishSetupModal] = useState(false);
+  const [payoutsReady, setPayoutsReady] = useState(false);
   const [earnings, setEarnings] = useState({ available: 0, pending: 0, total: 0 });
   const [platformFee, setPlatformFee] = useState({ feePercent: 15, bookingsThisMonth: 0 });
   const [cancelTarget, setCancelTarget] = useState<{ id: string; start: string } | null>(null);
@@ -405,6 +406,7 @@ const AdvisorDashboard = () => {
                 hasAvailability={completionStatus.hasAvailability}
                 portfolioCount={advisorProfile?.portfolio_images?.length || 0}
                 isPending={isPending}
+                payoutsReady={payoutsReady}
                 onToggleVisibility={async () => {
                   const result = await toggleVisibility(true);
                   if (!result.success) {
@@ -436,7 +438,7 @@ const AdvisorDashboard = () => {
           )}
 
           {/* Stripe Connect: required before taking paid bookings */}
-          {isApproved && profile && <PayoutSetupCard />}
+          {(isApproved || isPending) && profile && <PayoutSetupCard onStatus={(s) => setPayoutsReady(!!s.transfers_active && !!s.payouts_enabled)} />}
 
           {/* Platform Fee Progress Card */}
           {isApproved && profile && (

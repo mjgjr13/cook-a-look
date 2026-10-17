@@ -57,7 +57,10 @@ const LanguageSelect = ({
       onChange([...selected, language]);
     }
     setSearchTerm("");
-    inputRef.current?.focus();
+    // Close the list after each pick so it never covers the Continue button
+    // (and the phone keyboard goes away). Tap the box again to add another.
+    setIsOpen(false);
+    inputRef.current?.blur();
   };
 
   const removeLanguage = (language: string) => {
@@ -115,13 +118,21 @@ const LanguageSelect = ({
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Type to search languages..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
+            onClick={() => setIsOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" || e.key === "Tab") setIsOpen(false);
+              if (e.key === "Enter" && filteredOptions[0]) {
+                e.preventDefault();
+                addLanguage(filteredOptions[0]);
+              }
+            }}
+            placeholder={selected.length > 0 ? "Add another language..." : "Type to search languages..."}
             className="pr-10"
           />
           <button

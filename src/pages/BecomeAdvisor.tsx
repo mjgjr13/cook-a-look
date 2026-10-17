@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import TurnstileWidget, { type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -613,6 +613,21 @@ const BecomeAdvisor = () => {
   
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
+  // Each step starts at the top of the form, not where the last one ended.
+  const formTopRef = useRef<HTMLDivElement>(null);
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const el = formTopRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const top = el.getBoundingClientRect().top + window.scrollY - 96; // clear the fixed header
+    window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+  }, [currentStep]);
+
   // Returns a user-facing message for the first missing verification item, or null when complete.
   const getVerificationError = (): string | null => {
     if (!biometricConsentGiven) return "Please review and accept the identity verification consent to continue.";
@@ -777,7 +792,7 @@ const BecomeAdvisor = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="text-center mb-12">
+            <div ref={formTopRef} className="text-center mb-12">
               <h2 className="font-serif text-3xl font-medium mb-4">
                 Apply to Join
               </h2>
