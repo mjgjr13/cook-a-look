@@ -7,8 +7,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null; session: Session | null }>;
+  signIn: (email: string, password: string, captchaToken?: string | null) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, captchaToken?: string | null) => Promise<{ error: Error | null; session: Session | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -39,15 +39,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  // captchaToken: Cloudflare Turnstile token (components/auth/TurnstileWidget).
+  const signIn = async (email: string, password: string, captchaToken?: string | null) => {
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
+      options: captchaToken ? { captchaToken } : undefined,
     });
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, captchaToken?: string | null) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -55,6 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       options: {
         emailRedirectTo: redirectUrl,
+        ...(captchaToken ? { captchaToken } : {}),
         data: {
           full_name: fullName,
           timezone: getBrowserTimezone(),

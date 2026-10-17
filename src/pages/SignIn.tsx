@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import TurnstileWidget, { type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
@@ -20,6 +21,8 @@ const SignIn = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { signIn, user, isLoading: authLoading } = useAuth();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
   const {
     profile: userProfile,
     roles,
@@ -86,11 +89,17 @@ const SignIn = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await signIn(formData.email, formData.password);
+      const { error } = await signIn(formData.email, formData.password, captchaToken);
 
       if (error) {
         // Handle specific error cases with user-friendly messages
-        if (error.message.includes("Invalid login credentials")) {
+        if (/captcha/i.test(error.message)) {
+          toast({
+            title: "Security check didn't go through",
+            description: "Please wait a moment and try again.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("Invalid login credentials")) {
           toast({
             title: "Invalid credentials",
             description: "The email or password you entered is incorrect.",
@@ -125,6 +134,7 @@ const SignIn = () => {
       });
     } finally {
       setIsSubmitting(false);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -227,6 +237,8 @@ const SignIn = () => {
                   Forgot password?
                 </Link>
               </div>
+
+              <TurnstileWidget ref={turnstileRef} onToken={setCaptchaToken} className="flex justify-center" />
 
               <Button 
                 variant="hero" 

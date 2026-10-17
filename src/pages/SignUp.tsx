@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import TurnstileWidget, { type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
@@ -23,6 +24,8 @@ const SignUp = () => {
   const redirectTo = redirectParam || "/dashboard";
   const isBookingFlow = !!redirectParam?.startsWith("/advisors/");
   const { signUp, user, isLoading: authLoading } = useAuth();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
   
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: "",
@@ -75,11 +78,17 @@ const SignUp = () => {
 
     try {
       const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`;
-      const { error, session } = await signUp(formData.email, formData.password, fullName);
+      const { error, session } = await signUp(formData.email, formData.password, fullName, captchaToken);
 
       if (error) {
         // Handle specific error cases with user-friendly messages
-        if (error.message.includes("User already registered")) {
+        if (/captcha/i.test(error.message)) {
+          toast({
+            title: "Security check didn't go through",
+            description: "Please wait a moment and try again.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("User already registered")) {
           toast({
             title: "Account exists",
             description: "An account with this email already exists. Please sign in instead.",
@@ -138,6 +147,7 @@ const SignUp = () => {
       });
     } finally {
       setIsSubmitting(false);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -308,6 +318,8 @@ const SignUp = () => {
                   </p>
                 )}
               </div>
+
+              <TurnstileWidget ref={turnstileRef} onToken={setCaptchaToken} className="flex justify-center" />
 
               <Button 
                 variant="hero" 

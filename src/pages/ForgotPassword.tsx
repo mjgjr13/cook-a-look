@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import TurnstileWidget, { type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
@@ -17,6 +18,8 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +55,7 @@ const ForgotPassword = () => {
         email.trim().toLowerCase(),
         {
           redirectTo: `${window.location.origin}/reset-password`,
+          ...(captchaToken ? { captchaToken } : {}),
         }
       );
 
@@ -77,6 +81,7 @@ const ForgotPassword = () => {
       });
     } finally {
       setIsLoading(false);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -169,6 +174,8 @@ const ForgotPassword = () => {
                   <p className="text-xs text-destructive">{error}</p>
                 )}
               </div>
+
+              <TurnstileWidget ref={turnstileRef} onToken={setCaptchaToken} className="flex justify-center" />
 
               <Button
                 type="submit"

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import TurnstileWidget, { type TurnstileHandle } from "@/components/auth/TurnstileWidget";
 import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
@@ -141,6 +142,9 @@ const BecomeAdvisor = () => {
   const [biometricConsentGiven, setBiometricConsentGiven] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Bot check for the account-creation step (only shown when not signed in).
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileHandle>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState({
@@ -305,6 +309,7 @@ const BecomeAdvisor = () => {
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
           options: {
+            ...(captchaToken ? { captchaToken } : {}),
             data: {
               full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
               timezone: getBrowserTimezone(),
@@ -667,6 +672,7 @@ const BecomeAdvisor = () => {
       });
     } finally {
       setIsSubmitting(false);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -1677,6 +1683,10 @@ const BecomeAdvisor = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {currentStep === 4 && !authUser && (
+                <TurnstileWidget ref={turnstileRef} onToken={setCaptchaToken} className="mt-8 flex justify-center" />
+              )}
 
               {/* Navigation Buttons */}
               <div className="flex justify-between mt-10 pt-6 border-t border-border">
