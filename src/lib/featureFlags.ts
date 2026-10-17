@@ -5,7 +5,7 @@
  * Check with: curl -s "https://qdpqfsqjtbvlulekfhoy.supabase.co/auth/v1/authorize?provider=google"
  * (a redirect to accounts.google.com means it's ready; a JSON error means not yet).
  */
-export const GOOGLE_SIGN_IN_ENABLED = false;
+export const GOOGLE_SIGN_IN_ENABLED = true;
 
 /**
  * Treat the designated test advisor (James Whitaker, see
