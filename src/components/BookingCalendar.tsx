@@ -147,6 +147,7 @@ const BookingCalendar = ({
   const timesRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
   const scrollToTimes = useRef(false);
+  const [timesLoadedTick, setTimesLoadedTick] = useState(0);
   const scrollToDetails = useRef(false);
   // Start time to keep selected across refetches (restored after sign-in, or a session-length change).
   const keepSlotStart = useRef<string | null>(selectedSlot?.startTime ?? null);
@@ -317,6 +318,7 @@ const BookingCalendar = ({
       } finally {
         keepSlotStart.current = null;
         setIsLoadingSlots(false);
+        if (scrollToTimes.current) setTimesLoadedTick((n) => n + 1);
       }
     };
     fetchSlots();
@@ -324,11 +326,12 @@ const BookingCalendar = ({
   }, [selectedDate, advisorId, clientTimezone, isCorporate, corpFormat, slotDuration]);
 
   // Bring the next step into view so nobody has to scroll to find it.
+  // Runs after the times for a newly picked date have rendered.
   useEffect(() => {
-    if (!scrollToTimes.current || isLoadingSlots || !selectedDate) return;
+    if (!timesLoadedTick || !scrollToTimes.current) return;
     scrollToTimes.current = false;
     requestAnimationFrame(() => timesRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" }));
-  }, [isLoadingSlots, selectedDate, timeSlots]);
+  }, [timesLoadedTick]);
 
   useEffect(() => {
     if (!scrollToDetails.current || !selectedSlot) return;
