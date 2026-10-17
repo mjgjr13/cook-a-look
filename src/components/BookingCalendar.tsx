@@ -805,7 +805,7 @@ const BookingCalendar = ({
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  ${price}/hour × {hours} = ${price * hours}. Maximum 3 hours per booking.
+                  ${price.toLocaleString()}/hour × {hours} = ${(price * hours).toLocaleString()}. Maximum 3 hours per booking.
                 </p>
               </div>
               )}

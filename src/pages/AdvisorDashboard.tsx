@@ -625,7 +625,7 @@ const AdvisorDashboard = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
                       {isVirtualBooking(booking) ? (
                         <JoinCallButton
                           variant="hero"
