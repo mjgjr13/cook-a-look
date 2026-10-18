@@ -189,6 +189,39 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;c
 
 // ---------- Sending ----------
 
+/** Replies go to a mailbox someone reads (support@ forwards to the owner). */
+export const REPLY_TO_EMAIL = "support@cookalook.com";
+
+/**
+ * Plain-text copy of an email, sent alongside the HTML. Mail providers trust
+ * multipart messages more than HTML-only ones, and some readers show text only.
+ */
+export function htmlToText(html: string) {
+  return html
+    .replace(/<(head|style|script)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replace(/<a\s[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, label: string) => {
+      const text = label.replace(/<[^>]+>/g, "").trim();
+      // Image-only links (the logo) drop out; mailto links keep just their label.
+      return !text || text === href || href.startsWith("mailto:") ? text : `${text} (${href})`;
+    })
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|tr|li|table)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&rsquo;/g, "'")
+    .replace(/&middot;/g, "·")
+    .replace(/&copy;/g, "©")
+    .replace(/&mdash;/g, "—")
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export async function sendEmail({ to, subject, html, attachments, throwOnError = false }: {
   to: string | string[];
   subject: string;
@@ -208,8 +241,10 @@ export async function sendEmail({ to, subject, html, attachments, throwOnError =
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: Array.isArray(to) ? to : [to],
+      reply_to: REPLY_TO_EMAIL,
       subject,
       html,
+      text: htmlToText(html),
       ...(attachments?.length ? { attachments } : {}),
     }),
   });
