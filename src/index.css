@@ -166,14 +166,6 @@
 }
 
 @layer components {
-  .text-gradient-gold {
-    @apply bg-gradient-to-r from-gold via-gold-light to-gold bg-clip-text text-transparent;
-  }
-
-  .hover-lift {
-    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0;
-  }
-
   /* Vertical rhythm for page sections */
   .section-y {
     @apply py-20 lg:py-28;
@@ -182,10 +174,6 @@
   /* Smaller rhythm for content sections inside a page (gallery, reviews) */
   .section-y-sm {
     @apply py-14 lg:py-20;
-  }
-
-  .editorial-spacing {
-    @apply tracking-wide;
   }
 
   /* International Phone Input Styles */

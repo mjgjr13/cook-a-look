@@ -253,7 +253,7 @@ const SignIn = () => {
                     Signing In...
                   </>
                 ) : (
-                  "Sign In"
+                  "Sign in"
                 )}
               </Button>
             </form>
@@ -267,7 +267,7 @@ const SignIn = () => {
                 to={redirectParam ? `/signup?redirect=${encodeURIComponent(redirectParam)}` : "/signup"}
                 className="text-foreground hover:text-gold transition-colors font-medium"
               >
-                Create Account
+                Create account
               </Link>
             </p>
           </motion.div>

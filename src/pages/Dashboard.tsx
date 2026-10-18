@@ -220,7 +220,7 @@ const Dashboard = () => {
           <h2 className="font-serif text-xl">Session Expired</h2>
           <p className="text-muted-foreground">Please sign in to view your dashboard.</p>
           <Button asChild>
-            <Link to="/signin">Sign In</Link>
+            <Link to="/signin">Sign in</Link>
           </Button>
         </div>
       </Layout>

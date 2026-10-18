@@ -577,8 +577,8 @@ const BookingCalendar = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-[500px] max-h-[88svh] overflow-y-auto px-4 sm:px-6">
-        <DialogHeader className="flex-row items-center gap-3 space-y-0 pr-8 text-left">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-[500px] max-h-[88svh] flex flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="shrink-0 flex-row items-center gap-3 space-y-0 border-b border-border px-4 py-4 pr-12 text-left sm:px-6">
           {advisorAvatarUrl && (
             <img
               src={optimizedImageUrl(advisorAvatarUrl, 96, 96)}
@@ -597,7 +597,7 @@ const BookingCalendar = ({
           </div>
         </DialogHeader>
 
-        <div className="py-3 sm:py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6 sm:px-6 sm:pt-5">
           {offersCorporate && (
             <div className="mb-4">
               <p className="font-sans text-sm mb-2">What are you booking?</p>
@@ -1008,7 +1008,7 @@ const BookingCalendar = ({
                 {isLoading ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
                 ) : !user
-                  ? "Continue to Book"
+                  ? "Continue to book"
                   : isCorporate && corporateRate == null
                     ? "Continue to Payment"
                     : `Continue to Payment · $${totalLabel}`}

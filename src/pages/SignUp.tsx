@@ -186,7 +186,7 @@ const SignUp = () => {
                 Click it to activate your account, then sign in below.
               </p>
               <Button variant="hero" size="lg" className="w-full mt-8" asChild>
-                <Link to="/signin">Go to Sign In</Link>
+                <Link to="/signin">Go to sign in</Link>
               </Button>
             </motion.div>
           </div>
@@ -334,7 +334,7 @@ const SignUp = () => {
                     Creating Account...
                   </>
                 ) : (
-                  "Create Account"
+                  "Create account"
                 )}
               </Button>
 
@@ -356,7 +356,7 @@ const SignUp = () => {
                 to={redirectParam ? `/signin?redirect=${encodeURIComponent(redirectParam)}` : "/signin"}
                 className="text-foreground hover:text-gold transition-colors font-medium"
               >
-                Sign In
+                Sign in
               </Link>
             </p>
           </motion.div>

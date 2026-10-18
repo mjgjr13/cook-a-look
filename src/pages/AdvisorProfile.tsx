@@ -260,7 +260,7 @@ const AdvisorProfile = () => {
             className="inline-flex min-h-11 items-center gap-2 text-sm sm:text-base text-muted-foreground hover:text-foreground transition-colors mb-3 lg:mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Advisors
+            Back to advisors
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 lg:grid-rows-[auto_1fr] gap-6 lg:gap-x-12 lg:gap-y-0">
@@ -426,7 +426,7 @@ const AdvisorProfile = () => {
                 </div>
                 <Button variant="hero" size="lg" className="w-full sm:w-auto" onClick={handleBookConsultation} disabled={!isSample && notTakingBookings}>
                   <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
-                  {isSample ? "Join the Waitlist" : notTakingBookings ? "Not taking bookings yet" : "Book a Session"}
+                  {isSample ? "Join the waitlist" : notTakingBookings ? "Not taking bookings yet" : "Book a session"}
                 </Button>
               </div>
               {corporate && !isSample && !notTakingBookings && (
@@ -512,12 +512,12 @@ const AdvisorProfile = () => {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 shadow-lg backdrop-blur sm:hidden">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Hourly Rate</p>
+              <p className="font-sans text-xs uppercase tracking-wider text-muted-foreground">Hourly rate</p>
               <p className="font-sans text-lg font-medium leading-tight">${displayPrice}<span className="text-sm font-normal text-muted-foreground">/hour</span></p>
             </div>
             <Button variant="hero" size="lg" className="shrink-0" onClick={handleBookConsultation} disabled={!isSample && notTakingBookings}>
               <Calendar className="w-4 h-4 mr-2" aria-hidden="true" />
-              {isSample ? "Join Waitlist" : notTakingBookings ? "Not taking bookings yet" : "Book a Session"}
+              {isSample ? "Join the waitlist" : notTakingBookings ? "Not taking bookings yet" : "Book a session"}
             </Button>
           </div>
         </div>

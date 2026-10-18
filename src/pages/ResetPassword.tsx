@@ -210,7 +210,7 @@ const ResetPassword = () => {
                 Redirecting you to sign in...
               </p>
               <Button variant="outline" onClick={() => navigate("/signin")}>
-                Go to Sign In
+                Go to sign in
               </Button>
             </motion.div>
           </div>

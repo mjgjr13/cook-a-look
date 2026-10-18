@@ -123,7 +123,7 @@ const ForgotPassword = () => {
                 <Link to="/signin">
                   <Button variant="ghost" className="w-full">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Sign In
+                    Back to sign in
                   </Button>
                 </Link>
               </div>
@@ -193,7 +193,7 @@ const ForgotPassword = () => {
                 className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Sign In
+                Back to sign in
               </Link>
             </div>
           </motion.div>

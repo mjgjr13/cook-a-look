@@ -143,10 +143,10 @@ const Navbar = () => {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/signin">Sign In</Link>
+                  <Link to="/signin">Sign in</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link to="/signup">Create Account</Link>
+                  <Link to="/signup">Create account</Link>
                 </Button>
               </>
             )}
@@ -184,12 +184,12 @@ const Navbar = () => {
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : !isLoading ? (
               <Button variant="ghost" size="sm" className="h-11 px-2 text-sm" asChild>
-                <Link to="/signin">Sign In</Link>
+                <Link to="/signin">Sign in</Link>
               </Button>
             ) : null}
             <button className="p-2.5 -mr-2.5" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu" aria-expanded={isOpen}>
@@ -228,12 +228,12 @@ const Navbar = () => {
                   <div className="flex flex-col gap-3 pt-4 border-t border-border">
                     <Button variant="ghost" asChild>
                       <Link to="/signin" onClick={() => setIsOpen(false)}>
-                        Sign In
+                        Sign in
                       </Link>
                     </Button>
                     <Button variant="outline" asChild>
                       <Link to="/signup" onClick={() => setIsOpen(false)}>
-                        Create Account
+                        Create account
                       </Link>
                     </Button>
                   </div>
