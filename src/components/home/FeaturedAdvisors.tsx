@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Star, Video, MapPin, Loader2, Sparkles } from "lucide-react";
+import { Star, Video, MapPin, Loader2, Sparkles, CheckCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,8 @@ interface FeaturedAdvisor {
   location: string | null;
   target_demographics: string[] | null;
   is_demo?: boolean | null;
+  verified?: boolean | null;
+  advisor_approved?: boolean | null;
 }
 
 const useFeaturedAdvisors = () => {
@@ -96,6 +98,12 @@ const FeaturedAdvisors = () => {
                     <div className="absolute top-3 left-3 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
                       <Sparkles className="w-3 h-3 text-gold" aria-hidden="true" />
                       Sample profile
+                    </div>
+                  )}
+                  {!advisor.isSample && (advisor.verified || advisor.advisor_approved) && (
+                    <div className="absolute top-3 left-3 px-2 py-0.5 text-xs font-sans uppercase tracking-wider flex items-center gap-1 bg-background/90 text-foreground border border-border">
+                      <CheckCircle className="w-3 h-3 text-gold" aria-hidden="true" />
+                      Verified
                     </div>
                   )}
                 </div>
