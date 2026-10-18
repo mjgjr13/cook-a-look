@@ -217,14 +217,9 @@ const SignUp = () => {
               </h1>
               <p className="font-sans text-muted-foreground">
                 {isBookingFlow
-                  ? "One quick step before you book. It's free and takes about 30 seconds."
+                  ? "One quick step before you book."
                   : "Join Cook A Look and connect with style experts"}
               </p>
-              {isBookingFlow && (
-                <p className="mt-4 text-sm font-sans text-foreground bg-secondary/60 border border-border px-3 py-2">
-                  Your selected time is saved. You'll go straight back to checkout after this.
-                </p>
-              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
