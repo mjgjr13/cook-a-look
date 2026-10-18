@@ -67,7 +67,7 @@ export const SAMPLE_ADVISOR_CONTENT: Record<string, SampleAdvisorContent> = {
   "50ed9a7f-d7f0-447c-9ec6-b55ec9b6d10f": {
     full_name: "Marcus Reed",
     specialty: "Business Attire",
-    bio: "Tokyo-based stylist specializing in modern business attire and travel-ready wardrobes for busy professionals.",
+    bio: "Melbourne-based stylist specializing in modern business attire and travel-ready wardrobes for busy professionals.",
     personal_philosophy:
       "Your clothes should work as hard as you do. I focus on versatile, well-fitted pieces that mix and match, pack easily, and look right in any city. In our session we'll build outfits around your schedule and make a plan for the few pieces that will make the biggest difference.",
     experience_years: 10,
