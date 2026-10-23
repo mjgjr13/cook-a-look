@@ -338,7 +338,11 @@ const SignUp = () => {
                 <Link to="/terms" className="underline hover:text-foreground">
                   Terms of Service
                 </Link>{" "}
-                and Privacy Policy.
+                and{" "}
+                <Link to="/privacy" className="underline hover:text-foreground">
+                  Privacy Policy
+                </Link>
+                .
               </p>
             </form>
 

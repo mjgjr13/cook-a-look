@@ -1,84 +1,64 @@
+/*
+ * LAWYER REVIEW NEEDED BEFORE LAUNCH.
+ * Plain-language draft written from what the code actually does (October 2026).
+ * Search this file for "[TODO: Marcel to decide]" for open business decisions.
+ *
+ * Quebec (Law 25), not yet covered:
+ *   - Name a person in charge of protecting personal information and publish
+ *     their title and contact details on this page.
+ *   - Do a privacy impact assessment before sending data outside Quebec
+ *     (Supabase, Stripe, Daily.co, Resend, Anthropic are all outside Canada).
+ *   - The AI Concierge's saved style note may count as profiling; Law 25 may
+ *     require telling people before it's switched on and letting them opt in.
+ *   - Confidentiality incident register and breach-notification process.
+ *   - French-language version of this page for Quebec users.
+ *
+ * Clients outside Canada, not yet covered:
+ *   - US states (California CCPA/CPRA, etc.): the earlier draft had a section
+ *     on these rights; decide with counsel whether to bring it back.
+ *   - EU/UK users would need GDPR wording (legal basis for each use, data
+ *     transfer safeguards, possibly an EU/UK representative).
+ *   - Illinois BIPA-style wording for advisor ID photos is kept below.
+ *
+ * Keep the #biometric-data anchor: the advisor consent screen links to it.
+ */
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Seo from "@/components/Seo";
 import { motion } from "framer-motion";
 
-const nutritionLabelRows: {
-  category: string;
-  collected: string;
-  purpose: string;
-  sharedWith: string;
-  retention: string;
-}[] = [
-  {
-    category: "Contact info (name, email, phone)",
-    collected: "Yes",
-    purpose: "Account creation, booking, communication",
-    sharedWith: "Service providers only",
-    retention: "Duration of account + 3 years",
-  },
-  {
-    category: "Payment info",
-    collected: "Card data: no (Stripe-hosted)",
-    purpose: "Processing bookings and payouts",
-    sharedWith: "Stripe (processor)",
-    retention: "Per Stripe's records-retention policy",
-  },
-  {
-    category: "Biometric data (selfie, ID photo)",
-    collected: "Advisors only, at application",
-    purpose: "Identity verification for advisor applicants",
-    sharedWith: "Not shared outside Cook A Look",
-    retention: "Up to 1 year after last verification interaction",
-  },
-  {
-    category: "Booking & session data",
-    collected: "Yes",
-    purpose: "Scheduling, escrow, disputes",
-    sharedWith: "The other party to your booking",
-    retention: "Duration of account + 3 years",
-  },
-  {
-    category: "Session recordings (virtual)",
-    collected: "Yes, for virtual sessions",
-    purpose: "Quality assurance, dispute resolution, fraud prevention",
-    sharedWith: "Not shared outside Cook A Look",
-    retention: "90 days, longer if under active dispute",
-  },
-  {
-    category: "Chat messages",
-    collected: "Yes",
-    purpose: "Booking coordination between client & advisor",
-    sharedWith: "The other party to your booking",
-    retention: "Duration of account",
-  },
-  {
-    category: "AI concierge chat content",
-    collected: "Yes, if you use it",
-    purpose: "Advisor recommendations (sent to Anthropic, our AI provider)",
-    sharedWith: "Anthropic (AI provider)",
-    retention: "Questions: 90 days, not linked to your account. Style notes: until you clear them",
-  },
-  {
-    category: "Device & usage data",
-    collected: "Yes",
-    purpose: "Security and keeping the service running",
-    sharedWith: "Hosting providers (Cloudflare, Supabase)",
-    retention: "Up to 2 years",
-  },
-];
+const CONTACT_EMAIL = "admin@cookalook.com";
+
+const Mail = () => (
+  <a href={`mailto:${CONTACT_EMAIL}`} className="text-gold hover:underline">
+    {CONTACT_EMAIL}
+  </a>
+);
+
+const Todo = ({ children }: { children: ReactNode }) => (
+  <span className="text-destructive font-medium">[TODO: Marcel to decide: {children}]</span>
+);
+
+const Section = ({ id, title, children }: { id?: string; title: string; children: ReactNode }) => (
+  <section id={id} className="scroll-mt-24">
+    <h2 className="font-serif text-2xl font-normal mb-4">{title}</h2>
+    <div className="space-y-4 text-muted-foreground leading-relaxed">{children}</div>
+  </section>
+);
 
 const PrivacyPolicy = () => {
-  const lastUpdated = "October 15, 2026";
+  const lastUpdated = "October 23, 2026";
 
   return (
     <Layout>
       <Seo
         title="Privacy Policy | Cook A Look"
-        description="How Cook A Look collects, stores, and protects your personal information, including biometric data, across our styling marketplace."
+        description="What personal information Cook A Look collects, why, who we share it with, how long we keep it, and how to delete it."
         path="/privacy"
       />
       <section className="py-16 bg-card">
-        <div className="container mx-auto px-6 lg:px-8 max-w-4xl">
+        <div className="container mx-auto px-6 lg:px-8 max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -94,343 +74,267 @@ const PrivacyPolicy = () => {
               Last updated: {lastUpdated}
             </p>
 
-            <div className="prose prose-lg max-w-none space-y-8">
-              {/* Nutrition label */}
-              <section id="privacy-summary" className="bg-secondary/50 border border-border p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-normal mb-2">Privacy at a Glance</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  A short summary of what we collect and why, styled after app-store "privacy
-                  nutrition labels." This summary doesn't replace the full policy below — if the
-                  two ever conflict, the full policy controls.
+            <div className="max-w-none space-y-10">
+              <section className="bg-secondary/50 border border-border p-6">
+                <h2 className="font-serif text-2xl font-normal mb-3">The short version</h2>
+                <ul className="list-disc pl-5 space-y-2 text-muted-foreground leading-relaxed">
+                  <li>We collect what we need to run bookings, payments and video sessions.</li>
+                  <li>We never see or store your card number. Stripe handles payments.</li>
+                  <li>Virtual sessions are recorded, and we ask for your consent before every call.</li>
+                  <li>We don't sell your information, and we don't use advertising or analytics trackers.</li>
+                  <li>You can clear your AI preferences or delete your account at any time in Account settings.</li>
+                </ul>
+              </section>
+
+              <Section title="1. Who we are">
+                <p>
+                  Cook A Look ("we", "us") is a marketplace that connects clients with independent style
+                  advisors for video and in-person sessions. We're based in Ontario, Canada, and we follow
+                  Canada's privacy law (PIPEDA). This policy works alongside our{" "}
+                  <Link to="/terms" className="text-gold hover:underline">Terms of Use</Link>.
                 </p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b border-border text-left text-foreground">
-                        <th className="py-2 pr-3 font-medium">Category</th>
-                        <th className="py-2 pr-3 font-medium">Collected?</th>
-                        <th className="py-2 pr-3 font-medium">Purpose</th>
-                        <th className="py-2 pr-3 font-medium">Shared With</th>
-                        <th className="py-2 font-medium">Retention</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-muted-foreground">
-                      {nutritionLabelRows.map((row) => (
-                        <tr key={row.category} className="border-b border-border/60 align-top">
-                          <td className="py-2 pr-3 text-foreground font-medium whitespace-nowrap">
-                            {row.category}
-                          </td>
-                          <td className="py-2 pr-3">{row.collected}</td>
-                          <td className="py-2 pr-3">{row.purpose}</td>
-                          <td className="py-2 pr-3">{row.sharedWith}</td>
-                          <td className="py-2">{row.retention}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+              </Section>
 
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">1. Introduction</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  Cook A Look ("we", "our", or "us") is committed to protecting your privacy. This
-                  Privacy Policy explains how we collect, use, disclose, and safeguard your
-                  information when you use our platform (the "Platform"), and describes the
-                  rights available to you depending on where you live. It should be read together
-                  with our{" "}
-                  <a href="/terms" className="text-gold hover:underline">
-                    Terms of Use
-                  </a>
-                  .
+              <Section title="2. What we collect">
+                <p><strong className="text-foreground">Your account.</strong> Your name, email address and
+                  password. If you sign in with Google, Google shares your name and email with us. We
+                  never see your Google password.</p>
+                <p><strong className="text-foreground">Your profile.</strong> A profile photo and phone number
+                  if you add them. Advisors also give us a bio, Instagram and portfolio links, portfolio
+                  photos, their date of birth (to confirm they're 18 or older), and the places they're
+                  willing to meet in person.</p>
+                <p><strong className="text-foreground">Bookings.</strong> Session dates and times, the type of
+                  session, the meeting place for in-person sessions, what you paid, reviews you leave, and
+                  any dispute or refund request.</p>
+                <p><strong className="text-foreground">Messages.</strong> Messages you send to your advisor or
+                  client about a booking.</p>
+                <p><strong className="text-foreground">Video session recordings.</strong> Virtual sessions
+                  are recorded (video, audio and any shared screen). Recording starts automatically when
+                  someone joins, after everyone has agreed on the consent screen.</p>
+                <p><strong className="text-foreground">AI Concierge.</strong> What you type to the Concierge.
+                  If you're signed in, it also keeps a short note of style preferences you share (like
+                  budget, fit or what you dress for). See section 6.</p>
+                <p><strong className="text-foreground">Advisor ID check.</strong> Advisor applicants take a
+                  live selfie and a photo of a government ID. See section 7.</p>
+                <p><strong className="text-foreground">Waitlists.</strong> If you join a waitlist, your email
+                  and the optional name and note you give.</p>
+                <p><strong className="text-foreground">Payments.</strong> Stripe collects your card details
+                  on its own secure page. We only receive confirmation of the payment and the amount.
+                  Advisors give their bank and identity details
+                  directly to Stripe to get paid.</p>
+              </Section>
+
+              <Section title="3. Why we use it">
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>To create your account and keep you signed in.</li>
+                  <li>To book, run and pay for sessions, and to pay advisors.</li>
+                  <li>To send booking confirmations, reminders and review requests by email.</li>
+                  <li>To let clients and advisors message each other about a booking.</li>
+                  <li>To check that advisors are who they say they are.</li>
+                  <li>To keep sessions safe and to resolve disputes (this is what recordings are for).</li>
+                  <li>To answer your questions in the AI Concierge and improve its answers.</li>
+                </ul>
+                <p>We don't sell your information and we don't use it for advertising.</p>
+              </Section>
+
+              <Section title="4. Who we share it with">
+                <p>
+                  We use a small number of service providers. Each one gets only what it needs to do its
+                  job:
                 </p>
-              </section>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong className="text-foreground">Supabase</strong>: stores our database, files and
+                    logins.</li>
+                  <li><strong className="text-foreground">Cloudflare</strong>: delivers the website.</li>
+                  <li><strong className="text-foreground">Stripe</strong>: takes payments (we send it your
+                    email) and pays advisors.</li>
+                  <li><strong className="text-foreground">Daily.co</strong>: runs video sessions and stores
+                    the recordings. If Daily is unavailable, the call moves to a backup video service
+                    (Jitsi, run by Freifunk München in Germany), which doesn't record.</li>
+                  <li><strong className="text-foreground">Resend</strong>: sends our emails (your email
+                    address, name and booking details).</li>
+                  <li><strong className="text-foreground">Anthropic</strong>: the company behind Claude, the
+                    AI model that powers the Concierge. See section 6 for exactly what it receives.</li>
+                  <li><strong className="text-foreground">Google</strong>: Google sign-in, if you use it, and
+                    address search when choosing an in-person meeting place.</li>
+                </ul>
+                <p>
+                  <strong className="text-foreground">Other users.</strong> Your advisor or client sees your
+                  name, your messages and the booking details. Advisor profiles and reviews are public.
+                </p>
+                <p>
+                  <strong className="text-foreground">The law.</strong> We may share information if the law
+                  requires it, or to protect someone's safety.
+                </p>
+                <p>
+                  These providers store and process information outside Canada, mainly in the United States{" "}
+                  <Todo>confirm the region of our Supabase project</Todo>. While it's there, it's subject
+                  to local laws, which may let authorities access it.
+                </p>
+              </Section>
 
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">2. Information We Collect</h2>
-                <div className="space-y-4 text-muted-foreground leading-relaxed">
-                  <p><strong className="text-foreground">Personal Information:</strong></p>
-                  <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li>Name and email address</li>
-                    <li>Phone number</li>
-                    <li>Profile photos and, for advisors, verification documents (see "Biometric Data" below)</li>
-                    <li>Social media handles and portfolio links (for advisors)</li>
-                    <li>For advisors, date of birth, to confirm you are at least 18</li>
-                    <li>If you join a waitlist, your email and the optional name and note you give</li>
-                    <li>Payment card details are collected and stored directly by Stripe, our payment processor — we never receive or store your full card number</li>
-                  </ul>
-                  <p><strong className="text-foreground">Usage Information:</strong></p>
-                  <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li>Booking history, chat messages, and consultation preferences</li>
-                    <li>Device and browser information</li>
-                    <li>IP address and approximate location data</li>
-                  </ul>
-                </div>
-              </section>
+              <Section title="5. How long we keep it">
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong className="text-foreground">AI Concierge questions and feedback</strong>: kept
+                    for 90 days, then deleted automatically. They're stored without your name or account,
+                    and with email addresses and phone numbers removed.</li>
+                  <li><strong className="text-foreground">AI preferences</strong> (the Concierge's style
+                    note): until you clear them or delete your account.</li>
+                  <li><strong className="text-foreground">Advisor ID photos</strong>: deleted automatically
+                    within 1 year, within 30 days if an application is turned down, or straight away if the
+                    account is deleted.</li>
+                  <li><strong className="text-foreground">Video recordings</strong>:{" "}
+                    <Todo>how long to keep recordings (for example 90 days, longer during an open
+                    dispute); automatic deletion isn't set up yet</Todo>.</li>
+                  <li><strong className="text-foreground">Bookings, payments and booking messages</strong>:
+                    kept for our records after your account is deleted, with your name and contact details
+                    removed. <Todo>how many years to keep these (tax and accounting rules may set a
+                    minimum)</Todo>.</li>
+                  <li><strong className="text-foreground">Your account and profile</strong>: until you delete
+                    your account.</li>
+                </ul>
+              </Section>
 
-              {/* Biometric Data - BIPA-aligned section */}
+              <Section id="ai-concierge" title="6. The AI Concierge">
+                <p>
+                  The Concierge is an AI assistant, not a human stylist. When you use it, we send Anthropic
+                  your conversation (up to your last 30 messages), your saved style note if you're signed
+                  in, and the public profiles of our advisors. We don't send your name or email, unless you
+                  type them into the chat. Please don't share sensitive details like health information or
+                  addresses. We don't use your chats to train AI models.
+                </p>
+                <p>
+                  If you're signed in, the Concierge keeps a short note of style preferences you share, so
+                  it doesn't have to ask again. Only you can see it. You can clear it at any time in{" "}
+                  <Link to="/settings#concierge-memory" className="text-gold hover:underline">
+                    Account settings → Security → AI preferences
+                  </Link>
+                  , and it's deleted when you delete your account.
+                </p>
+                <p>
+                  To improve the Concierge, we keep the questions people ask and any thumbs up or down
+                  feedback for 90 days, without linking them to anyone's account.
+                </p>
+              </Section>
+
               <section
                 id="biometric-data"
-                className="bg-gold/10 border border-gold/30 p-6 rounded-none scroll-mt-24"
+                className="bg-gold/10 border border-gold/30 p-6 scroll-mt-24"
               >
-                <h2 className="font-serif text-2xl font-normal mb-4">3. Biometric Data</h2>
+                <h2 className="font-serif text-2xl font-normal mb-4">7. Advisor ID photos</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
-                    This section is our publicly available biometric data policy. It applies to
-                    the live selfie and government ID photo advisor applicants provide during
-                    identity verification, and is presented to every applicant for explicit,
-                    written (electronic) consent before those photos are captured — see the
-                    consent screen shown before that step.
+                    This applies only to people applying to be advisors. Before you take the photos, we ask
+                    for your consent on a separate screen.
                   </p>
                   <p>
-                    <strong className="text-foreground">What is collected.</strong> A live photo
-                    of your face taken through your device camera, and a photo of a
-                    government-issued ID. We do not currently run facial-recognition or
-                    face-geometry matching software against these photos — a human reviewer
-                    compares them manually. If that ever changes, we will update this policy and
-                    obtain fresh consent before doing so.
+                    <strong className="text-foreground">What we collect.</strong> A live photo of your face
+                    and a photo of a government-issued ID. A person on our team compares them by eye. We
+                    don't use facial-recognition software. If that ever changes, we'll update this policy
+                    and ask for your consent again first.
                   </p>
                   <p>
-                    <strong className="text-foreground">Why we collect it.</strong> Solely to
-                    verify advisor identity before approving an application and to reduce
-                    impersonation and fraud on the Platform.
+                    <strong className="text-foreground">Why.</strong> Only to confirm your identity before
+                    approving your application, and to prevent impersonation and fraud.
                   </p>
                   <p>
-                    <strong className="text-foreground">Retention &amp; destruction schedule.</strong>{" "}
-                    Both the selfie and ID photo are retained only as long as needed to complete
-                    verification and resolve any related dispute. They are automatically and
-                    permanently deleted no later than one (1) year after the application was
-                    submitted, within thirty (30) days if the application is denied, or
-                    immediately if the underlying account is deleted — whichever comes first.
-                    This selfie is separate from, and does not replace, the public profile photo
-                    an advisor uploads elsewhere in onboarding.
+                    <strong className="text-foreground">How long.</strong> Deleted automatically within 1
+                    year of your application, within 30 days if it's turned down, or straight away if you
+                    delete your account, whichever comes first. This selfie is separate from your public
+                    profile photo.
                   </p>
                   <p>
-                    <strong className="text-foreground">We do not sell it.</strong> We do not
-                    sell, lease, trade, or otherwise profit from biometric identifiers or
-                    biometric information, and we do not disclose them to any third party except
-                    service providers who store data on our behalf under confidentiality
-                    obligations, or as required by a valid legal process.
+                    <strong className="text-foreground">Sharing.</strong> We never sell or trade these
+                    photos. They're stored by our hosting provider (Supabase) and shared with no one else,
+                    unless the law requires it.
                   </p>
                   <p>
-                    <strong className="text-foreground">Your rights.</strong> You may request
-                    access to, or early deletion of, your verification photos by contacting{" "}
-                    <a href="mailto:privacy@cookalook.com" className="text-gold hover:underline">
-                      privacy@cookalook.com
-                    </a>
-                    . Deleting these photos before your application is approved will prevent us
-                    from completing verification.
+                    To see your verification photos, or to have them deleted early, email <Mail />. Deleting
+                    them before approval means we can't finish verifying you.
                   </p>
                 </div>
               </section>
 
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">4. How We Use Your Information</h2>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                  <li>To provide and maintain our services</li>
-                  <li>To process bookings and payments</li>
-                  <li>To verify advisor identities</li>
-                  <li>To communicate with you about your account and bookings</li>
-                  <li>To power the AI Concierge chat feature you choose to use (see Section 9)</li>
-                  <li>To improve our platform and user experience</li>
-                  <li>To resolve disputes and enforce our Terms of Use</li>
+              <Section id="your-choices" title="8. Deleting your data">
+                <p>
+                  <strong className="text-foreground">Clear AI preferences.</strong> In{" "}
+                  <Link to="/settings#concierge-memory" className="text-gold hover:underline">
+                    Account settings → Security
+                  </Link>
+                  , choose "Clear AI preferences". The Concierge forgets everything it saved about you.
+                  Your account and bookings aren't affected.
+                </p>
+                <p>
+                  <strong className="text-foreground">Delete your account.</strong> In Account settings →
+                  Security, choose "Delete Account". You'll need to cancel any upcoming sessions first. We
+                  then:
+                </p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>delete your photos, portfolio and ID photos;</li>
+                  <li>delete your AI preferences, advisor application and waitlist entries;</li>
+                  <li>remove your name, email, bio, links and location from your profile;</li>
+                  <li>switch off your login.</li>
                 </ul>
-              </section>
-
-              <section className="bg-gold/10 border border-gold/30 p-6 rounded-none">
-                <h2 className="font-serif text-2xl font-normal mb-4">5. Session Recordings</h2>
-                <div className="space-y-4 text-muted-foreground leading-relaxed">
-                  <p>
-                    <strong className="text-foreground">Virtual Session Recording:</strong> All
-                    virtual consultations are automatically recorded for quality assurance and
-                    dispute resolution purposes.
-                  </p>
-                  <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li>Recordings are stored securely and encrypted</li>
-                    <li>Access is limited to authorized administrators only</li>
-                    <li>Recordings are retained for 90 days unless a dispute is active</li>
-                    <li>By participating in sessions, you consent to recording</li>
-                  </ul>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">6. Information Sharing</h2>
-                <p className="text-muted-foreground leading-relaxed mb-4">
-                  We do not sell or share (as those terms are defined under California law) your
-                  personal information for cross-context behavioral advertising. We may share your
-                  information with:
+                <p>
+                  Booking, payment and message records stay for our accounts, with your personal details
+                  removed (see section 5).
                 </p>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                  <li><strong>Service Providers:</strong> Stripe (payments), Daily.co (video calls; only if Daily is unavailable, the Jitsi service run by Freifunk München in Germany), Resend (email), Supabase (hosting and database), Cloudflare (website delivery), Anthropic (the AI model behind the Concierge), and Google (fonts, and address search for in-person sessions). Each receives only what it needs to perform its service</li>
-                  <li><strong>Other Users:</strong> your public profile information, reviews, and (for bookings) chat messages are visible to the relevant counterparty or the public as applicable</li>
-                  <li><strong>Legal Requirements:</strong> when required by law, valid legal process, or to protect the rights, property, or safety of Cook A Look, our users, or the public</li>
-                  <li><strong>Business Transfers:</strong> in connection with a merger, acquisition, financing, or sale of assets, subject to standard confidentiality protections</li>
-                </ul>
-              </section>
+              </Section>
 
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">7. Data Security</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  We implement industry-standard security measures to protect your information,
-                  including encryption in transit and at rest, access controls limiting who can
-                  view verification photos and recordings, and regular review of our systems.
-                  However, no method of transmission over the Internet or electronic storage is
-                  100% secure, and we cannot guarantee absolute security.
+              <Section title="9. Your rights">
+                <p>
+                  You can ask what personal information we hold about you, ask for a copy, and ask us to
+                  correct it. You can also withdraw your consent to optional uses at any time. Most details
+                  can be changed in Account settings. For anything else, email <Mail /> and we'll reply
+                  within 30 days. We may need to confirm your identity first.
                 </p>
-              </section>
-
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">
-                  8. Your Privacy Rights (California &amp; Other States)
-                </h2>
-                <div className="space-y-4 text-muted-foreground leading-relaxed">
-                  <p>
-                    If you are a California resident, the California Consumer Privacy Act, as
-                    amended by the California Privacy Rights Act (CCPA/CPRA), gives you the right
-                    to: (a) know the categories and specific pieces of personal information we
-                    collect, use, and disclose; (b) request deletion; (c) request correction of
-                    inaccurate information; (d) request a portable copy of your data; (e) limit
-                    the use of "sensitive personal information" (which includes your biometric
-                    data collected under Section 3 above); and (f) not be discriminated against
-                    for exercising these rights. We do not sell personal information and honor
-                    Global Privacy Control (GPC) opt-out signals where technically feasible.
-                  </p>
-                  <p>
-                    Residents of Colorado, Connecticut, Virginia, Oregon, Texas, and other states
-                    with comprehensive privacy laws have similar rights to access, correct, delete,
-                    and port their data, and to opt out of the sale of personal data and targeted
-                    advertising (which, again, we do not engage in). To exercise any of these
-                    rights, contact{" "}
-                    <a href="mailto:privacy@cookalook.com" className="text-gold hover:underline">
-                      privacy@cookalook.com
-                    </a>
-                    . We will verify your identity before fulfilling a request and will respond
-                    within the time required by applicable law.
-                  </p>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">
-                  8A. Your Privacy Rights (Canada)
-                </h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  Canadian privacy law (including PIPEDA) gives you the right to know what personal
-                  information we hold about you, to get a copy of it, and to ask us to correct it.
-                  You can also withdraw consent to optional uses, such as waitlist emails, at any
-                  time. Most details can be edited in Account settings, and you can delete your
-                  account there. When you delete your account, your profile details, photos and
-                  documents are removed and your login is disabled; booking and payment records are
-                  kept without your personal details, for accounting. For anything else, email{" "}
-                  <a href="mailto:privacy@cookalook.com" className="text-gold hover:underline">
-                    privacy@cookalook.com
-                  </a>
-                  ; we'll respond within 30 days. If you're not satisfied with our answer, you can
-                  complain to the Office of the Privacy Commissioner of Canada (priv.gc.ca).
-                </p>
-              </section>
-
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">9. AI Concierge</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  The "AI Concierge" chat feature is an automated system powered by Anthropic's
-                  Claude AI model, not a human advisor. Messages you send it, along with
-                  publicly listed advisor information, are sent to our AI infrastructure provider
-                  to generate a response. We do not use your chat content to train AI models.
-                </p>
-                <p className="text-muted-foreground leading-relaxed mt-4">
-                  To improve the Concierge, we keep the questions you send it, with email addresses
-                  and phone numbers removed and without linking them to your account, and any
-                  feedback you choose to give (thumbs up or down, an optional comment, and the
-                  answer it refers to). Our team reviews these to fix gaps in the Concierge's
-                  instructions. They are deleted automatically after 90 days. If you are signed in,
-                  the Concierge also keeps a short note of style preferences you share (for example
-                  budget, fit, or what you dress for) so it doesn't have to ask again. Only you can
-                  see that note, and you can clear it at any time under Account settings → Security.
-                  Please don't share sensitive personal information in the chat.
-                </p>
-                <p className="text-muted-foreground leading-relaxed mt-4">
-                  See our{" "}
-                  <a href="/terms" className="text-gold hover:underline">
-                    Terms of Use
-                  </a>{" "}
-                  for the disclosure that AI Concierge is AI-generated and not professional
-                  styling advice.
-                </p>
-              </section>
-
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">10. Cookies and Tracking</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  We don't use advertising or analytics trackers. We use your browser's storage
-                  only for things the Platform needs: keeping you signed in, remembering your
-                  preferences, and keeping your current Concierge conversation. You can clear this
-                  storage through your browser settings; doing so signs you out.
-                </p>
-              </section>
-
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">11. Children's Privacy</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  The Platform is restricted to individuals who are at least 18 years old, as
-                  stated in our{" "}
-                  <a href="/terms" className="text-gold hover:underline">
-                    Terms of Use
-                  </a>
-                  . We do not knowingly collect personal information from anyone under 18. If we
-                  learn that we have collected personal information from someone under 18, we
-                  will delete it promptly. Parents or guardians who believe a child has provided
-                  us information should contact{" "}
-                  <a href="mailto:privacy@cookalook.com" className="text-gold hover:underline">
-                    privacy@cookalook.com
+                <p>
+                  If you're not happy with our answer, you can complain to the Office of the Privacy
+                  Commissioner of Canada at{" "}
+                  <a href="https://www.priv.gc.ca" className="text-gold hover:underline" target="_blank" rel="noreferrer">
+                    priv.gc.ca
                   </a>
                   .
                 </p>
-              </section>
+              </Section>
 
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">12. International Users</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  Cook A Look is operated from Ontario, Canada. Our service providers (listed in
-                  Section 6) store and process information outside Canada, mainly in the United
-                  States, and, for the backup video service only, in Germany. While your
-                  information is there, it is subject to the laws of that country, which may allow
-                  government authorities to access it.
+              <Section title="10. Cookies and browser storage">
+                <p>
+                  We don't use advertising or analytics trackers. We only use your browser's storage for
+                  what the site needs: keeping you signed in, remembering your settings, and keeping your
+                  current Concierge conversation. Clearing it signs you out.
                 </p>
-              </section>
+              </Section>
 
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">13. Changes to This Policy</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  We may update this Privacy Policy from time to time. We will notify you of any
-                  material changes by posting the new policy on this page and updating the "Last
-                  updated" date. Material changes affecting the Biometric Data section will not
-                  apply retroactively to previously collected photos without obtaining fresh
-                  consent.
+              <Section title="11. Security">
+                <p>
+                  Your information is sent over encrypted connections. Access is limited, so only you can
+                  see your own AI preferences, and only our admins can see ID photos. Clients can watch their
+                  own session recordings, and our admins can view recordings to resolve disputes. No system
+                  is perfectly secure, but if a breach puts you at risk, we'll tell you.
                 </p>
-              </section>
+              </Section>
 
-              <section>
-                <h2 className="font-serif text-2xl font-normal mb-4">14. Contact Us</h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  If you have any questions about this Privacy Policy or want to exercise a
-                  privacy right, contact us at{" "}
-                  <a href="mailto:privacy@cookalook.com" className="text-gold hover:underline">
-                    privacy@cookalook.com
-                  </a>
-                  .
+              <Section title="12. Age">
+                <p>
+                  Cook A Look is only for people 18 and older. If we learn that someone under 18 has given
+                  us personal information, we'll delete it.
                 </p>
-              </section>
+              </Section>
 
-              {/* Disclaimer footer */}
-              <section className="border-t border-border pt-6 mt-8">
-                <p className="text-xs text-muted-foreground italic leading-relaxed">
-                  This document is provided for informational purposes and does not constitute
-                  legal advice. Cook A Look recommends consulting qualified legal counsel,
-                  licensed in the relevant jurisdiction(s), before relying on this policy.
+              <Section title="13. Changes">
+                <p>
+                  If we change this policy, we'll post the new version here and update the date at the top.{" "}
+                  <Todo>whether to email users about important changes</Todo>
                 </p>
-              </section>
+              </Section>
+
+              <Section title="14. Contact">
+                <p>
+                  Questions about your privacy, or a request about your data: email <Mail />.{" "}
+                  <Todo>name the person responsible for privacy at Cook A Look</Todo>
+                </p>
+              </Section>
             </div>
           </motion.div>
         </div>
