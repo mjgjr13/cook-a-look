@@ -36,6 +36,7 @@ import LanguageSelect from "@/components/advisor/LanguageSelect";
 import ConciergeMemoryCard from "@/components/profile/ConciergeMemoryCard";
 import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import CorporateServicesFields, { type CorporateServicesValue, corporateError, corporateFreeText, corporateFromProfile, corporateToProfile } from "@/components/advisor/CorporateServicesFields";
+import { scrollBehavior, whenElement } from "@/lib/scroll";
 
 // Separate component for Security Tab to manage delete account flow
 interface SecurityTabProps {
@@ -211,10 +212,10 @@ const AccountSettings = () => {
   useEffect(() => {
     if (isLoading || typeof window === "undefined" || window.location.hash !== "#portfolio-photos") return;
     setActiveTab("profile");
-    const t = window.setTimeout(() => {
-      document.getElementById("portfolio-photos")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 150);
-    return () => window.clearTimeout(t);
+    return whenElement(
+      () => document.getElementById("portfolio-photos"),
+      (el) => el.scrollIntoView({ behavior: scrollBehavior(), block: "start" }),
+    );
   }, [isLoading]);
 
   // Check if user is an advisor - advisors don't see rewards tab

@@ -22,6 +22,7 @@ import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import { CORPORATE_VIRTUAL_HOURS, type CorporateInfo } from "@/lib/corporateAdvisors";
 import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
 import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
+import { scrollToTopOf, whenElement } from "@/lib/scroll";
 import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/google-places-autocomplete";
 
 interface BookingCalendarProps {
@@ -82,14 +83,6 @@ type OpenDatesRpc = (
   fn: "get_advisor_open_dates",
   args: { p_advisor_id: string; p_client_tz: string; p_duration_minutes: number },
 ) => PromiseLike<{ data: { open_date: string }[] | null; error: unknown }>;
-
-const scrollBehavior = (): ScrollBehavior => {
-  try {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-  } catch {
-    return "smooth";
-  }
-};
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -153,7 +146,10 @@ const BookingCalendar = ({
   const timesRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
   const scrollToTimes = useRef(false);
-  const [timesLoadedTick, setTimesLoadedTick] = useState(0);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  // Height reserved for the times section while it's the last step, so the one
+  // scroll to it can line it up with the top before the slots have loaded.
+  const [timesMinHeight, setTimesMinHeight] = useState<number | undefined>();
   const scrollToDetails = useRef(false);
   // Start time to keep selected across refetches (restored after sign-in, or a session-length change).
   const keepSlotStart = useRef<string | null>(selectedSlot?.startTime ?? null);
@@ -326,29 +322,36 @@ const BookingCalendar = ({
       } finally {
         keepSlotStart.current = null;
         setIsLoadingSlots(false);
-        if (scrollToTimes.current) setTimesLoadedTick((n) => n + 1);
       }
     };
     fetchSlots();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, advisorId, clientTimezone, isCorporate, corpFormat, slotDuration]);
 
-  // Bring the next step into view so nobody has to scroll to find it.
-  // Runs after the times for a newly picked date have rendered.
+  // Bring the next step into view so nobody has to scroll to find it. Scrolls
+  // once, as soon as the section exists (the times heading shows while slots
+  // load, so we don't wait on the network), and lines its top up with the top
+  // of the dialog's scroll area so the slots fill in below without shifting it.
   useEffect(() => {
-    if (!timesLoadedTick || !scrollToTimes.current) return;
+    if (!scrollToTimes.current || !selectedDate) return;
     scrollToTimes.current = false;
-    requestAnimationFrame(() => timesRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" }));
-  }, [timesLoadedTick]);
+    return whenElement(() => timesRef.current, (el) => scrollerRef.current && scrollToTopOf(el, scrollerRef.current));
+  }, [selectedDate]);
 
   useEffect(() => {
     if (!scrollToDetails.current || !selectedSlot) return;
     scrollToDetails.current = false;
-    requestAnimationFrame(() => detailsRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" }));
+    return whenElement(() => detailsRef.current, (el) => scrollerRef.current && scrollToTopOf(el, scrollerRef.current));
   }, [selectedSlot]);
 
   const handleSelectDate = (date: Date | undefined) => {
     scrollToTimes.current = !!date;
+    const scroller = scrollerRef.current;
+    if (scroller?.parentElement) {
+      // The dialog grows to 88svh as content is added, so size against that.
+      const headerHeight = scroller.getBoundingClientRect().top - scroller.parentElement.getBoundingClientRect().top;
+      setTimesMinHeight(window.innerHeight * 0.88 - headerHeight - 40);
+    }
     keepSlotStart.current = null;
     setSelectedSlot(null);
     setSelectedDate(date);
@@ -597,7 +600,7 @@ const BookingCalendar = ({
           </div>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6 sm:px-6 sm:pt-5">
+        <div ref={scrollerRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6 sm:px-6 sm:pt-5">
           {offersCorporate && (
             <div className="mb-4">
               <p className="font-sans text-sm mb-2">What are you booking?</p>
@@ -695,7 +698,11 @@ const BookingCalendar = ({
           )}
 
           {selectedDate && (
-            <div className="mt-6 scroll-mt-4 motion-safe:animate-rise" ref={timesRef}>
+            <div
+              className="mt-6 motion-safe:animate-rise"
+              ref={timesRef}
+              style={{ minHeight: selectedSlot ? undefined : timesMinHeight }}
+            >
               <h4 className="font-sans font-medium mb-3">
                 {isCorporate && corpFormat === "on_site" ? "Availability for" : "Available times for"} {format(selectedDate, "MMMM d, yyyy")}
               </h4>
@@ -745,7 +752,7 @@ const BookingCalendar = ({
           )}
 
           {selectedDate && selectedSlot && (
-            <div ref={detailsRef} className="mt-6 p-4 bg-secondary border border-border space-y-4 scroll-mt-4 motion-safe:animate-rise">
+            <div ref={detailsRef} className="mt-6 p-4 bg-secondary border border-border space-y-4 motion-safe:animate-rise">
               <div className="flex justify-between items-start gap-4">
                 <span className="font-sans text-sm">Your session</span>
                 <span className="font-sans font-medium text-right">

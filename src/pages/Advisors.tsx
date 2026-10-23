@@ -16,6 +16,7 @@ import { CorporateInfo, fetchCorporateAdvisors } from "@/lib/corporateAdvisors";
 const ADVISORS_PER_PAGE = 20;
 import Seo from "@/components/Seo";
 import { withSampleContent } from "@/lib/sampleAdvisors";
+import { scrollBehavior } from "@/lib/scroll";
 interface AdvisorData {
   id: string;
   full_name: string | null;
@@ -154,7 +155,7 @@ const Advisors = () => {
   const pageAdvisors = filteredAndSortedAdvisors.slice((currentPage - 1) * ADVISORS_PER_PAGE, currentPage * ADVISORS_PER_PAGE);
   const goToPage = (n: number) => {
     setPage(n);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
   };
 
   const handleCardClick = (advisorId: string) => {

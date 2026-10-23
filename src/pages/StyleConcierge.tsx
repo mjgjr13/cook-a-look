@@ -19,6 +19,7 @@ import {
 } from "@/lib/conciergeStream";
 import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
 import type { User } from "@supabase/supabase-js";
+import { scrollBehavior } from "@/lib/scroll";
 
 const STORAGE_KEY = "cal_concierge_conversation";
 const SESSION_KEY = "cal_concierge_session";
@@ -254,9 +255,39 @@ const StyleConcierge = () => {
     });
   }, []);
 
+  // Keep the latest message in view. A new message scrolls once (smoothly unless
+  // reduced motion); while a reply streams in, follow it with instant scrolls so
+  // dozens of overlapping smooth scrolls don't stutter. Scrolling up to reread
+  // stops the following until the next message.
+  const messageCount = useRef<number | null>(null);
+  const following = useRef(true);
+  useEffect(() => {
+    const stop = () => (following.current = false);
+    const onWheel = (e: WheelEvent) => e.deltaY < 0 && stop();
+    const onKey = (e: KeyboardEvent) => ["ArrowUp", "PageUp", "Home"].includes(e.key) && stop();
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchmove", stop, { passive: true });
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchmove", stop);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
   useEffect(() => {
     saveConversation(messages);
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const end = endRef.current;
+    const previous = messageCount.current;
+    messageCount.current = messages.length;
+    if (!end) return;
+    if (previous === null) {
+      if (messages.length) end.scrollIntoView({ block: "end" });
+    } else if (messages.length > previous && messages[messages.length - 1].role === "user") {
+      following.current = true;
+      end.scrollIntoView({ behavior: scrollBehavior(), block: "end" });
+    } else if (following.current) {
+      end.scrollIntoView({ block: "end" });
+    }
   }, [messages]);
 
   const send = useCallback(
