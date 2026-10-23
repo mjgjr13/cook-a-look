@@ -230,7 +230,17 @@ const StyleConcierge = () => {
     };
     supabase.auth.getSession().then(({ data: { session } }) => load(session?.user ?? null));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => load(session?.user ?? null));
-    return () => subscription.unsubscribe();
+    // Re-read on return to this tab, so preferences cleared in Settings in
+    // another tab aren't sent back to the concierge and saved again.
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      supabase.auth.getSession().then(({ data: { session } }) => load(session?.user ?? null));
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   useEffect(() => {
