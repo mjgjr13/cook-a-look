@@ -30,7 +30,6 @@ import AdvisorOnboardingModal from "@/components/advisor/AdvisorOnboardingModal"
 import FinishSetupPromptModal from "@/components/advisor/FinishSetupPromptModal";
 import ProfileCompletionCard from "@/components/advisor/ProfileCompletionCard";
 import NewAdvisorSetupCard from "@/components/advisor/NewAdvisorSetupCard";
-import AdvisorFeeProgressCard from "@/components/advisor/AdvisorFeeProgressCard";
 import PayoutSetupCard from "@/components/advisor/PayoutSetupCard";
 import PendingLocationApprovals from "@/components/advisor/PendingLocationApprovals";
 import PendingBookingRequests from "@/components/advisor/PendingBookingRequests";
@@ -40,7 +39,8 @@ import { AlertCircle } from "lucide-react";
 import BookingDetailsModal from "@/components/booking/BookingDetailsModal";
 import AdminMessagesInbox from "@/components/advisor/AdminMessagesInbox";
 import CancelBookingDialog from "@/components/booking/CancelBookingDialog";
-import { useProfile, calculatePlatformFee } from "@/hooks/useProfile";
+import { useProfile } from "@/hooks/useProfile";
+import { advisorShare } from "@/lib/fees";
 import { useAdvisorProfile } from "@/hooks/useAdvisorProfile";
 
 interface Booking {
@@ -83,7 +83,6 @@ const AdvisorDashboard = () => {
   const [showFinishSetupModal, setShowFinishSetupModal] = useState(false);
   const [payoutsReady, setPayoutsReady] = useState(false);
   const [earnings, setEarnings] = useState({ available: 0, pending: 0, total: 0 });
-  const [platformFee, setPlatformFee] = useState({ feePercent: 15, bookingsThisMonth: 0 });
   const [cancelTarget, setCancelTarget] = useState<{ id: string; start: string } | null>(null);
 
   useEffect(() => {
@@ -148,7 +147,7 @@ const AdvisorDashboard = () => {
       }
 
       // Fetch bookings, earnings, and platform fee in parallel
-      const [bookingsResult, paymentsResult, feeResult] = await Promise.all([
+      const [bookingsResult, paymentsResult] = await Promise.all([
         supabase
           .from("bookings")
           .select(`
@@ -162,11 +161,9 @@ const AdvisorDashboard = () => {
           .from("payments")
           .select("*, booking:bookings(slot:availability_slots(start_time))")
           .eq("advisor_id", profile.id),
-        calculatePlatformFee(profile.id),
       ]);
 
       setBookings(bookingsResult.data || []);
-      setPlatformFee(feeResult);
 
       // Paid out = transferred to the advisor's Stripe account (release-advisor-payouts);
       // everything else that isn't refunded is in escrow or about to be sent.
@@ -176,7 +173,7 @@ const AdvisorDashboard = () => {
         paymentsResult.data
           .filter(p => p.status === "completed" && p.escrow_status !== "refunded")
           .forEach(p => {
-            const payout = Number(p.advisor_payout || p.amount * (1 - feeResult.feePercent / 100));
+            const payout = Number(p.advisor_payout || advisorShare(Number(p.amount)));
             if (p.stripe_transfer_id) paidOut += payout;
             else onTheWay += payout;
           });
@@ -439,13 +436,6 @@ const AdvisorDashboard = () => {
 
           {/* Stripe Connect: required before taking paid bookings */}
           {(isApproved || isPending) && profile && <PayoutSetupCard onStatus={(s) => setPayoutsReady(!!s.transfers_active && !!s.payouts_enabled)} />}
-
-          {/* Platform Fee Progress Card */}
-          {isApproved && profile && (
-            <div className="mb-8">
-              <AdvisorFeeProgressCard advisorProfileId={profile.id} />
-            </div>
-          )}
 
           {isApproved && profile && (
             <div className="mb-8">

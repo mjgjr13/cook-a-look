@@ -148,38 +148,4 @@ export const useProfile = (): UseProfileResult => {
   };
 };
 
-/**
- * Calculate platform fee based on completed bookings this month.
- * Bookings 1–9: 15% fee. Booking 10+ in the same calendar month: 10% fee.
- */
-export const calculatePlatformFee = async (advisorProfileId: string): Promise<{ feePercent: number; bookingsThisMonth: number }> => {
-  try {
-    // Same rule as the server when it records a payment (confirmPayment.ts):
-    // bookings completed since the start of this calendar month, UTC.
-    const now = new Date();
-    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("advisor_id", advisorProfileId)
-      .eq("status", "completed")
-      .gte("completed_at", startOfMonth.toISOString());
-
-    if (error) {
-      console.error("Error fetching bookings for fee calculation:", error);
-      return { feePercent: 15, bookingsThisMonth: 0 };
-    }
-
-    const bookingsThisMonth = data?.length || 0;
-    // 10% fee applies once the advisor has already completed 9 bookings this month.
-    const feePercent = bookingsThisMonth >= 9 ? 10 : 15;
-
-    return { feePercent, bookingsThisMonth };
-  } catch (err) {
-    console.error("Error calculating platform fee:", err);
-    return { feePercent: 15, bookingsThisMonth: 0 };
-  }
-};
-
 export default useProfile;

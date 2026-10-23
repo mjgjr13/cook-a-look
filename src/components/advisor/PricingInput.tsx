@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DollarSign, CheckCircle, Info } from "lucide-react";
+import { PLATFORM_FEE_PERCENT, PLATFORM_FEE_SUMMARY } from "@/lib/fees";
 
 interface PricingInputProps {
   value: string;
@@ -8,11 +9,9 @@ interface PricingInputProps {
   error?: string;
 }
 
-const PLATFORM_FEE_PERCENTAGE = 0.15; // 15% standard platform fee
-
 const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
   const numericValue = parseFloat(value) || 0;
-  const platformFee = numericValue * PLATFORM_FEE_PERCENTAGE;
+  const platformFee = numericValue * PLATFORM_FEE_PERCENT / 100;
   const yourPayout = numericValue - platformFee;
 
   return (
@@ -52,7 +51,7 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
               <span className="font-medium">${numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Platform fee (15%):</span>
+              <span className="text-muted-foreground">Platform fee ({PLATFORM_FEE_PERCENT}%):</span>
               <span className="text-muted-foreground">-${platformFee.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between items-center">
@@ -65,7 +64,7 @@ const PricingInput = ({ value, onChange, error }: PricingInputProps) => {
           </div>
           
           <p className="text-xs text-muted-foreground italic">
-            Payouts release 48 hours after each session. After 9 completed bookings in a calendar month, every additional booking that month is charged a reduced 10% fee instead of 15%.
+            {PLATFORM_FEE_SUMMARY} Payouts release 48 hours after each session.
           </p>
         </div>
       )}

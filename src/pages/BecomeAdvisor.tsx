@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckCircle, 
-  Trophy, 
+  Percent,
   DollarSign, 
   Clock, 
   Users, 
@@ -30,6 +30,7 @@ import {
   Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PLATFORM_FEE_SUMMARY } from "@/lib/fees";
 import { getBrowserTimezone } from "@/hooks/useTimezone";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -73,9 +74,9 @@ const benefits = [
     description: "Reach clients actively seeking style guidance.",
   },
   {
-    icon: Trophy,
-    title: "Loyalty Rewards",
-    description: "Pay a reduced 10% platform fee (down from 15%) on every booking after your 9th completed booking in a calendar month.",
+    icon: Percent,
+    title: "One Simple Fee",
+    description: PLATFORM_FEE_SUMMARY,
   },
 ];
 

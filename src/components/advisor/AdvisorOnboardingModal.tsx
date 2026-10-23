@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Video, Shield, Clock, DollarSign, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PLATFORM_FEE_SUMMARY } from "@/lib/fees";
 
 interface AdvisorOnboardingModalProps {
   profileId: string;
@@ -67,8 +68,7 @@ const AdvisorOnboardingModal = ({
       title: "Payout Schedule",
       content: [
         "You set your own hourly rate - clients see your full price and choose 1, 2, or 3 hours per booking",
-        "Standard platform fee is 15% per booking",
-        "After your 9th completed booking in a calendar month, every additional booking that month is charged a reduced 10% fee",
+        PLATFORM_FEE_SUMMARY,
         "Your net payout is automatically calculated and shown in your dashboard",
         "You need to connect with Stripe before you can take paid bookings. Your share is then sent automatically once the client marks the session complete, or 48 hours after it ends if no problem is reported",
       ],

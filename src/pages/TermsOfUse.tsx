@@ -118,9 +118,7 @@ const TermsOfUse = () => {
                   </p>
                   <p>
                     <strong>Platform Fees.</strong> Cook A Look charges Advisors a service fee of
-                    fifteen percent (15%) per completed booking, reduced to ten percent (10%) for
-                    each additional booking in a calendar month after the Advisor's ninth (9th)
-                    completed booking in that month. Fees may change with notice posted to the
+                    fifteen percent (15%) of the session price per completed booking. Fees may change with notice posted to the
                     Platform; continued use after a change constitutes acceptance.
                   </p>
                   <p>

@@ -15,6 +15,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Settings, Gift, History, Plus, Save, Search, CreditCard, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { PLATFORM_FEE_PERCENT } from "@/lib/fees";
+
+const ADVISOR_FEE_KEYS = new Set(["advisor_default_fee_percent", "advisor_reduced_fee_percent", "advisor_fee_reduction_threshold"]);
 
 interface RewardSetting {
   id: string;
@@ -287,7 +290,11 @@ const AdminRewards = () => {
   const settingsGroups = {
     points: settings.filter((s) => s.setting_key.includes("points") || s.setting_key.includes("threshold")),
     credits: settings.filter((s) => s.setting_key.includes("credit") || s.setting_key.includes("expiry")),
-    advisor: settings.filter((s) => s.setting_key.includes("advisor") || s.setting_key.includes("fee")),
+    // The advisor platform fee is a flat rate set in code (src/lib/fees.ts), so
+    // the old fee-tier settings are hidden here; they no longer do anything.
+    advisor: settings.filter(
+      (s) => (s.setting_key.includes("advisor") || s.setting_key.includes("fee")) && !ADVISOR_FEE_KEYS.has(s.setting_key),
+    ),
   };
 
   return (
@@ -459,7 +466,7 @@ const AdminRewards = () => {
                     <Settings className="w-5 h-5 text-muted-foreground" />
                     Advisor Fees
                   </CardTitle>
-                  <CardDescription>Platform fee structure for advisors</CardDescription>
+                  <CardDescription>Advisor platform fee: a flat {PLATFORM_FEE_PERCENT}% per booking (set in code).</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {settingsGroups.advisor.map((setting) => (

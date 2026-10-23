@@ -38,6 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { PLATFORM_FEE_PERCENT } from "@/lib/fees";
 
 type WithdrawalUpdate = Database["public"]["Tables"]["withdrawal_requests"]["Update"];
 
@@ -130,7 +131,7 @@ const AdminPayments = () => {
       // Calculate stats
       const completedPayments = (paymentsData || []).filter(p => p.status === "completed");
       const totalRevenue = completedPayments.reduce((sum, p) => sum + Number(p.total_amount), 0);
-      const platformFees = completedPayments.reduce((sum, p) => sum + Number(p.platform_fee || p.amount * 0.15), 0);
+      const platformFees = completedPayments.reduce((sum, p) => sum + Number(p.platform_fee || p.amount * PLATFORM_FEE_PERCENT / 100), 0);
       const advisorPayouts = completedPayments.reduce((sum, p) => sum + Number(p.advisor_payout || p.amount * 0.85), 0);
       const pendingWithdrawals = (withdrawalsData || [])
         .filter(w => w.status === "pending" || w.status === "approved")
@@ -496,7 +497,7 @@ const AdminPayments = () => {
                               ${Number(payment.total_amount).toFixed(2)}
                             </TableCell>
                             <TableCell className="text-green-600">
-                              +${Number(payment.platform_fee || payment.amount * 0.15).toFixed(2)}
+                              +${Number(payment.platform_fee || payment.amount * PLATFORM_FEE_PERCENT / 100).toFixed(2)}
                             </TableCell>
                             <TableCell>
                               ${Number(payment.advisor_payout || payment.amount * 0.85).toFixed(2)}
