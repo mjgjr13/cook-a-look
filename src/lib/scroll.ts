@@ -36,8 +36,13 @@ export const scrollToTopOf = (el: HTMLElement, container: HTMLElement, margin = 
     el.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
     return;
   }
+  scrollContainerTo(container, offset - margin);
+};
+
+/** Scrolls `container` to `top` the same way: quick ease-out, instant with reduced motion. */
+export const scrollContainerTo = (container: HTMLElement, top: number) => {
   const max = container.scrollHeight - container.clientHeight;
-  const target = Math.max(0, Math.min(offset - margin, max));
+  const target = Math.max(0, Math.min(top, max));
   const start = container.scrollTop;
   if (Math.abs(target - start) < 2) return;
   if (prefersReducedMotion()) {

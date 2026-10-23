@@ -22,7 +22,7 @@ import { optimizedImageUrl, fallbackToOriginal } from "@/lib/imageUrl";
 import { CORPORATE_VIRTUAL_HOURS, type CorporateInfo } from "@/lib/corporateAdvisors";
 import { getBrowserTimezone, getTimezoneAbbreviation, formatTimeInTimezone } from "@/hooks/useTimezone";
 import { containsProfanity, PROFANITY_MESSAGE } from "@/lib/profanity";
-import { scrollToTopOf, whenElement } from "@/lib/scroll";
+import { scrollContainerTo, scrollToTopOf, whenElement } from "@/lib/scroll";
 import GooglePlacesAutocomplete, { type SelectedPlace } from "@/components/ui/google-places-autocomplete";
 
 interface BookingCalendarProps {
@@ -703,9 +703,18 @@ const BookingCalendar = ({
               ref={timesRef}
               style={{ minHeight: selectedSlot ? undefined : timesMinHeight }}
             >
-              <h4 className="font-sans font-medium mb-3">
-                {isCorporate && corpFormat === "on_site" ? "Availability for" : "Available times for"} {format(selectedDate, "MMMM d, yyyy")}
-              </h4>
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h4 className="font-sans font-medium">
+                  {isCorporate && corpFormat === "on_site" ? "Availability for" : "Available times for"} {format(selectedDate, "MMMM d, yyyy")}
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => scrollerRef.current && scrollContainerTo(scrollerRef.current, 0)}
+                  className="shrink-0 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                >
+                  Change date
+                </button>
+              </div>
               {isLoadingSlots ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
